@@ -4,12 +4,10 @@ const SIDEBAR_ID = 'guardscope-sidebar-container'
 const SIDEBAR_WIDTH = '360px'
 
 let sidebarMounted = false
-let shadowRoot: ShadowRoot | null = null
 
 function createSidebar(): void {
   if (document.getElementById(SIDEBAR_ID)) return
 
-  // Create host container
   const container = document.createElement('div')
   container.id = SIDEBAR_ID
   container.style.cssText = `
@@ -20,79 +18,86 @@ function createSidebar(): void {
     height: 100vh;
     z-index: 9999;
     box-shadow: -4px 0 24px rgba(0,0,0,0.4);
-    transition: transform 0.3s ease;
   `
 
-  // Use Shadow DOM to prevent CSS conflicts with Gmail
-  shadowRoot = container.attachShadow({ mode: 'open' })
-
-  // Create sidebar iframe entry point (loads our React app)
+  // Shadow DOM prevents Gmail CSS from leaking in
+  const shadow = container.attachShadow({ mode: 'open' })
   const iframe = document.createElement('iframe')
   iframe.src = chrome.runtime.getURL('src/sidebar/sidebar.html')
-  iframe.style.cssText = `
-    width: 100%;
-    height: 100%;
-    border: none;
-    background: transparent;
-  `
+  iframe.style.cssText = 'width:100%;height:100%;border:none;'
+  shadow.appendChild(iframe)
 
-  shadowRoot.appendChild(iframe)
   document.body.appendChild(container)
   sidebarMounted = true
-
   console.log('[GuardScope] Sidebar mounted')
 }
 
 function removeSidebar(): void {
-  const container = document.getElementById(SIDEBAR_ID)
-  if (container) {
-    container.remove()
+  const el = document.getElementById(SIDEBAR_ID)
+  if (el) {
+    el.remove()
     sidebarMounted = false
-    shadowRoot = null
     console.log('[GuardScope] Sidebar removed')
   }
 }
 
+/**
+ * Reliable Gmail email-open detection.
+ *
+ * Two independent signals — either one triggers the sidebar:
+ *  1. URL hash: Gmail navigates to /#inbox/16HEXCHARS when opening an email.
+ *  2. DOM: .adn.ads is the reading pane Gmail mounts only when an email is open.
+ *
+ * Avoided: `.gs` (matches inbox list items), `[data-message-id]` (matches list rows).
+ */
 function isEmailOpen(): boolean {
-  // Check for Gmail's email view — various selectors for robustness
+  // Signal 1 — URL hash contains a message ID (hex, 10+ chars after folder name)
+  if (/^#[^/]+\/[a-f0-9]{10,}/.test(window.location.hash)) {
+    return true
+  }
+  // Signal 2 — reading pane is in the DOM
   return !!(
-    document.querySelector('[data-message-id]') ||
-    document.querySelector('.gs') ||
-    document.querySelector('.adn.ads') ||
-    document.querySelector('[role="main"] .h7')
+    document.querySelector('.adn.ads') ||          // primary reading pane
+    document.querySelector('[data-legacy-message-id]') || // thread within pane
+    document.querySelector('.nH.if .gs')            // opened thread container
   )
 }
 
-// Watch for Gmail navigation changes (it's an SPA)
-const observer = new MutationObserver(() => {
-  const emailOpen = isEmailOpen()
-
-  if (emailOpen && !sidebarMounted) {
-    // Small delay to let Gmail finish rendering
-    setTimeout(createSidebar, 500)
-  } else if (!emailOpen && sidebarMounted) {
+function syncSidebar(): void {
+  if (isEmailOpen() && !sidebarMounted) {
+    setTimeout(createSidebar, 300)
+  } else if (!isEmailOpen() && sidebarMounted) {
     removeSidebar()
   }
-})
+}
 
-// Start observing once Gmail has loaded its main content area
+// ── Signal 1: URL hash changes (Gmail SPA navigation) ──────────────────────
+// This is the most reliable trigger — fires immediately when user clicks an email.
+window.addEventListener('hashchange', syncSidebar)
+
+// ── Signal 2: DOM mutations (fallback for cases where hash doesn't change) ──
+// Observe the main area for DOM changes (e.g. inline reply, thread expand).
+const observer = new MutationObserver(syncSidebar)
+
 function startObserver(): void {
-  const mainArea = document.querySelector('[role="main"]') || document.body
-  observer.observe(mainArea, {
-    childList: true,
-    subtree: true,
-  })
-  console.log('[GuardScope] Observer started on', mainArea.tagName)
+  const target = document.querySelector('[role="main"]') || document.body
+  observer.observe(target, { childList: true, subtree: true })
+  console.log('[GuardScope] Observer started')
+  syncSidebar() // check immediately on load
+}
 
-  // Check immediately in case email is already open
-  if (isEmailOpen()) {
-    setTimeout(createSidebar, 500)
+// Gmail loads asynchronously — wait for [role="main"] to exist
+function waitForGmail(retries = 20): void {
+  if (document.querySelector('[role="main"]')) {
+    startObserver()
+    return
+  }
+  if (retries > 0) {
+    setTimeout(() => waitForGmail(retries - 1), 500)
+  } else {
+    // Fallback: observe body if Gmail's main area never appeared
+    startObserver()
   }
 }
 
-// Gmail takes a moment to fully load — wait for the main area
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startObserver)
-} else {
-  startObserver()
-}
+waitForGmail()
