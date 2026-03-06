@@ -132,7 +132,7 @@ function buildFastReport(
       url_analysis: { vt_flagged: vt.flagged, sb_flagged: sb.flagged, flagged_count: red_flags.filter((f) => f.module === 'url_analysis').length },
       behavioral: {},
     },
-    analysis_path: 'haiku_fast',
+    analysis_path: 'haiku_fast',  // fast fallback path (no deep AI call)
   }
 }
 
@@ -157,8 +157,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields: fromEmail, subject, bodyText' }, { status: 400 })
   }
 
-  // Determine AI provider: 'claude' (default) or 'mercury' (InceptionLabs)
-  const provider: Provider = body.provider === 'mercury' ? 'mercury' : 'claude'
+  // Mercury-2 is the default provider (5-10x faster, lower cost).
+  // Pass "provider": "claude" in the request body to use Claude (Haiku + Sonnet) instead.
+  const provider: Provider = body.provider === 'claude' ? 'claude' : 'mercury'
 
   const email: EmailInput = {
     fromName: body.fromName ?? null,
