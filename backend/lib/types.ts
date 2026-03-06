@@ -1,0 +1,72 @@
+export interface EmailInput {
+  fromName: string | null
+  fromEmail: string | null
+  subject: string | null
+  date: string | null
+  bodyText: string | null
+  urls: string[]
+  attachments: Array<{ name: string; type: string }>
+  replyTo: string | null
+  messageId: string | null
+}
+
+export interface HaikuResult {
+  pre_score: number
+  signals: string[]
+  urls_found: string[]
+  escalate_to_sonnet: boolean
+  error?: string
+}
+
+export interface DnsResult {
+  spf: 'pass' | 'fail' | 'neutral' | 'none' | 'error'
+  dkim: 'present' | 'absent' | 'error'
+  dmarc: { policy: 'none' | 'quarantine' | 'reject' | 'error'; raw: string }
+  error?: string
+}
+
+export interface VirusTotalResult {
+  flagged: boolean
+  results: Array<{ url: string; malicious: number; suspicious: number; engines: string[] }>
+  error?: string
+}
+
+export interface SafeBrowsingResult {
+  flagged: boolean
+  threats: Array<{ url: string; threatType: string }>
+  error?: string
+}
+
+export interface RdapResult {
+  registrationDate: string | null
+  ageInDays: number | null
+  riskLevel: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN'
+  registrar: string | null
+  error?: string
+}
+
+export interface Flag {
+  label: string
+  detail?: string
+  evidence?: string
+  severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  module: string
+}
+
+export interface AnalysisReport {
+  risk_score: number
+  risk_level: 'SAFE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  verdict: string
+  recommendation: string
+  green_flags: Array<{ label: string; detail: string; module: string }>
+  red_flags: Array<{ label: string; evidence: string; severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'; module: string }>
+  modules: {
+    sender_auth: object
+    domain_intel: object
+    content_analysis: object
+    url_analysis: object
+    behavioral: object
+  }
+  analysis_path: 'haiku_fast' | 'sonnet_deep'
+  duration_ms: number
+}
