@@ -26,14 +26,18 @@ export default function Popup() {
   // Usage state
   const [usageCount, setUsageCount] = useState<number | null>(null)
 
-  // Load auth on mount
+  // Load auth on mount — read storage directly (avoids service worker timing issues)
   useEffect(() => {
-    chrome.runtime.sendMessage({ type: 'GET_AUTH' }, (response: AuthState) => {
-      setAuth(response)
-      setLoading(false)
-      if (response.isAuthenticated && response.token && response.userId) {
-        fetchUsage(response.userId, response.token)
+    chrome.storage.local.get('guardscope_auth', (result) => {
+      const stored = result.guardscope_auth as AuthState | undefined
+      // Only treat as authenticated if token + email are actually present
+      if (stored?.isAuthenticated && stored.token && stored.email) {
+        setAuth(stored)
+        fetchUsage(stored.userId!, stored.token)
+      } else {
+        setAuth({ isAuthenticated: false, userId: null, email: null, tier: 'free', token: null })
       }
+      setLoading(false)
     })
   }, [])
 
@@ -67,29 +71,28 @@ export default function Popup() {
 
     chrome.runtime.sendMessage({ type: 'SIGN_IN', email, password }, (response: { success: boolean; error?: string }) => {
       setSigningIn(false)
+      if (chrome.runtime.lastError || !response) {
+        setSignInError('Extension error — try reloading')
+        return
+      }
       if (!response.success) {
         setSignInError(response.error ?? 'Sign in failed')
         return
       }
-      // Reload auth state
-      chrome.runtime.sendMessage({ type: 'GET_AUTH' }, (newAuth: AuthState) => {
-        setAuth(newAuth)
-        if (newAuth.isAuthenticated && newAuth.token && newAuth.userId) {
+      // Read fresh auth directly from storage
+      chrome.storage.local.get('guardscope_auth', (result) => {
+        const newAuth = result.guardscope_auth as AuthState | undefined
+        if (newAuth?.isAuthenticated && newAuth.token && newAuth.userId) {
+          setAuth(newAuth)
           fetchUsage(newAuth.userId, newAuth.token)
         }
       })
     })
   }
 
-  async function handleSignOut() {
-    chrome.runtime.sendMessage({ type: 'SIGN_OUT' }, () => {
-      setAuth({
-        isAuthenticated: false,
-        userId: null,
-        email: null,
-        tier: 'free',
-        token: null,
-      })
+  function handleSignOut() {
+    chrome.storage.local.remove('guardscope_auth', () => {
+      setAuth({ isAuthenticated: false, userId: null, email: null, tier: 'free', token: null })
       setUsageCount(null)
     })
   }
@@ -247,7 +250,7 @@ export default function Popup() {
 
       {/* Footer */}
       <div className="px-4 py-2 border-t border-[#2a2d3a]">
-        <p className="text-[10px] text-[#64748b] text-center">Powered by Mercury-2 AI</p>
+        <p className="text-[10px] text-[#64748b] text-center">Powered by GuardScope AI</p>
       </div>
     </div>
   )

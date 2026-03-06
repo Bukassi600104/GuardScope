@@ -252,7 +252,7 @@ export default function App() {
            'Analyze This Email'}
         </button>
         <p className="text-[11px] text-[#64748b] text-center">
-          Powered by Mercury-2 AI
+          Powered by GuardScope AI
         </p>
       </div>
     </div>
