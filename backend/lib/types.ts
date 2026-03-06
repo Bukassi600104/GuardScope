@@ -53,6 +53,14 @@ export interface Flag {
   module: string
 }
 
+// Shared intel payload — same shape for both Mercury and Sonnet paths
+export interface AnalysisIntel {
+  dns: DnsResult
+  vt: VirusTotalResult
+  sb: SafeBrowsingResult
+  rdap: RdapResult
+}
+
 export interface AnalysisReport {
   risk_score: number
   risk_level: 'SAFE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'

@@ -1,46 +1,96 @@
 /**
- * InceptionLabs Mercury — AI provider alternative to Claude.
- * Mercury is a diffusion-based LLM optimized for speed.
+ * InceptionLabs Mercury-2 — primary AI provider for GuardScope.
+ * Diffusion-based LLM: 5-10x faster than Claude Haiku, same quality tier.
  * API is OpenAI-compatible: https://api.inceptionlabs.ai/v1
- * Docs: https://docs.inceptionlabs.ai/get-started/get-started
+ *
+ * Mercury has no native "thinking" parameter, but we simulate chain-of-thought
+ * by requiring a _reasoning field in the JSON response. Mercury must reason
+ * through each module before producing its final verdict — same effect.
  */
-import type { EmailInput, HaikuResult, AnalysisReport, DnsResult, VirusTotalResult, SafeBrowsingResult, RdapResult } from './types'
+import type { EmailInput, AnalysisReport, AnalysisIntel } from './types'
 
 const INCEPTION_BASE = 'https://api.inceptionlabs.ai/v1'
-const PRESCAN_MODEL = 'mercury-2'  // mercury-2: best quality, 5-10x faster than Haiku
-const DEEP_MODEL = 'mercury-2'     // mercury-2 for both paths — single model, consistent results
+const MODEL = 'mercury-2'
 
-const PRESCAN_SYSTEM = `You are a phishing pre-screening classifier.
-Return ONLY valid JSON with this exact shape — no prose, no markdown:
-{"pre_score": <integer 0-100>, "signals": ["<brief signal>"], "urls_found": ["<url>"], "escalate_to_sonnet": <boolean>}
-escalate_to_sonnet must be true if pre_score >= 26.
-pre_score rubric: urgency language +10, mismatched sender domain +15, suspicious URLs +20, credential request +20, generic greeting +5.`
+// Premium chain-of-thought prompt.
+// The _reasoning field forces Mercury to reason through each module BEFORE
+// committing to a risk score — this is the closest equivalent to a thinking model
+// available in Mercury's API surface.
+const SYSTEM_PROMPT = `You are GuardScope Security Engine — a world-class email threat analyst with access to real-time security intelligence.
 
-const DEEP_SYSTEM = `You are an expert email security analyst. Analyze the email and all provided threat intelligence.
-Run 5 analysis modules: sender_auth, domain_intel, content_analysis, url_analysis, behavioral.
-Return ONLY the full AnalysisReport JSON — no prose, no markdown, no explanation:
+ANALYSIS PROCEDURE:
+You must populate the _reasoning field FIRST, working through each module in order. Your final risk_score and flags must be consistent with and derived from your reasoning. Do not skip reasoning steps.
+
+MODULE 1 — SENDER AUTHENTICATION (sender_auth)
+• SPF pass = sender verified by domain owner → green flag
+• SPF fail/none = spoofing possible → red flag (HIGH/MEDIUM)
+• DKIM present = cryptographic signature exists → green flag
+• DKIM absent = no tamper protection → red flag (MEDIUM)
+• DMARC reject/quarantine = domain enforces anti-spoofing → green flag
+• DMARC none/missing = no enforcement, domain is spoofable → red flag (LOW/MEDIUM)
+• Mismatch: fromEmail domain ≠ SPF-authorized domain = HIGH severity
+
+MODULE 2 — DOMAIN INTELLIGENCE (domain_intel)
+• Age < 30 days = newly registered, strong phishing indicator → red flag (HIGH)
+• Age 30–90 days = recently registered, suspicious → red flag (MEDIUM)
+• Age > 90 days = established domain → green flag
+• Registrar: known registrars (MarkMonitor, CSC) = legitimate signal
+• RDAP UNKNOWN = domain may not exist or RDAP unavailable = note but do not penalize
+
+MODULE 3 — URL THREAT INTELLIGENCE (url_analysis)
+• ANY VirusTotal malicious detection → CRITICAL red flag, score minimum 85
+• ANY Google Safe Browsing threat → CRITICAL red flag, score minimum 85
+• URL shorteners (bit.ly, tinyurl, ow.ly) = obfuscation risk → red flag (MEDIUM)
+• Typosquatting/homograph in URLs (paypa1, arnazon) = HIGH red flag
+• Zero URLs in email from financial/account sender = suspicious absence
+
+MODULE 4 — CONTENT ANALYSIS (content_analysis)
+• Urgency language: "URGENT", "suspended", "verify now", "act immediately" → red flag (MEDIUM)
+• Credential/payment requests = phishing intent → red flag (HIGH)
+• Generic greeting "Dear Customer/User" = mass phishing indicator → red flag (LOW)
+• Brand name in subject/body but sender domain doesn't match that brand → HIGH mismatch
+
+MODULE 5 — BEHAVIORAL PATTERNS (behavioral)
+• Brand impersonation + new domain + urgency = CRITICAL combination
+• Multiple concurrent red signals amplify each other — do not treat independently
+• No suspicious signals despite analysis = behavioral green flag
+
+SCORING RULES (must be consistent with your _reasoning):
+• 0–10:  All modules clean, sender is verified and established
+• 11–25: SAFE — trivial anomalies, no credible threat
+• 26–49: LOW — some flags but context is benign
+• 50–69: MEDIUM — real risk, user should verify before acting
+• 70–84: HIGH — strong phishing signals, do not engage
+• 85–100: CRITICAL — confirmed attack vector (VT hit, or brand impersonation + new domain + urgency all together)
+
+OVERRIDE RULE: A single CRITICAL signal (VirusTotal hit, Safe Browsing threat) sets minimum score to 85 regardless of other clean signals.
+
+Return ONLY valid JSON. Absolutely no text before or after the JSON object.
+Schema:
 {
-  "risk_score": <integer 0-100>,
+  "_reasoning": {
+    "sender_auth": "<your step-by-step analysis of SPF/DKIM/DMARC and fromEmail domain>",
+    "domain_intel": "<your analysis of domain age, registrar, and risk level>",
+    "url_analysis": "<your analysis of each URL, VT results, SB results, shortened links>",
+    "content_analysis": "<your analysis of subject, body, urgency, credentials, brand mentions>",
+    "behavioral": "<your synthesis of combined signals and impersonation assessment>",
+    "score_rationale": "<explain exactly why you chose this specific score>"
+  },
+  "risk_score": <integer 0–100>,
   "risk_level": <"SAFE"|"LOW"|"MEDIUM"|"HIGH"|"CRITICAL">,
-  "verdict": "<one-sentence summary>",
-  "recommendation": "<one-sentence action>",
-  "green_flags": [{"label": "...", "detail": "...", "module": "sender_auth|domain_intel|content_analysis|url_analysis|behavioral"}],
-  "red_flags": [{"label": "...", "evidence": "...", "severity": <"LOW"|"MEDIUM"|"HIGH"|"CRITICAL">, "module": "..."}],
+  "verdict": "<one clear sentence stating the threat assessment>",
+  "recommendation": "<one actionable sentence for the user>",
+  "green_flags": [{"label": "<short label>", "detail": "<specific evidence>", "module": "<module_name>"}],
+  "red_flags": [{"label": "<short label>", "evidence": "<specific evidence>", "severity": <"LOW"|"MEDIUM"|"HIGH"|"CRITICAL">, "module": "<module_name>"}],
   "modules": {
-    "sender_auth": {"spf": "...", "dkim": "...", "dmarc": "..."},
-    "domain_intel": {"age_days": <number|null>, "risk_level": "...", "registrar": "..."},
-    "content_analysis": {"signals": [], "pre_score": <number>},
-    "url_analysis": {"vt_flagged": <bool>, "sb_flagged": <bool>, "flagged_urls": []},
-    "behavioral": {"urgency_indicators": [], "impersonation_risk": "..."}
+    "sender_auth": {"spf": "<value>", "dkim": "<value>", "dmarc": "<value>", "assessment": "<pass|fail|partial>"},
+    "domain_intel": {"age_days": <number|null>, "risk_level": "<HIGH|MEDIUM|LOW|UNKNOWN>", "registrar": "<name|null>", "assessment": "<trusted|suspicious|new|unknown>"},
+    "content_analysis": {"signals": ["<signal1>", "..."], "urgency_score": <0-10>, "assessment": "<clean|suspicious|malicious>"},
+    "url_analysis": {"vt_flagged": <bool>, "sb_flagged": <bool>, "flagged_urls": ["<url>"], "url_risks": ["<risk description>"], "assessment": "<clean|suspicious|malicious>"},
+    "behavioral": {"urgency_indicators": ["<phrase>"], "impersonation_risk": "<none|low|medium|high|critical>", "social_engineering_tactics": ["<tactic>"]}
   },
   "analysis_path": "mercury_deep"
-}
-Risk scale: 0-25 SAFE, 26-49 LOW, 50-69 MEDIUM, 70-84 HIGH, 85-100 CRITICAL.`
-
-interface OpenAIMessage {
-  role: 'system' | 'user' | 'assistant'
-  content: string
-}
+}`
 
 interface OpenAIResponse {
   choices: Array<{
@@ -49,12 +99,7 @@ interface OpenAIResponse {
   }>
 }
 
-async function callMercury(
-  model: string,
-  messages: OpenAIMessage[],
-  maxTokens: number,
-  timeoutMs: number
-): Promise<string> {
+async function callMercury(userContent: string, timeoutMs: number): Promise<string> {
   const apiKey = process.env.INCEPTION_API_KEY
   if (!apiKey) throw new Error('INCEPTION_API_KEY not configured')
 
@@ -69,11 +114,14 @@ async function callMercury(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: maxTokens,
-        temperature: 0,
-        response_format: { type: 'json_object' },  // Mercury supports json_mode natively
+        model: MODEL,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userContent },
+        ],
+        max_tokens: 6000,   // enough for _reasoning + full report
+        temperature: 0.1,   // slight creativity for thorough reasoning; 0 can be too rigid
+        response_format: { type: 'json_object' },
       }),
       signal: controller.signal,
     })
@@ -91,49 +139,13 @@ async function callMercury(
   }
 }
 
-export async function mercuryPrescan(email: EmailInput): Promise<HaikuResult> {
-  try {
-    const text = await callMercury(
-      PRESCAN_MODEL,
-      [
-        { role: 'system', content: PRESCAN_SYSTEM },
-        { role: 'user', content: JSON.stringify(email) },
-      ],
-      1024,
-      10000
-    )
+export async function mercuryAnalyze(email: EmailInput, intel: AnalysisIntel): Promise<AnalysisReport> {
+  const userContent = JSON.stringify({ email, intelligence: intel }, null, 2)
+  const raw = await callMercury(userContent, 60000)
+  const parsed = JSON.parse(raw) as AnalysisReport & { _reasoning?: unknown }
 
-    const parsed = JSON.parse(text) as HaikuResult
-    return {
-      pre_score: Number(parsed.pre_score) || 0,
-      signals: Array.isArray(parsed.signals) ? parsed.signals : [],
-      urls_found: Array.isArray(parsed.urls_found) ? parsed.urls_found : [],
-      escalate_to_sonnet: Boolean(parsed.escalate_to_sonnet),
-    }
-  } catch (err) {
-    return { pre_score: 0, signals: [], urls_found: [], escalate_to_sonnet: false, error: String(err) }
-  }
-}
-
-export async function mercuryDeepAnalysis(
-  email: EmailInput,
-  intel: {
-    haiku: HaikuResult
-    dns: DnsResult
-    vt: VirusTotalResult
-    sb: SafeBrowsingResult
-    rdap: RdapResult
-  }
-): Promise<AnalysisReport> {
-  const text = await callMercury(
-    DEEP_MODEL,
-    [
-      { role: 'system', content: DEEP_SYSTEM },
-      { role: 'user', content: JSON.stringify({ email, intelligence: intel }, null, 2) },
-    ],
-    4096,
-    60000
-  )
-
-  return JSON.parse(text) as AnalysisReport
+  // Strip internal reasoning field — it's for Mercury's benefit, not the API consumer
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { _reasoning, ...report } = parsed
+  return report as AnalysisReport
 }
