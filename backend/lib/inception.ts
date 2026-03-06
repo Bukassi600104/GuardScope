@@ -7,8 +7,8 @@
 import type { EmailInput, HaikuResult, AnalysisReport, DnsResult, VirusTotalResult, SafeBrowsingResult, RdapResult } from './types'
 
 const INCEPTION_BASE = 'https://api.inceptionlabs.ai/v1'
-const PRESCAN_MODEL = 'mercury-coder-small'  // fast, low-latency pre-screening
-const DEEP_MODEL = 'mercury-2'               // full deep analysis
+const PRESCAN_MODEL = 'mercury-2'  // mercury-2: best quality, 5-10x faster than Haiku
+const DEEP_MODEL = 'mercury-2'     // mercury-2 for both paths — single model, consistent results
 
 const PRESCAN_SYSTEM = `You are a phishing pre-screening classifier.
 Return ONLY valid JSON with this exact shape — no prose, no markdown:
@@ -73,6 +73,7 @@ async function callMercury(
         messages,
         max_tokens: maxTokens,
         temperature: 0,
+        response_format: { type: 'json_object' },  // Mercury supports json_mode natively
       }),
       signal: controller.signal,
     })
