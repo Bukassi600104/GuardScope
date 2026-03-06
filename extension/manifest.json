@@ -28,7 +28,11 @@
     }
   ],
   "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["https://mail.google.com/*"],
+  "host_permissions": [
+    "https://mail.google.com/*",
+    "https://backend-gules-sigma-37.vercel.app/*",
+    "https://zfuxxoyjfedmtoeydcvp.supabase.co/*"
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },

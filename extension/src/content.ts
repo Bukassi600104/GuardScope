@@ -1,5 +1,7 @@
 // GuardScope Content Script — Gmail sidebar injection
 
+import { extractEmailData } from './utils/emailExtractor'
+
 const SIDEBAR_ID = 'guardscope-sidebar-container'
 const SIDEBAR_WIDTH = '360px'
 
@@ -30,6 +32,9 @@ function createSidebar(): void {
   document.body.appendChild(container)
   sidebarMounted = true
   console.log('[GuardScope] Sidebar mounted')
+
+  // Capture email data immediately and store for sidebar/background to read
+  storeCurrentEmail()
 }
 
 function removeSidebar(): void {
@@ -71,9 +76,25 @@ function syncSidebar(): void {
   }
 }
 
+function storeCurrentEmail(): void {
+  try {
+    const email = extractEmailData()
+    chrome.storage.local.set({ guardscope_current_email: email })
+    console.log('[GuardScope] Email data stored:', email.fromEmail, email.subject)
+  } catch (e) {
+    console.warn('[GuardScope] Failed to extract email data:', e)
+  }
+}
+
 // ── Signal 1: URL hash changes (Gmail SPA navigation) ──────────────────────
 // This is the most reliable trigger — fires immediately when user clicks an email.
-window.addEventListener('hashchange', syncSidebar)
+window.addEventListener('hashchange', () => {
+  syncSidebar()
+  // Re-extract on each new email open
+  if (isEmailOpen()) {
+    setTimeout(storeCurrentEmail, 600) // slight delay so Gmail DOM has rendered
+  }
+})
 
 // ── Signal 2: DOM mutations (fallback for cases where hash doesn't change) ──
 // Observe the main area for DOM changes (e.g. inline reply, thread expand).

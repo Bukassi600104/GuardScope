@@ -15,7 +15,7 @@ export default function ProgressBar() {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = setInterval(() => { // 900ms/step → ~6.3s for all 7 steps, matching API duration
       setStep((s) => {
         const next = s + 1
         if (next >= STEPS.length) {
@@ -24,7 +24,7 @@ export default function ProgressBar() {
         }
         return next
       })
-    }, 400)
+    }, 900)
 
     return () => clearInterval(interval)
   }, [])

@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 
 interface Flag {
-  id: string
+  id?: string
   label: string
-  detail: string
-  severity?: 'HIGH' | 'CRITICAL' | 'MEDIUM'
+  detail?: string     // green flags from API
+  evidence?: string   // red flags from API
+  severity?: string
   module: string
 }
 
@@ -45,17 +46,17 @@ export default function FlagCard({ type, flags }: FlagCardProps) {
 
       {expanded && (
         <div className="divide-y divide-gs-border">
-          {flags.map((flag) => (
-            <div key={flag.id} className="px-3 py-2.5 bg-gs-surface/50">
+          {flags.map((flag, i) => (
+            <div key={flag.id ?? i} className="px-3 py-2.5 bg-gs-surface/50">
               <div className="flex items-start justify-between gap-2">
                 <span className="text-xs font-medium text-gs-text">{flag.label}</span>
                 {flag.severity && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded border flex-shrink-0 ${SEVERITY_COLORS[flag.severity] || ''}`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded border flex-shrink-0 ${SEVERITY_COLORS[flag.severity] ?? ''}`}>
                     {flag.severity}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gs-muted mt-1">{flag.detail}</p>
+              <p className="text-xs text-gs-muted mt-1">{flag.detail ?? flag.evidence ?? ''}</p>
               <p className="text-xs text-gs-muted/60 mt-0.5">Module: {flag.module}</p>
             </div>
           ))}
