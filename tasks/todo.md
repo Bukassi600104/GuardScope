@@ -70,14 +70,14 @@
 - [x] Mercury system prompt: trust allowlist guidance + VT/SB override rule
 - [x] Commit & push
 
-### 3C-3: Hybrid Scoring Architecture
-- [ ] Create backend/lib/scorer.ts
-- [ ] Implement rule_score calculator (deterministic: SPF/DKIM/DMARC/domain-age/VT/SB)
-- [ ] Implement hybrid scorer: final = rule_score * 0.35 + mercury_score * 0.65
-- [ ] Hard overrides: VT hit → min 85, SB hit → min 85, SPF fail + new domain → min 70
-- [ ] Apply in route.ts after Mercury returns report
-- [ ] Remove raw mercury score pass-through; always apply hybrid formula
-- [ ] Commit & push
+### 3C-3: Hybrid Scoring Architecture ✅
+- [x] Create backend/lib/scorer.ts
+- [x] calcRuleScore(): deterministic signals (SPF/DKIM/DMARC/domain-age/VT/SB/trust)
+- [x] applyHybridScore(): final = rule_score * 0.35 + mercury_score * 0.65
+- [x] Hard overrides: VT/SB hit → min 85, SPF fail + new domain → min 70
+- [x] Trust cap: allowlisted domain + no VT/SB → max 40
+- [x] Applied in route.ts after Mercury returns report
+- [x] Commit & push
 
 ### 3C-4: DNS Label Framing Fix
 - [ ] In system prompt: SPF 'neutral' maps to yellow (not fail)

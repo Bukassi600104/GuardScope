@@ -6,6 +6,7 @@ import { virusTotalScan } from '../../../lib/virustotal'
 import { safeBrowsingCheck } from '../../../lib/safebrowsing'
 import { rdapLookup } from '../../../lib/rdap'
 import { isTrustedDomain, getTrustCategory } from '../../../lib/allowlist'
+import { applyHybridScore } from '../../../lib/scorer'
 
 const MAX_BODY_BYTES = 500_000
 
@@ -165,7 +166,9 @@ export async function POST(req: NextRequest) {
   // Mercury-2 deep analysis — every user gets full AI results
   let report: Omit<AnalysisReport, 'duration_ms'>
   try {
-    report = await mercuryAnalyze(email, intel)
+    const mercuryReport = await mercuryAnalyze(email, intel)
+    // Apply hybrid scoring: rule_score * 0.35 + mercury_score * 0.65 + hard overrides
+    report = applyHybridScore(mercuryReport, intel)
   } catch (err) {
     // Mercury unavailable — return rule-based fallback so users always get a response
     report = buildFallbackReport(intel, String(err))
