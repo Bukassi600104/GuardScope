@@ -117,6 +117,34 @@ function buildFallbackReport(
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+async function saveAnalysisHistory(
+  userId: string,
+  fromDomain: string,
+  report: Omit<AnalysisReport, 'duration_ms'>,
+  duration_ms: number
+): Promise<void> {
+  await fetch(`${SUPABASE_URL}/rest/v1/analysis_history`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      from_domain: fromDomain || 'unknown',
+      risk_level: report.risk_level,
+      risk_score: report.risk_score,
+      analysis_path: report.analysis_path,
+      duration_ms,
+    }),
+  })
+}
+
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
@@ -251,6 +279,13 @@ export async function POST(req: NextRequest) {
     report = buildFallbackReport(intel, String(err))
   }
 
-  return NextResponse.json({ ...report, duration_ms: Date.now() - start }, { headers: SECURITY_HEADERS })
+  const duration_ms = Date.now() - start
+
+  // Fire-and-forget: save analysis metadata to history (no email content stored)
+  if (userId) {
+    saveAnalysisHistory(userId, senderDomain, report, duration_ms).catch(() => { /* non-critical */ })
+  }
+
+  return NextResponse.json({ ...report, duration_ms }, { headers: SECURITY_HEADERS })
 }
 
