@@ -150,17 +150,14 @@
 - [x] Build verified: dist/src/onboarding/onboarding.html ✓
 - [x] Commit & push
 
-### 3C-12: Manifest & Build Fixes for CWS
-- [ ] Add "homepage_url": "https://backend-gules-sigma-37.vercel.app" to manifest.json
-- [ ] Add single_purpose description in manifest.json description field
-- [ ] Add permission justifications file: extension/PERMISSION_JUSTIFICATIONS.md
-  - activeTab: needed to read Gmail DOM for email extraction
-  - storage: needed to store auth token and current email data locally
-  - scripting: needed to inject sidebar iframe into Gmail page
-- [ ] Verify manifest version is "3" (already set)
-- [ ] Verify no remote code execution (no eval, no remote scripts)
-- [ ] Run npm run build → confirm zero TypeScript errors
-- [ ] Commit & push
+### 3C-12: Manifest & Build Fixes for CWS ✅
+- [x] homepage_url added in 3C-11 commit
+- [x] Single-purpose description in manifest.json
+- [x] extension/PERMISSION_JUSTIFICATIONS.md created (6 sections: activeTab, storage, scripting, 3 host permissions + data use table)
+- [x] manifest_version: 3 confirmed
+- [x] No eval, no remote scripts (CSP: script-src 'self')
+- [x] npm run build → zero errors, 17 output files
+- [x] Commit & push
 
 ### 3C Milestone Verification
 - [ ] Google OTP email → scores ≤ 20 (not flagged)
