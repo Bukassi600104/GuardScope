@@ -53,10 +53,33 @@ export async function POST(req: NextRequest) {
       case 'charge.success': {
         const data = event.data
         const metadata = data.metadata as Record<string, string> | undefined
-        const userId = metadata?.userId
-        if (!userId) break
-
+        let userId = metadata?.userId || ''
         const customerCode = (data.customer as Record<string, string>)?.customer_code
+
+        // If no userId in metadata (guest upgrade from /upgrade page), look up by email
+        if (!userId && metadata?.email) {
+          try {
+            const lookupRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(metadata.email)}&select=id`,
+              {
+                headers: {
+                  'apikey': SUPABASE_SERVICE_KEY,
+                  'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+                },
+              }
+            )
+            if (lookupRes.ok) {
+              const rows = await lookupRes.json() as Array<{ id: string }>
+              userId = rows[0]?.id ?? ''
+            }
+          } catch { /* non-fatal */ }
+        }
+
+        if (!userId) {
+          console.warn('[paystack] charge.success — no userId found for email:', metadata?.email)
+          break
+        }
+
         await updateUserTier(userId, 'pro', customerCode)
         console.log(`[paystack] User ${userId} upgraded to pro`)
         break

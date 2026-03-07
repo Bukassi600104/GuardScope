@@ -189,11 +189,10 @@ export default function Popup() {
             </button>
             {(auth?.tier === 'free') && (
               <a
-                href={`${BACKEND_URL}/api/paystack/initialize`}
+                href={`${BACKEND_URL}/upgrade`}
                 onClick={(e) => {
                   e.preventDefault()
-                  // Send through background to add auth header
-                  chrome.tabs.create({ url: 'https://guardscope.io/upgrade' })
+                  chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })
                 }}
                 className="block w-full py-2 px-4 text-center text-xs font-semibold text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/10 transition-colors"
               >
@@ -248,12 +247,12 @@ export default function Popup() {
             <p className="text-[10px] text-[#64748b] text-center">
               No account?{' '}
               <a
-                href="https://guardscope.io/signup"
+                href={`${BACKEND_URL}/signup`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#ef4343] hover:underline"
               >
-                Sign up at guardscope.io
+                Create one free →
               </a>
             </p>
           </form>
