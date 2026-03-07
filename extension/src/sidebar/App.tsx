@@ -5,6 +5,7 @@ import ProgressBar from './components/ProgressBar'
 import TechnicalDetails from './components/TechnicalDetails'
 import type { AnalysisReport, AppState } from '../utils/analyze'
 import type { ExtractedEmail } from '../utils/emailExtractor'
+import { t } from '../utils/i18n'
 
 // Shield icon SVG
 function ShieldIcon({ color = '#ef4343' }: { color?: string }) {
@@ -250,10 +251,8 @@ export default function App() {
         {appState === 'no_email' && (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3">
             <div className="text-4xl">📧</div>
-            <p className="text-sm font-semibold text-[#e2e8f0]">No email open</p>
-            <p className="text-xs text-[#64748b] leading-relaxed">
-              Open an email in Gmail, then click "Analyze This Email" to scan it for phishing.
-            </p>
+            <p className="text-sm font-semibold text-[#e2e8f0]">{t('noEmailTitle')}</p>
+            <p className="text-xs text-[#64748b] leading-relaxed">{t('noEmailBody')}</p>
           </div>
         )}
 
@@ -261,13 +260,11 @@ export default function App() {
         {appState === 'idle' && (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3">
             <div className="text-4xl">🔍</div>
-            <p className="text-sm font-semibold text-[#e2e8f0]">Ready to analyze</p>
+            <p className="text-sm font-semibold text-[#e2e8f0]">{t('idleTitle')}</p>
             {currentEmail?.fromEmail && (
-              <p className="text-xs text-[#64748b] truncate w-full">From: {currentEmail.fromEmail}</p>
+              <p className="text-xs text-[#64748b] truncate w-full">{t('from')}: {currentEmail.fromEmail}</p>
             )}
-            <p className="text-xs text-[#64748b] leading-relaxed">
-              Click "Analyze This Email" below to run a full security scan.
-            </p>
+            <p className="text-xs text-[#64748b] leading-relaxed">{t('idleBody')}</p>
           </div>
         )}
 
@@ -348,7 +345,7 @@ export default function App() {
               onClick={handleShare}
               className="w-full py-1.5 px-3 border border-[#2a2d3a] rounded-lg text-[#64748b] text-xs hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
             >
-              {copied ? '✓ Copied to clipboard' : 'Copy report to clipboard'}
+              {copied ? t('copied') : t('copyReport')}
             </button>
 
             {/* Red flags */}
@@ -385,12 +382,12 @@ export default function App() {
           disabled={appState === 'analyzing' || appState === 'no_email' || appState === 'limit_reached'}
           className="w-full py-2.5 px-4 bg-[#ef4343] text-white text-sm font-semibold rounded-lg hover:bg-[#dc2626] active:bg-[#b91c1c] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {appState === 'analyzing' ? 'Analyzing...' :
-           appState === 'result' ? 'Analyze Again' :
-           'Analyze This Email'}
+          {appState === 'analyzing' ? t('analyzing') :
+           appState === 'result' ? t('analyzeAgainBtn') :
+           t('analyzeBtn')}
         </button>
         <p className="text-[11px] text-[#64748b] text-center">
-          Powered by Mercury-2 AI
+          {t('poweredBy')}
         </p>
       </div>
     </div>

@@ -1,16 +1,8 @@
 import React, { useEffect, useState } from 'react'
-
-const STEPS = [
-  'Reading email headers and metadata...',
-  'Verifying sender authentication (SPF · DKIM · DMARC)...',
-  'Checking domain age and reputation...',
-  'Scanning all links against threat databases...',
-  'Running AI pre-assessment...',
-  'Running deep language and behavior analysis...',
-  'Generating your security report...',
-]
+import { tArray } from '../../utils/i18n'
 
 export default function ProgressBar() {
+  const STEPS = tArray('progressSteps')
   const [step, setStep] = useState(0)
   const [progress, setProgress] = useState(0)
 
