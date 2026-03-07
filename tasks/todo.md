@@ -130,12 +130,14 @@
 - [x] Override rule updated to include PhishTank + URLhaus
 - [x] Commit & push
 
-### 3C-10: Privacy Policy Page
-- [ ] Create backend/app/privacy/page.tsx (Next.js page, serves at /privacy)
-- [ ] Cover: what IS collected, what is NOT collected (email content never stored), third parties, user rights, NDPR 2023, GDPR
-- [ ] Style consistent with landing page (dark theme or clean white)
-- [ ] Deploy to Vercel — accessible at https://backend-gules-sigma-37.vercel.app/privacy
-- [ ] Commit & push
+### 3C-10: Privacy Policy Page ✅
+- [x] Create backend/app/privacy/page.tsx (serves at /privacy)
+- [x] Covers: what IS collected, what is NOT (email content never stored), all 9 third parties
+- [x] NDPR 2023 compliance section (Nigeria Data Protection Commission)
+- [x] GDPR compliance section (Supabase EU hosting, DPA signed)
+- [x] User rights: access, deletion, correction, portability
+- [x] Data retention: usage 13 months, email analysis never retained
+- [x] Commit & push
 
 ### 3C-11: First-Run Consent Screen (CWS Requirement)
 - [ ] Create extension/src/onboarding/onboarding.html + onboarding.tsx
