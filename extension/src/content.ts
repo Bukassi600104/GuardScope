@@ -7,7 +7,22 @@ const SIDEBAR_WIDTH = '360px'
 
 let sidebarMounted = false
 
+/**
+ * Check if the extension context is still valid.
+ * When an extension is reloaded/updated while Gmail is open, the old content
+ * script loses the chrome runtime — all chrome.* calls throw TypeError.
+ * This guard prevents those errors from surfacing.
+ */
+function isContextValid(): boolean {
+  try {
+    return typeof chrome !== 'undefined' && !!chrome.runtime?.id
+  } catch {
+    return false
+  }
+}
+
 function createSidebar(): void {
+  if (!isContextValid()) return
   if (document.getElementById(SIDEBAR_ID)) return
 
   const container = document.createElement('div')
@@ -69,6 +84,7 @@ function isEmailOpen(): boolean {
 }
 
 function syncSidebar(): void {
+  if (!isContextValid()) return
   if (isEmailOpen() && !sidebarMounted) {
     setTimeout(createSidebar, 300)
   } else if (!isEmailOpen() && sidebarMounted) {
@@ -77,6 +93,7 @@ function syncSidebar(): void {
 }
 
 function storeCurrentEmail(): void {
+  if (!isContextValid()) return
   try {
     const email = extractEmailData()
     chrome.storage.local.set({ guardscope_current_email: email })
@@ -121,20 +138,39 @@ function waitForGmail(retries = 20): void {
   }
 }
 
-// Check onboarding completion before starting — if first install and user hasn't
-// completed onboarding, don't inject the sidebar (they'll be on the onboarding tab anyway)
-chrome.storage.local.get('guardscope_onboarding_complete', (result) => {
-  if (result.guardscope_onboarding_complete) {
-    waitForGmail()
-  } else {
-    // Poll until onboarding is completed (user clicks "Activate GuardScope")
-    const pollInterval = setInterval(() => {
-      chrome.storage.local.get('guardscope_onboarding_complete', (r) => {
-        if (r.guardscope_onboarding_complete) {
+// Guard: only start if the extension context is valid.
+// On extension reload/update while Gmail is open, chrome.runtime becomes undefined —
+// the old content script instance should silently stop rather than throw.
+if (!isContextValid()) {
+  console.warn('[GuardScope] Extension context not valid — content script will not run')
+} else {
+  // Check onboarding completion before starting.
+  // For dev reloads, skip the gate (onboarding_complete will already be set).
+  chrome.storage.local.get('guardscope_onboarding_complete', (result) => {
+    if (chrome.runtime.lastError) {
+      // Context invalidated between check and callback — bail silently
+      return
+    }
+    if (result.guardscope_onboarding_complete) {
+      waitForGmail()
+    } else {
+      // Poll until onboarding is completed (user clicks "Activate GuardScope")
+      const pollInterval = setInterval(() => {
+        if (!isContextValid()) {
           clearInterval(pollInterval)
-          waitForGmail()
+          return
         }
-      })
-    }, 2000)
-  }
-})
+        chrome.storage.local.get('guardscope_onboarding_complete', (r) => {
+          if (chrome.runtime.lastError || !isContextValid()) {
+            clearInterval(pollInterval)
+            return
+          }
+          if (r.guardscope_onboarding_complete) {
+            clearInterval(pollInterval)
+            waitForGmail()
+          }
+        })
+      }, 2000)
+    }
+  })
+}
