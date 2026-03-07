@@ -79,13 +79,13 @@
 - [x] Applied in route.ts after Mercury returns report
 - [x] Commit & push
 
-### 3C-4: DNS Label Framing Fix
-- [ ] In system prompt: SPF 'neutral' maps to yellow (not fail)
-- [ ] SPF '+all' or '~all' = neutral warning (not same as SPF pass with -all)
-- [ ] DKIM 'unknown' label in UI: show "DKIM: Not Verified" (neutral grey, no red)
-- [ ] DMARC 'none' = monitoring only — LOW flag, not MEDIUM
-- [ ] Update fallback report buildFallbackReport() to match same semantics
-- [ ] Commit & push
+### 3C-4: DNS Label Framing Fix ✅
+- [x] SPF neutral (~all/+all) → LOW flag only (not same as fail)
+- [x] DKIM unknown → NEUTRAL, not flagged at all
+- [x] DMARC none/error → LOW flag (was MEDIUM)
+- [x] Fallback buildFallbackReport() updated to match new semantics
+- [x] Trust hint applied to fallback scorer too
+- [x] Commit & push
 
 ### 3C-5: Additional Threat Intel (PhishTank + URLhaus)
 - [ ] Create backend/lib/phishtank.ts

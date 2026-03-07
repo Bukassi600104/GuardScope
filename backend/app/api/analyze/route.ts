@@ -30,8 +30,12 @@ function buildFallbackReport(
 
   if (intel.dns.spf === 'pass') {
     green_flags.push({ label: 'SPF Pass', detail: 'Sender is authorized by the domain SPF record', module: 'sender_auth' })
-  } else if (intel.dns.spf === 'fail' || intel.dns.spf === 'none') {
-    red_flags.push({ label: `SPF ${intel.dns.spf === 'fail' ? 'Fail' : 'Missing'}`, evidence: 'Domain SPF check failed — spoofing possible', severity: intel.dns.spf === 'fail' ? 'HIGH' : 'MEDIUM', module: 'sender_auth' })
+  } else if (intel.dns.spf === 'fail') {
+    red_flags.push({ label: 'SPF Fail', evidence: 'Sender is not authorized — spoofing likely', severity: 'HIGH', module: 'sender_auth' })
+  } else if (intel.dns.spf === 'none') {
+    red_flags.push({ label: 'SPF Missing', evidence: 'No SPF record — sender identity unverified', severity: 'MEDIUM', module: 'sender_auth' })
+  } else if (intel.dns.spf === 'neutral') {
+    red_flags.push({ label: 'SPF Permissive', evidence: 'SPF policy is permissive (~all/+all) — weak protection', severity: 'LOW', module: 'sender_auth' })
   }
 
   if (intel.dns.dkim === 'present') {
@@ -44,8 +48,8 @@ function buildFallbackReport(
     green_flags.push({ label: 'DMARC Reject', detail: 'Strong DMARC policy enforced', module: 'sender_auth' })
   } else if (intel.dns.dmarc.policy === 'quarantine') {
     green_flags.push({ label: 'DMARC Quarantine', detail: 'DMARC policy quarantines unauthorized emails', module: 'sender_auth' })
-  } else if (intel.dns.dmarc.policy === 'none') {
-    red_flags.push({ label: 'Weak DMARC Policy', evidence: 'DMARC is monitoring only — no enforcement', severity: 'LOW', module: 'sender_auth' })
+  } else if (intel.dns.dmarc.policy === 'none' || intel.dns.dmarc.policy === 'error') {
+    red_flags.push({ label: 'DMARC Monitoring Only', evidence: 'DMARC is set to monitoring — no enforcement active', severity: 'LOW', module: 'sender_auth' })
   }
 
   if (intel.rdap.riskLevel === 'HIGH') {
@@ -73,13 +77,15 @@ function buildFallbackReport(
   // Score from intel signals since Mercury is unavailable
   let score = 0
   if (intel.dns.spf === 'fail') score += 20
-  if (intel.dns.spf === 'none') score += 10
+  else if (intel.dns.spf === 'none') score += 10
+  else if (intel.dns.spf === 'neutral') score += 5
   if (intel.dns.dkim === 'absent') score += 10
   if (intel.dns.dmarc.policy === 'none' || intel.dns.dmarc.policy === 'error') score += 5
   if (intel.rdap.riskLevel === 'HIGH') score += 25
-  if (intel.rdap.riskLevel === 'MEDIUM') score += 10
+  else if (intel.rdap.riskLevel === 'MEDIUM') score += 10
   if (intel.vt.flagged) score += 40
   if (intel.sb.flagged) score += 40
+  if (intel.trustHint) score = Math.max(0, score - 15)
   score = Math.min(100, score)
 
   const risk_level = scoreToLevel(score)

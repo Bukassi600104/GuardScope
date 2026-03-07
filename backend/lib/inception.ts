@@ -34,12 +34,16 @@ MODULE 1 — SENDER AUTHENTICATION (sender_auth)
   - mailedBy does NOT match → SPF mismatch red flag (HIGH)
   - mailedBy is null → fall back to DNS intel.dns.spf value
 • DNS fallback (when gmailAuth not available):
-  - SPF pass = sender verified → green flag
-  - SPF fail/none = spoofing possible → red flag (HIGH/MEDIUM)
+  - SPF pass (-all) = sender verified → green flag
+  - SPF neutral (~all or +all) = permissive policy, slight risk → LOW flag only
+  - SPF fail = sender not authorized → red flag (HIGH)
+  - SPF none = no SPF record → red flag (MEDIUM) — not the same as fail
   - DKIM present = key found in DNS → green flag (weaker than gmailAuth signedBy)
-  - DKIM unknown = selector not publicly discoverable → NEUTRAL, do NOT penalize
+  - DKIM unknown = selector not publicly discoverable — NEUTRAL, do NOT flag at all
+  - DKIM absent = explicitly no DKIM configured → LOW flag
 • DMARC reject/quarantine = domain enforces anti-spoofing → green flag
-• DMARC none/missing = no enforcement → red flag (LOW/MEDIUM)
+• DMARC none = monitoring only → LOW flag (not MEDIUM — many legitimate domains use none)
+• DMARC missing/error = no DMARC record → LOW flag only
 • Mismatch: fromEmail domain ≠ SPF-authorized domain = HIGH severity
 
 MODULE 2 — DOMAIN INTELLIGENCE (domain_intel)
