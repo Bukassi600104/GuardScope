@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import type { EmailInput, AnalysisReport, DnsResult, VirusTotalResult, SafeBrowsingResult, RdapResult, AnalysisIntel } from '../../../lib/types'
 import { mercuryAnalyze } from '../../../lib/inception'
 import { dnsLookup } from '../../../lib/dns'
@@ -11,6 +12,8 @@ import { applyHybridScore } from '../../../lib/scorer'
 import { phishTankScan } from '../../../lib/phishtank'
 import { urlHausScan } from '../../../lib/urlhaus'
 import { normalizeUrls } from '../../../lib/urlCache'
+import { decodeJwt, checkAndIncrementQuota, getUserTier } from '../../../lib/quota'
+import { checkRateLimit } from '../../../lib/ratelimit'
 
 const MAX_BODY_BYTES = 500_000
 
@@ -114,12 +117,25 @@ function buildFallbackReport(
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+  'Access-Control-Allow-Origin': '*',  // extension origin varies by install — allow all, auth via JWT
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: SECURITY_HEADERS })
+}
+
 export async function POST(req: NextRequest) {
   const start = Date.now()
 
   const contentLength = req.headers.get('content-length')
   if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
-    return NextResponse.json({ error: 'Request body too large (max 500KB)' }, { status: 413 })
+    return NextResponse.json({ error: 'Request body too large (max 500KB)' }, { status: 413, headers: SECURITY_HEADERS })
   }
 
   let body: Partial<EmailInput>
@@ -130,7 +146,17 @@ export async function POST(req: NextRequest) {
   }
 
   if (!body.fromEmail || !body.subject || !body.bodyText) {
-    return NextResponse.json({ error: 'Missing required fields: fromEmail, subject, bodyText' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing required fields: fromEmail, subject, bodyText' }, { status: 400, headers: SECURITY_HEADERS })
+  }
+
+  // Basic email format validation
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.fromEmail)) {
+    return NextResponse.json({ error: 'Invalid fromEmail format' }, { status: 400, headers: SECURITY_HEADERS })
+  }
+
+  // bodyText size cap (belt-and-suspenders — truncation also happens in inception.ts)
+  if (typeof body.bodyText === 'string' && body.bodyText.length > 50_000) {
+    return NextResponse.json({ error: 'bodyText too large (max 50KB)' }, { status: 413, headers: SECURITY_HEADERS })
   }
 
   const email: EmailInput = {
@@ -145,6 +171,41 @@ export async function POST(req: NextRequest) {
     messageId: body.messageId ?? null,
     gmailAuth: body.gmailAuth ?? undefined,
   }
+
+  // ── Rate Limit + JWT Auth + Quota ────────────────────────────────────────
+  const authHeader = req.headers.get('authorization') ?? ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  const jwtPayload = token ? decodeJwt(token) : null
+  const userId = jwtPayload?.sub ?? null
+
+  // Rate limit: per user_id if authed, per IP if anon
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const rateLimitId = userId ?? `ip:${ip}`
+  const rateLimit = await checkRateLimit(rateLimitId, !!userId)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests', retry_after_ms: rateLimit.resetAt - Date.now() },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+          'X-RateLimit-Remaining': String(rateLimit.remaining),
+        },
+      }
+    )
+  }
+
+  if (userId) {
+    const tier = await getUserTier(userId)
+    const quota = await checkAndIncrementQuota(userId, tier)
+    if (!quota.allowed) {
+      return NextResponse.json(
+        { error: 'limit_reached', count: quota.count, limit: quota.limit, message: 'Monthly analysis limit reached. Upgrade to Pro for unlimited analyses.' },
+        { status: 429 }
+      )
+    }
+  }
+  // Anonymous users: no quota enforcement yet (Phase 5 adds IP-based limiting)
 
   const domainMatch = email.fromEmail?.match(/@([\w.-]+)/)
   const senderDomain = domainMatch ? domainMatch[1].toLowerCase() : ''
@@ -186,9 +247,10 @@ export async function POST(req: NextRequest) {
     report = applyHybridScore(mercuryReport, intel)
   } catch (err) {
     // Mercury unavailable — return rule-based fallback so users always get a response
+    Sentry.captureException(err, { extra: { fromEmail: email.fromEmail, senderDomain } })
     report = buildFallbackReport(intel, String(err))
   }
 
-  return NextResponse.json({ ...report, duration_ms: Date.now() - start })
+  return NextResponse.json({ ...report, duration_ms: Date.now() - start }, { headers: SECURITY_HEADERS })
 }
 
