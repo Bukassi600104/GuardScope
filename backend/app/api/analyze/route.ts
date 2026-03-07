@@ -10,6 +10,7 @@ import { isTopDomain } from '../../../lib/tranco'
 import { applyHybridScore } from '../../../lib/scorer'
 import { phishTankScan } from '../../../lib/phishtank'
 import { urlHausScan } from '../../../lib/urlhaus'
+import { normalizeUrls } from '../../../lib/urlCache'
 
 const MAX_BODY_BYTES = 500_000
 
@@ -138,10 +139,11 @@ export async function POST(req: NextRequest) {
     subject: body.subject,
     date: body.date ?? null,
     bodyText: body.bodyText,
-    urls: Array.isArray(body.urls) ? body.urls : [],
+    urls: normalizeUrls(Array.isArray(body.urls) ? body.urls : []),
     attachments: Array.isArray(body.attachments) ? body.attachments : [],
     replyTo: body.replyTo ?? null,
     messageId: body.messageId ?? null,
+    gmailAuth: body.gmailAuth ?? undefined,
   }
 
   const domainMatch = email.fromEmail?.match(/@([\w.-]+)/)

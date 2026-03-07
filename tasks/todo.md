@@ -104,12 +104,13 @@
 - [x] Combined: isTrustedDomain() || isTopDomain() → trustHint passed to Mercury
 - [x] Commit & push
 
-### 3C-7: URL Normalization + Result Caching
-- [ ] Create backend/lib/urlCache.ts — in-memory LRU cache (50 entries, 15-min TTL)
-- [ ] Normalize URLs before scanning: lowercase, strip tracking params (utm_*, fbclid), remove fragment
-- [ ] Cache VT + SB results by normalized URL key
-- [ ] Reduces duplicate API calls for common URLs (unsubscribe links, tracking pixels)
-- [ ] Commit & push
+### 3C-7: URL Normalization + Result Caching ✅
+- [x] Create backend/lib/urlCache.ts — LRUCache class (100 entries, 15-min TTL)
+- [x] normalizeUrl(): lowercase, strip 15+ tracking params (utm_*, fbclid, gclid, etc.), remove fragment, sort query params
+- [x] normalizeUrls(): deduplicates array using normalized keys
+- [x] Applied in route.ts before all URL scanning — cleaner inputs to VT/SB/PT/URLhaus
+- [x] Also passes gmailAuth from request body through to EmailInput
+- [x] Commit & push
 
 ### 3C-8: Prompt Injection Defense
 - [ ] In route.ts: sanitize email fields before passing to Mercury
