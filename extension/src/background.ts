@@ -7,6 +7,28 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
+// ── Extension Badge ──────────────────────────────────────────────────────────
+// Sets the toolbar icon badge when a HIGH/CRITICAL email is detected.
+// Cleared when a new email is opened (fresh context).
+
+function updateBadge(riskLevel: string) {
+  try {
+    if (riskLevel === 'CRITICAL') {
+      chrome.action.setBadgeText({ text: '!' })
+      chrome.action.setBadgeBackgroundColor({ color: '#ef4444' })
+    } else if (riskLevel === 'HIGH') {
+      chrome.action.setBadgeText({ text: '!' })
+      chrome.action.setBadgeBackgroundColor({ color: '#f97316' })
+    } else {
+      chrome.action.setBadgeText({ text: '' })
+    }
+  } catch { /* ignore — badge is non-critical */ }
+}
+
+function clearBadge() {
+  try { chrome.action.setBadgeText({ text: '' }) } catch { /* ignore */ }
+}
+
 // ── Service Worker Keepalive ─────────────────────────────────────────────────
 // MV3 service workers terminate after ~5 min of inactivity.
 // The sidebar opens a port named 'guardscope-keepalive' before every ANALYZE call.
@@ -70,6 +92,8 @@ async function handleAnalyze(): Promise<{ success: boolean; report?: unknown; er
     return { success: false, error: 'No email data — please open an email first' }
   }
 
+  clearBadge() // clear previous badge while new analysis runs
+
   const token = await getValidToken()
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) {
@@ -96,7 +120,9 @@ async function handleAnalyze(): Promise<{ success: boolean; report?: unknown; er
     }
   }
 
-  const report = await res.json()
+  const report = await res.json() as { risk_level?: string }
+  // Update badge based on risk level
+  if (report.risk_level) updateBadge(report.risk_level)
   return { success: true, report }
 }
 
