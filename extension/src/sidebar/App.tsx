@@ -128,6 +128,31 @@ export default function App() {
     setAppState(currentEmail?.fromEmail ? 'idle' : 'no_email')
   }
 
+  const [copied, setCopied] = useState(false)
+  const handleShare = () => {
+    if (!report) return
+    const flagLines = [
+      ...report.red_flags.map(f => `⚠ ${f.label}: ${(f as { evidence?: string }).evidence ?? ''}`),
+      ...report.green_flags.map(f => `✓ ${f.label}: ${(f as { detail?: string }).detail ?? ''}`),
+    ]
+    const text = [
+      `GuardScope Email Security Report`,
+      `Risk: ${report.risk_level} (${report.risk_score}/100)`,
+      ``,
+      report.verdict,
+      ``,
+      `→ ${report.recommendation}`,
+      ``,
+      ...flagLines,
+      ``,
+      `Analyzed by GuardScope — guardscope.io`,
+    ].join('\n')
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => { /* clipboard unavailable */ })
+  }
+
   const riskLevel = report?.risk_level ?? 'HIGH'
   const shieldColor = appState === 'result' ? SHIELD_COLORS[riskLevel] : '#ef4343'
 
@@ -236,6 +261,14 @@ export default function App() {
                 </p>
               </div>
             </div>
+
+            {/* Share button */}
+            <button
+              onClick={handleShare}
+              className="w-full py-1.5 px-3 border border-[#2a2d3a] rounded-lg text-[#64748b] text-xs hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+            >
+              {copied ? '✓ Copied to clipboard' : 'Copy report to clipboard'}
+            </button>
 
             {/* Red flags */}
             {report.red_flags.length > 0 && (
