@@ -10,12 +10,19 @@ let sidebarMounted = false
 /**
  * Check if the extension context is still valid.
  * When an extension is reloaded/updated while Gmail is open, the old content
- * script loses the chrome runtime — all chrome.* calls throw TypeError.
+ * script loses the chrome runtime — chrome.runtime and chrome.storage both
+ * become undefined, making all chrome.* calls throw TypeError.
  * This guard prevents those errors from surfacing.
  */
 function isContextValid(): boolean {
   try {
-    return typeof chrome !== 'undefined' && !!chrome.runtime?.id
+    return (
+      typeof chrome !== 'undefined' &&
+      typeof chrome.runtime !== 'undefined' &&
+      !!chrome.runtime.id &&
+      typeof chrome.storage !== 'undefined' &&
+      typeof chrome.storage.local !== 'undefined'
+    )
   } catch {
     return false
   }

@@ -71,23 +71,45 @@ export default function App() {
     setAppState('analyzing')
     setError('')
 
+    // Open a long-lived port BEFORE sending ANALYZE.
+    // MV3 service workers terminate after ~5 min of inactivity.
+    // An open port connection prevents termination for the duration of the analysis.
+    let port: chrome.runtime.Port | null = null
+    try {
+      port = chrome.runtime.connect({ name: 'guardscope-keepalive' })
+    } catch {
+      // Couldn't open port — proceed anyway (SW likely already active)
+    }
+
+    const cleanup = () => {
+      try { port?.disconnect() } catch { /* ignore */ }
+      port = null
+    }
+
     chrome.runtime.sendMessage({ type: 'ANALYZE' }, (response: {
       success: boolean
       report?: AnalysisReport
       error?: string
       status?: number
     }) => {
+      cleanup()
+
       if (chrome.runtime.lastError) {
-        setError('Extension error: ' + chrome.runtime.lastError.message)
+        const msg = chrome.runtime.lastError.message ?? 'Extension error'
+        if (msg.includes('No email')) {
+          setError('Open an email in Gmail first, then click Analyze.')
+        } else {
+          setError(msg)
+        }
         setAppState('error')
         return
       }
 
-      if (!response.success) {
-        if (response.status === 429) {
+      if (!response?.success) {
+        if (response?.status === 429) {
           setAppState('limit_reached')
         } else {
-          setError(response.error ?? 'Unknown error')
+          setError(response?.error ?? 'Unknown error')
           setAppState('error')
         }
         return

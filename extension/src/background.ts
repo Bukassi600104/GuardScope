@@ -7,6 +7,20 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
+// ── Service Worker Keepalive ─────────────────────────────────────────────────
+// MV3 service workers terminate after ~5 min of inactivity.
+// The sidebar opens a port named 'guardscope-keepalive' before every ANALYZE call.
+// Having an active port connection prevents SW termination during the 6-10s analysis.
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'guardscope-keepalive') {
+    // Port stays open until sidebar disconnects (after response received).
+    // No message handling needed — the open connection itself is the keepalive.
+    port.onDisconnect.addListener(() => {
+      // SW can now sleep again after analysis completes
+    })
+  }
+})
+
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('[GuardScope] Extension installed:', details.reason)
   if (details.reason === 'install') {
@@ -56,10 +70,10 @@ async function handleAnalyze(): Promise<{ success: boolean; report?: unknown; er
     return { success: false, error: 'No email data — please open an email first' }
   }
 
-  const auth = await getAuthState()
+  const token = await getValidToken()
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (auth.token) {
-    headers['Authorization'] = `Bearer ${auth.token}`
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
   }
 
   let res: Response
@@ -88,6 +102,53 @@ async function handleAnalyze(): Promise<{ success: boolean; report?: unknown; er
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Returns a valid access token, refreshing it if it expires within 5 minutes.
+ * Returns null if user is not signed in or refresh fails (clears stale auth).
+ */
+async function getValidToken(): Promise<string | null> {
+  const auth = await getAuthState()
+  if (!auth.isAuthenticated || !auth.token) return null
+
+  const FIVE_MIN = 5 * 60 * 1000
+  const isExpiringSoon = auth.tokenExpiresAt && (auth.tokenExpiresAt - Date.now()) < FIVE_MIN
+
+  if (!isExpiringSoon) return auth.token
+
+  // Token near expiry — attempt silent refresh
+  if (!auth.refreshToken) {
+    await clearAuthState()
+    return null
+  }
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ refresh_token: auth.refreshToken }),
+    })
+    if (!res.ok) {
+      await clearAuthState()
+      return null
+    }
+    const data = await res.json() as {
+      access_token: string
+      refresh_token: string
+      expires_in: number
+    }
+    const newAuth = {
+      ...auth,
+      token: data.access_token,
+      refreshToken: data.refresh_token,
+      tokenExpiresAt: Date.now() + data.expires_in * 1000,
+    }
+    await setAuthState(newAuth)
+    return data.access_token
+  } catch {
+    return auth.token // use existing token on network error
+  }
+}
+
 async function signIn(email: string, password: string): Promise<{ success: boolean; error?: string }> {
   let res: Response
   try {
@@ -110,6 +171,8 @@ async function signIn(email: string, password: string): Promise<{ success: boole
 
   const data = await res.json() as {
     access_token: string
+    refresh_token: string
+    expires_in: number
     user: { id: string; email: string }
   }
 
@@ -119,6 +182,8 @@ async function signIn(email: string, password: string): Promise<{ success: boole
     email: data.user.email,
     tier: 'free',
     token: data.access_token,
+    refreshToken: data.refresh_token,
+    tokenExpiresAt: Date.now() + (data.expires_in ?? 3600) * 1000,
   }
   await setAuthState(authState)
   return { success: true }

@@ -7,6 +7,8 @@ export interface AuthState {
   email: string | null
   tier: 'free' | 'pro' | 'team'
   token: string | null
+  refreshToken?: string | null
+  tokenExpiresAt?: number | null  // unix ms
 }
 
 const DEFAULT_AUTH_STATE: AuthState = {
