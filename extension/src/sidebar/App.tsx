@@ -48,15 +48,29 @@ const VERDICT_ICONS: Record<string, string> = {
   SAFE: '✅', LOW: '⚠️', MEDIUM: '⚠️', HIGH: '🚨', CRITICAL: '🚨',
 }
 
+interface HistoryEntry {
+  fromEmail: string
+  subject: string
+  risk_level: string
+  risk_score: number
+  analyzedAt: number
+}
+
+const RISK_BADGE_DOT: Record<string, string> = {
+  SAFE: 'bg-green-500', LOW: 'bg-lime-500', MEDIUM: 'bg-orange-500', HIGH: 'bg-red-500', CRITICAL: 'bg-red-400',
+}
+
 export default function App() {
   const [appState, setAppState] = useState<AppState>('idle')
   const [report, setReport] = useState<AnalysisReport | null>(null)
   const [error, setError] = useState<string>('')
   const [currentEmail, setCurrentEmail] = useState<ExtractedEmail | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [history, setHistory] = useState<HistoryEntry[]>([])
 
-  // On mount: check if there's an email in storage
+  // On mount: check if there's an email in storage + load history
   useEffect(() => {
-    chrome.storage.local.get('guardscope_current_email', (result) => {
+    chrome.storage.local.get(['guardscope_current_email', 'guardscope_history'], (result) => {
       const email = result.guardscope_current_email as ExtractedEmail | undefined
       if (email?.fromEmail) {
         setCurrentEmail(email)
@@ -64,6 +78,7 @@ export default function App() {
       } else {
         setAppState('no_email')
       }
+      setHistory((result.guardscope_history as HistoryEntry[]) ?? [])
     })
   }, [])
 
@@ -118,6 +133,10 @@ export default function App() {
       if (response.report) {
         setReport(response.report)
         setAppState('result')
+        // Refresh history after successful analysis
+        chrome.storage.local.get('guardscope_history', (r) => {
+          setHistory((r.guardscope_history as HistoryEntry[]) ?? [])
+        })
       }
     })
   }
@@ -173,10 +192,42 @@ export default function App() {
             SCANNING
           </span>
         )}
+        {history.length > 0 && appState !== 'analyzing' && (
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className={`ml-auto text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider transition-colors ${showHistory ? 'border-[#64748b] text-[#94a3b8]' : 'border-[#2a2d3a] text-[#64748b] hover:text-[#94a3b8]'}`}
+          >
+            History ({history.length})
+          </button>
+        )}
       </div>
 
       {/* ── Scrollable content ── */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 overflow-y-auto scrollbar-thin relative">
+
+        {/* HISTORY PANEL */}
+        {showHistory && (
+          <div className="absolute inset-0 top-[49px] bg-[#0f1117] z-10 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#2a2d3a]">
+              <span className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider">Recent Scans</span>
+              <button onClick={() => setShowHistory(false)} className="text-[#64748b] hover:text-[#e2e8f0] text-xs transition-colors">✕ Close</button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+              {history.map((h, i) => (
+                <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[#1a1d27] border border-[#2a2d3a]">
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${RISK_BADGE_DOT[h.risk_level] ?? 'bg-[#64748b]'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-[#e2e8f0] truncate">{h.subject}</p>
+                    <p className="text-[10px] text-[#64748b] truncate">{h.fromEmail}</p>
+                    <p className="text-[10px] text-[#64748b] mt-0.5">
+                      {h.risk_level} · {h.risk_score}/100 · {new Date(h.analyzedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ANALYZING */}
         {appState === 'analyzing' && (
@@ -231,16 +282,25 @@ export default function App() {
             <div className="text-4xl">🔒</div>
             <p className="text-sm font-semibold text-[#e2e8f0]">Monthly limit reached</p>
             <p className="text-xs text-[#64748b] leading-relaxed">
-              You've used all 5 free analyses this month. Upgrade to Pro for unlimited scans.
+              You've used all 5 free analyses this month.<br />
+              Upgrade to Pro for unlimited scans, priority AI, and team features.
             </p>
-            <a
-              href="https://guardscope.io/upgrade"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 px-4 py-2 bg-[#ef4343] text-white text-xs font-semibold rounded-lg hover:bg-[#dc2626] transition-colors"
-            >
-              Upgrade to Pro — $4.99/mo
-            </a>
+            <div className="w-full space-y-2 mt-1">
+              <a
+                href="https://guardscope.io/upgrade"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full px-4 py-2.5 bg-[#ef4343] text-white text-xs font-semibold rounded-lg hover:bg-[#dc2626] transition-colors"
+              >
+                Upgrade to Pro — $4.99/mo
+              </a>
+              <button
+                onClick={handleRetry}
+                className="block w-full px-4 py-2 text-[#64748b] text-xs hover:text-[#e2e8f0] transition-colors"
+              >
+                Maybe later
+              </button>
+            </div>
           </div>
         )}
 

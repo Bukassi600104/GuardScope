@@ -79,6 +79,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true
   }
 
+  if (message.type === 'GET_HISTORY') {
+    chrome.storage.local.get('guardscope_history', (res) => {
+      sendResponse({ history: res.guardscope_history ?? [] })
+    })
+    return true
+  }
+
   return true
 })
 
@@ -120,10 +127,42 @@ async function handleAnalyze(): Promise<{ success: boolean; report?: unknown; er
     }
   }
 
-  const report = await res.json() as { risk_level?: string }
+  const report = await res.json() as { risk_level?: string; risk_score?: number; verdict?: string; duration_ms?: number }
   // Update badge based on risk level
   if (report.risk_level) updateBadge(report.risk_level)
+  // Save to local history (max 20 entries)
+  await saveToHistory({
+    fromEmail: email.fromEmail as string,
+    subject: (email.subject as string) ?? '(no subject)',
+    risk_level: report.risk_level ?? 'UNKNOWN',
+    risk_score: report.risk_score ?? 0,
+    verdict: report.verdict ?? '',
+    analyzedAt: Date.now(),
+    duration_ms: report.duration_ms ?? 0,
+  })
   return { success: true, report }
+}
+
+// ── History ─────────────────────────────────────────────────────────────────
+
+interface HistoryEntry {
+  fromEmail: string
+  subject: string
+  risk_level: string
+  risk_score: number
+  verdict: string
+  analyzedAt: number
+  duration_ms: number
+}
+
+async function saveToHistory(entry: HistoryEntry): Promise<void> {
+  try {
+    const stored = await chrome.storage.local.get('guardscope_history')
+    const history: HistoryEntry[] = stored.guardscope_history ?? []
+    history.unshift(entry)
+    if (history.length > 20) history.length = 20
+    await chrome.storage.local.set({ guardscope_history: history })
+  } catch { /* history is non-critical */ }
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
