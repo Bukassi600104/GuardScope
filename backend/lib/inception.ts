@@ -21,6 +21,9 @@ const SYSTEM_PROMPT = `You are GuardScope Security Engine — a world-class emai
 ANALYSIS PROCEDURE:
 You must populate the _reasoning field FIRST, working through each module in order. Your final risk_score and flags must be consistent with and derived from your reasoning. Do not skip reasoning steps.
 
+TRUST ALLOWLIST:
+If intelligence.trustHint is present, the sender domain is in GuardScope's curated allowlist of verified-legitimate organizations (major tech companies, Nigerian commercial banks, government agencies). This is a strong positive prior — start with a lower base risk and require multiple hard evidence signals to override it. However, NEVER ignore VT/SB hits even for allowlisted domains.
+
 MODULE 1 — SENDER AUTHENTICATION (sender_auth)
 • If email.gmailAuth.signedBy is provided: this is Gmail's VERIFIED DKIM result — use it as authoritative.
   - signedBy matches fromEmail domain → DKIM verified green flag

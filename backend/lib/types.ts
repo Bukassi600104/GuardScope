@@ -60,6 +60,7 @@ export interface AnalysisIntel {
   vt: VirusTotalResult
   sb: SafeBrowsingResult
   rdap: RdapResult
+  trustHint?: string  // set when sender domain is in the trusted allowlist
 }
 
 export interface AnalysisReport {

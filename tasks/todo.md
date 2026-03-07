@@ -61,14 +61,14 @@
 - [x] Update inception.ts system prompt to use gmailAuth if available
 - [x] Commit & push
 
-### 3C-2: Trusted Domain Allowlist
-- [ ] Create backend/lib/allowlist.ts
-- [ ] Add tier-1 trusted domains (google.com, gmail.com, microsoft.com, apple.com, amazon.com, paypal.com, meta.com, linkedin.com, github.com)
-- [ ] Add Nigerian bank domains (gtbank.com, accessbank.com, zenithbank.com, firstbanknigeria.com, uba.com, stanbicibtc.com, fidelitybank.ng, unionbankng.com, keystone.com, ecobank.com)
-- [ ] Add Nigerian gov/telco domains (nnpc.com.ng, mtn.com.ng, airtel.com.ng, glo.com.ng, firs.gov.ng)
-- [ ] In route.ts: if sender domain in allowlist → fast-track with lower base risk
-- [ ] In inception.ts prompt: note if sender is allowlisted trusted domain
-- [ ] Commit & push
+### 3C-2: Trusted Domain Allowlist ✅
+- [x] Create backend/lib/allowlist.ts
+- [x] Add tier-1 trusted domains (google, microsoft, apple, amazon, paypal, meta, linkedin, github, etc.)
+- [x] Add 20+ Nigerian bank domains (GTBank, Access, Zenith, First Bank, UBA, Kuda, OPay, etc.)
+- [x] Add Nigerian gov/telco domains (CBN, FIRS, EFCC, MTN, Airtel, Glo, 9mobile, gov.ng TLD)
+- [x] AnalysisIntel.trustHint field added — passed to Mercury when domain is in allowlist
+- [x] Mercury system prompt: trust allowlist guidance + VT/SB override rule
+- [x] Commit & push
 
 ### 3C-3: Hybrid Scoring Architecture
 - [ ] Create backend/lib/scorer.ts

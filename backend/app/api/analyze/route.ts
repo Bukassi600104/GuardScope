@@ -5,6 +5,7 @@ import { dnsLookup } from '../../../lib/dns'
 import { virusTotalScan } from '../../../lib/virustotal'
 import { safeBrowsingCheck } from '../../../lib/safebrowsing'
 import { rdapLookup } from '../../../lib/rdap'
+import { isTrustedDomain, getTrustCategory } from '../../../lib/allowlist'
 
 const MAX_BODY_BYTES = 500_000
 
@@ -136,6 +137,10 @@ export async function POST(req: NextRequest) {
   const domainMatch = email.fromEmail?.match(/@([\w.-]+)/)
   const senderDomain = domainMatch ? domainMatch[1].toLowerCase() : ''
 
+  // Allowlist check — will be passed to Mercury via intel object
+  const trusted = isTrustedDomain(senderDomain)
+  const trustCategory = getTrustCategory(senderDomain)
+
   const NO_DOMAIN_DNS: DnsResult = { spf: 'none', dkim: 'error', dmarc: { policy: 'error', raw: '' }, error: 'no domain' }
   const NO_DOMAIN_RDAP: RdapResult = { registrationDate: null, ageInDays: null, riskLevel: 'UNKNOWN', registrar: null, error: 'no domain' }
 
@@ -152,6 +157,9 @@ export async function POST(req: NextRequest) {
     vt: vtRes.status === 'fulfilled' ? vtRes.value : { flagged: false, results: [], error: 'VT failed' },
     sb: sbRes.status === 'fulfilled' ? sbRes.value : { flagged: false, threats: [], error: 'SB failed' },
     rdap: rdapRes.status === 'fulfilled' ? rdapRes.value : { registrationDate: null, ageInDays: null, riskLevel: 'UNKNOWN', registrar: null, error: 'RDAP failed' },
+    ...(trusted && trustCategory ? {
+      trustHint: `Sender domain "${senderDomain}" is a known-legitimate ${trustCategory} domain in GuardScope's allowlist.`
+    } : {}),
   }
 
   // Mercury-2 deep analysis — every user gets full AI results
