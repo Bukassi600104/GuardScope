@@ -54,12 +54,26 @@ export interface Flag {
   module: string
 }
 
+export interface PhishTankResult {
+  flagged: boolean
+  phishingUrls: string[]
+  error?: string
+}
+
+export interface URLhausResult {
+  flagged: boolean
+  malwareUrls: string[]
+  error?: string
+}
+
 // Shared intel payload — same shape for both Mercury and Sonnet paths
 export interface AnalysisIntel {
   dns: DnsResult
   vt: VirusTotalResult
   sb: SafeBrowsingResult
   rdap: RdapResult
+  phishtank?: PhishTankResult
+  urlhaus?: URLhausResult
   trustHint?: string  // set when sender domain is in the trusted allowlist
 }
 

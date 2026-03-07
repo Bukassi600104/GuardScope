@@ -87,15 +87,14 @@
 - [x] Trust hint applied to fallback scorer too
 - [x] Commit & push
 
-### 3C-5: Additional Threat Intel (PhishTank + URLhaus)
-- [ ] Create backend/lib/phishtank.ts
-- [ ] Implement PhishTank URL lookup (free API, no key required for basic)
-- [ ] Create backend/lib/urlhaus.ts
-- [ ] Implement URLhaus URL/domain lookup (Abuse.ch API, free)
-- [ ] Add both to Promise.allSettled in route.ts
-- [ ] Add phishtank + urlhaus results to AnalysisIntel type
-- [ ] Pass results to Mercury in intel object
-- [ ] Commit & push
+### 3C-5: Additional Threat Intel (PhishTank + URLhaus) ✅
+- [x] Create backend/lib/phishtank.ts — checks URLs against PhishTank database
+- [x] Create backend/lib/urlhaus.ts — checks URLs + sender domain against URLhaus/Abuse.ch
+- [x] Both added to Promise.allSettled in route.ts (parallel with VT/SB)
+- [x] PhishTankResult + URLhausResult added to AnalysisIntel type
+- [x] Mercury prompt: PhishTank/URLhaus hits → CRITICAL, min score 85
+- [x] Scorer: hard override for PT/URLhaus hits, trust cap updated
+- [x] Commit & push
 
 ### 3C-6: Tranco Top 10K Domain Bundle
 - [ ] Download Tranco top-10k list (tranco-list.eu) → save as backend/data/tranco-10k.json (domain array)

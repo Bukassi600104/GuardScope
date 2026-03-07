@@ -38,6 +38,8 @@ export function calcRuleScore(intel: AnalysisIntel): number {
   // ── URL Threat Intelligence ───────────────────────────────────────────────
   if (intel.vt.flagged) score += 40
   if (intel.sb.flagged) score += 40
+  if (intel.phishtank?.flagged) score += 35
+  if (intel.urlhaus?.flagged) score += 35
 
   // Trust allowlist reduces rule score — known good senders get benefit of doubt
   if (intel.trustHint) score = Math.max(0, score - 15)
@@ -60,7 +62,7 @@ export function applyHybridScore(
   let finalScore = Math.round(ruleScore * 0.35 + mercuryScore * 0.65)
 
   // ── Hard overrides ────────────────────────────────────────────────────────
-  if (intel.vt.flagged || intel.sb.flagged) {
+  if (intel.vt.flagged || intel.sb.flagged || intel.phishtank?.flagged || intel.urlhaus?.flagged) {
     finalScore = Math.max(finalScore, 85)
   }
 
@@ -69,9 +71,10 @@ export function applyHybridScore(
     finalScore = Math.max(finalScore, 70)
   }
 
-  // Trusted allowlisted domain with no VT/SB hits → cap at 40
+  // Trusted allowlisted domain with no threat intel hits → cap at 40
   // (prevents hallucinated HIGH scores for Google/bank emails)
-  if (intel.trustHint && !intel.vt.flagged && !intel.sb.flagged) {
+  const anyThreatHit = intel.vt.flagged || intel.sb.flagged || intel.phishtank?.flagged || intel.urlhaus?.flagged
+  if (intel.trustHint && !anyThreatHit) {
     finalScore = Math.min(finalScore, 40)
   }
 

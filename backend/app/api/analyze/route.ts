@@ -7,6 +7,8 @@ import { safeBrowsingCheck } from '../../../lib/safebrowsing'
 import { rdapLookup } from '../../../lib/rdap'
 import { isTrustedDomain, getTrustCategory } from '../../../lib/allowlist'
 import { applyHybridScore } from '../../../lib/scorer'
+import { phishTankScan } from '../../../lib/phishtank'
+import { urlHausScan } from '../../../lib/urlhaus'
 
 const MAX_BODY_BYTES = 500_000
 
@@ -152,11 +154,13 @@ export async function POST(req: NextRequest) {
   const NO_DOMAIN_RDAP: RdapResult = { registrationDate: null, ageInDays: null, riskLevel: 'UNKNOWN', registrar: null, error: 'no domain' }
 
   // Gather all external intel in parallel — no AI call during this phase
-  const [dnsRes, vtRes, sbRes, rdapRes] = await Promise.allSettled([
+  const [dnsRes, vtRes, sbRes, rdapRes, ptRes, uhRes] = await Promise.allSettled([
     senderDomain ? dnsLookup(senderDomain) : Promise.resolve(NO_DOMAIN_DNS),
     virusTotalScan(email.urls),
     safeBrowsingCheck(email.urls),
     senderDomain ? rdapLookup(senderDomain) : Promise.resolve(NO_DOMAIN_RDAP),
+    phishTankScan(email.urls),
+    urlHausScan(email.urls, senderDomain || undefined),
   ])
 
   const intel: AnalysisIntel = {
@@ -164,6 +168,8 @@ export async function POST(req: NextRequest) {
     vt: vtRes.status === 'fulfilled' ? vtRes.value : { flagged: false, results: [], error: 'VT failed' },
     sb: sbRes.status === 'fulfilled' ? sbRes.value : { flagged: false, threats: [], error: 'SB failed' },
     rdap: rdapRes.status === 'fulfilled' ? rdapRes.value : { registrationDate: null, ageInDays: null, riskLevel: 'UNKNOWN', registrar: null, error: 'RDAP failed' },
+    phishtank: ptRes.status === 'fulfilled' ? ptRes.value : { flagged: false, phishingUrls: [], error: 'PhishTank failed' },
+    urlhaus: uhRes.status === 'fulfilled' ? uhRes.value : { flagged: false, malwareUrls: [], error: 'URLhaus failed' },
     ...(trusted && trustCategory ? {
       trustHint: `Sender domain "${senderDomain}" is a known-legitimate ${trustCategory} domain in GuardScope's allowlist.`
     } : {}),

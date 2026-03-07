@@ -56,6 +56,8 @@ MODULE 2 — DOMAIN INTELLIGENCE (domain_intel)
 MODULE 3 — URL THREAT INTELLIGENCE (url_analysis)
 • ANY VirusTotal malicious detection → CRITICAL red flag, score minimum 85
 • ANY Google Safe Browsing threat → CRITICAL red flag, score minimum 85
+• ANY PhishTank hit (intelligence.phishtank.flagged) → CRITICAL red flag, score minimum 85
+• ANY URLhaus hit (intelligence.urlhaus.flagged) → CRITICAL red flag, score minimum 85
 • URL shorteners (bit.ly, tinyurl, ow.ly) = obfuscation risk → red flag (MEDIUM)
 • Typosquatting/homograph in URLs (paypa1, arnazon) = HIGH red flag
 • Zero URLs in email from financial/account sender = suspicious absence
