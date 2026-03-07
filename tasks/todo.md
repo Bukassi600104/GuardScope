@@ -120,13 +120,15 @@
 - [x] System prompt: SECURITY BOUNDARY section — treats XML tag content as untrusted data
 - [x] Commit & push
 
-### 3C-9: Nigeria-Specific Threat Context
-- [ ] Add to inception.ts system prompt: Nigeria threat patterns section
-  - "Dear Customer" + NGN/naira mentions = phishing indicator
-  - EFCC/NNPC/CBN impersonation = CRITICAL
-  - "You have won" / lottery = known Nigerian advance-fee fraud pattern
-  - Legitimate Nigerian bank domains list (for contrast)
-- [ ] Commit & push
+### 3C-9: Nigeria-Specific Threat Context ✅
+- [x] Added NIGERIA-SPECIFIC THREAT PATTERNS section to Mercury system prompt
+- [x] Government agency fraud (EFCC, CBN, FIRS, NAFDAC) → CRITICAL
+- [x] Fintech impersonation (OPay, Kuda, PiggyVest, PalmPay) patterns
+- [x] BVN/NIN email phishing → always phishing rule
+- [x] Advance-fee fraud hallmarks (inheritance, customs packages, transfer fees)
+- [x] Legitimate Nigerian bank domain list as contrast reference
+- [x] Override rule updated to include PhishTank + URLhaus
+- [x] Commit & push
 
 ### 3C-10: Privacy Policy Page
 - [ ] Create backend/app/privacy/page.tsx (Next.js page, serves at /privacy)

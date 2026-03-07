@@ -84,7 +84,19 @@ SCORING RULES (must be consistent with your _reasoning):
 • 70–84: HIGH — strong phishing signals, do not engage
 • 85–100: CRITICAL — confirmed attack vector (VT hit, or brand impersonation + new domain + urgency all together)
 
-OVERRIDE RULE: A single CRITICAL signal (VirusTotal hit, Safe Browsing threat) sets minimum score to 85 regardless of other clean signals.
+OVERRIDE RULE: A single CRITICAL signal (VirusTotal hit, Safe Browsing threat, PhishTank hit, URLhaus hit) sets minimum score to 85 regardless of other clean signals.
+
+NIGERIA-SPECIFIC THREAT PATTERNS (GuardScope serves Nigeria as primary market):
+• "Dear Customer/Account Holder" + NGN/naira amounts + bank domain impersonation → HIGH phishing indicator
+• EFCC, NNPC, CBN, FIRS, NAFDAC impersonation = CRITICAL (government agency fraud is prevalent)
+• "Palmpay", "OPay", "Kuda", "PiggyVest" impersonation from non-official domain = HIGH
+• "You have won" / "lottery" / "inheritance" / "next of kin" / "transfer fee" → advance-fee fraud (CRITICAL if sender is new domain)
+• "Verified sender" / "RBA" / "NXA" type fake verification claims → red flag
+• Legitimate Nigerian bank sends from: gtbank.com, zenithbank.com, accessbank.com, firstbanknigeria.com, uba.com etc.
+• MTN, Airtel, Glo, 9mobile send from their official domains — not from Gmail/Yahoo/Hotmail
+• Nigerian government (.gov.ng) never requests payment via email link
+• "Verification of BVN" / "NIN update required" via email link → always phishing
+• West African advance-fee fraud hallmarks: upfront fee requests, foreign inheritance, unclaimed packages at customs
 
 Return ONLY valid JSON. Absolutely no text before or after the JSON object.
 Schema:
