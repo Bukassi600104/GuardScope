@@ -110,21 +110,31 @@ export default function App() {
       cleanup()
 
       if (chrome.runtime.lastError) {
-        const msg = chrome.runtime.lastError.message ?? 'Extension error'
-        if (msg.includes('No email')) {
+        const msg = chrome.runtime.lastError.message ?? ''
+        if (msg.includes('No email') || msg.includes('open an email')) {
           setError('Open an email in Gmail first, then click Analyze.')
+        } else if (msg.includes('Could not establish connection') || msg.includes('Receiving end does not exist')) {
+          setError('Extension lost connection. Please reload this page and try again.')
+        } else if (msg.includes('Extension context invalidated')) {
+          setError('Extension was updated. Please reload the Gmail page to continue.')
         } else {
-          setError(msg)
+          setError(msg || 'Something went wrong. Please try again.')
         }
         setAppState('error')
         return
       }
 
       if (!response?.success) {
-        if (response?.status === 429) {
+        if (response?.status === 429 || response?.error === 'limit_reached') {
           setAppState('limit_reached')
+        } else if (response?.error?.includes('Network error')) {
+          setError('Cannot reach GuardScope servers. Check your internet connection and try again.')
+          setAppState('error')
+        } else if (response?.status && response.status >= 500) {
+          setError('GuardScope servers are temporarily unavailable. Please try again in a moment.')
+          setAppState('error')
         } else {
-          setError(response?.error ?? 'Unknown error')
+          setError(response?.error ?? 'Analysis failed. Please try again.')
           setAppState('error')
         }
         return
@@ -264,15 +274,26 @@ export default function App() {
         {/* ERROR */}
         {appState === 'error' && (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3">
-            <div className="text-4xl">⚠️</div>
-            <p className="text-sm font-semibold text-[#e2e8f0]">Analysis failed</p>
-            <p className="text-xs text-[#ef4343] leading-relaxed">{error}</p>
-            <button
-              onClick={handleRetry}
-              className="mt-2 text-xs px-4 py-2 border border-[#2a2d3a] rounded-lg text-[#64748b] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
-            >
-              Try again
-            </button>
+            <div className="text-4xl">
+              {error.includes('internet') || error.includes('reach') ? '📡' :
+               error.includes('reload') || error.includes('updated') ? '🔄' :
+               error.includes('Open an email') ? '📧' : '⚠️'}
+            </div>
+            <p className="text-sm font-semibold text-[#e2e8f0]">
+              {error.includes('Open an email') ? 'No email selected' :
+               error.includes('reload') || error.includes('updated') ? 'Page reload needed' :
+               error.includes('internet') || error.includes('reach') ? 'Connection error' :
+               'Analysis failed'}
+            </p>
+            <p className="text-xs text-[#94a3b8] leading-relaxed">{error}</p>
+            {!error.includes('reload') && !error.includes('updated') && (
+              <button
+                onClick={handleRetry}
+                className="mt-1 text-xs px-4 py-2 border border-[#2a2d3a] rounded-lg text-[#64748b] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+              >
+                Try again
+              </button>
+            )}
           </div>
         )}
 
