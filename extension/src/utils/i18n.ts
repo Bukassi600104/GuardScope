@@ -90,7 +90,8 @@ const FR = {
   ],
 } as const
 
-type Translations = typeof EN
+// Use a loose type for the translation map so different locale strings pass the check
+type TranslationMap = Record<string, string | readonly string[]>
 
 function detectLocale(): 'en' | 'fr' {
   const lang = typeof navigator !== 'undefined' ? navigator.language : 'en'
@@ -98,22 +99,25 @@ function detectLocale(): 'en' | 'fr' {
   return 'en'
 }
 
-const TRANSLATIONS: Record<string, Translations> = { en: EN, fr: FR }
+const TRANSLATIONS: Record<string, TranslationMap> = { en: EN, fr: FR }
 
 let _locale: 'en' | 'fr' | null = null
 
-export function t(key: keyof Translations): string {
+type StringKey = Exclude<keyof typeof EN, 'progressSteps'>
+
+export function t(key: StringKey): string {
   if (!_locale) _locale = detectLocale()
   const translations = TRANSLATIONS[_locale] ?? EN
   const value = translations[key]
-  if (Array.isArray(value)) return value.join('|') // shouldn't be called for arrays
-  return value as string
+  if (Array.isArray(value)) return (value as string[]).join('|')
+  return (value as string) ?? (EN[key] as string)
 }
 
 export function tArray(key: 'progressSteps'): readonly string[] {
   if (!_locale) _locale = detectLocale()
   const translations = TRANSLATIONS[_locale] ?? EN
-  return translations[key]
+  const value = translations[key]
+  return (Array.isArray(value) ? value : EN.progressSteps) as readonly string[]
 }
 
 export function getLocale(): 'en' | 'fr' {

@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
   // ── Rate Limit + JWT Auth + Quota ────────────────────────────────────────
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  const jwtPayload = token ? decodeJwt(token) : null
+  const jwtPayload = token ? await decodeJwt(token) : null
   const userId = jwtPayload?.sub ?? null
 
   // Rate limit: per user_id if authed, per IP if anon

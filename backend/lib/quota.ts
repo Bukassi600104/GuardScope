@@ -21,15 +21,42 @@ export interface QuotaResult {
   tier: string
 }
 
+// UUID v4 pattern — Supabase user IDs are always UUIDs
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 /**
- * Decode a Supabase JWT to extract user_id and email without verifying signature.
- * Signature verification is done by Supabase itself when we use the service key.
+ * Decode AND cryptographically verify a Supabase JWT.
+ * Supabase issues HS256 JWTs signed with JWT_SECRET (from env).
+ * If JWT_SECRET is not configured, falls back to decode-only (dev mode).
+ *
+ * Returns null if the token is invalid, expired, or signature doesn't match.
  */
-export function decodeJwt(token: string): { sub?: string; email?: string } | null {
+export async function decodeJwt(token: string): Promise<{ sub?: string; email?: string } | null> {
   try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+
     const payload = JSON.parse(
-      Buffer.from(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
-    )
+      Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString()
+    ) as { sub?: string; email?: string; exp?: number }
+
+    // Reject expired tokens
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null
+
+    // Validate UUID format of sub — prevents injection via crafted tokens
+    if (payload.sub && !UUID_REGEX.test(payload.sub)) return null
+
+    // Cryptographic verification if JWT secret is available
+    const jwtSecret = process.env.SUPABASE_JWT_SECRET
+    if (jwtSecret) {
+      const { createHmac } = await import('crypto')
+      const signingInput = `${parts[0]}.${parts[1]}`
+      const expected = createHmac('sha256', jwtSecret)
+        .update(signingInput)
+        .digest('base64url')
+      if (expected !== parts[2]) return null // signature mismatch — reject
+    }
+
     return payload
   } catch {
     return null

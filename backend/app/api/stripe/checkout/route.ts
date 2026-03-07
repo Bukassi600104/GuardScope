@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://backend-gules-sigm
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  const jwtPayload = token ? decodeJwt(token) : null
+  const jwtPayload = token ? await decodeJwt(token) : null
 
   if (!jwtPayload?.sub || !jwtPayload?.email) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })

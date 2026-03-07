@@ -6,6 +6,7 @@ const SIDEBAR_ID = 'guardscope-sidebar-container'
 const SIDEBAR_WIDTH = '360px'
 
 let sidebarMounted = false
+let sidebarCreating = false // prevents double-create during 300ms setTimeout window
 
 /**
  * Check if the extension context is still valid.
@@ -29,8 +30,18 @@ function isContextValid(): boolean {
 }
 
 function createSidebar(): void {
+  sidebarCreating = false // clear the in-flight flag regardless of outcome
   if (!isContextValid()) return
-  if (document.getElementById(SIDEBAR_ID)) return
+  if (!isEmailOpen()) return // safety: re-check — user may have navigated away in 300ms
+  if (document.getElementById(SIDEBAR_ID)) { sidebarMounted = true; return }
+
+  // Wrap getURL in try-catch: context can die between isContextValid() and here
+  let sidebarUrl: string
+  try {
+    sidebarUrl = chrome.runtime.getURL('src/sidebar/sidebar.html')
+  } catch {
+    return // context invalidated — bail silently
+  }
 
   const container = document.createElement('div')
   container.id = SIDEBAR_ID
@@ -47,7 +58,7 @@ function createSidebar(): void {
   // Shadow DOM prevents Gmail CSS from leaking in
   const shadow = container.attachShadow({ mode: 'open' })
   const iframe = document.createElement('iframe')
-  iframe.src = chrome.runtime.getURL('src/sidebar/sidebar.html')
+  iframe.src = sidebarUrl
   iframe.style.cssText = 'width:100%;height:100%;border:none;'
   shadow.appendChild(iframe)
 
@@ -60,6 +71,7 @@ function createSidebar(): void {
 }
 
 function removeSidebar(): void {
+  sidebarCreating = false // cancel any pending create
   const el = document.getElementById(SIDEBAR_ID)
   if (el) {
     el.remove()
@@ -92,7 +104,8 @@ function isEmailOpen(): boolean {
 
 function syncSidebar(): void {
   if (!isContextValid()) return
-  if (isEmailOpen() && !sidebarMounted) {
+  if (isEmailOpen() && !sidebarMounted && !sidebarCreating) {
+    sidebarCreating = true
     setTimeout(createSidebar, 300)
   } else if (!isEmailOpen() && sidebarMounted) {
     removeSidebar()
@@ -113,10 +126,11 @@ function storeCurrentEmail(): void {
 // ── Signal 1: URL hash changes (Gmail SPA navigation) ──────────────────────
 // This is the most reliable trigger — fires immediately when user clicks an email.
 window.addEventListener('hashchange', () => {
+  if (!isContextValid()) return
   syncSidebar()
-  // Re-extract on each new email open
+  // Re-extract on each new email open — re-check context inside the timeout
   if (isEmailOpen()) {
-    setTimeout(storeCurrentEmail, 600) // slight delay so Gmail DOM has rendered
+    setTimeout(() => { if (isContextValid()) storeCurrentEmail() }, 600)
   }
 })
 

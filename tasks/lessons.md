@@ -5,6 +5,22 @@ Updated after every user correction. Rules to prevent repeating mistakes.
 
 ---
 
+## Lesson 4 — Never Ask User for Manual Deployments or Tokens Twice (2026-03-03)
+
+**Mistake (pattern to avoid):** Telling the user to manually deploy to Vercel, run
+SQL in Supabase dashboard, or provide tokens more than once.
+
+**Rule:**
+- Supabase MCP and Vercel MCP are configured in `~/.claude/settings.json`
+- Tokens are already stored there — never ask again
+- For ALL Supabase tasks (migrations, queries, RLS, auth): use `mcp__supabase__*` tools
+- For ALL Vercel tasks (deploy, env vars, domains): use `mcp__vercel__*` tools or `vercel` CLI
+- Secret tokens belong in `settings.json` ONLY — never write them to memory files or code
+- If MCP tools aren't responding, check settings.json or ask user to regenerate tokens
+  (but ask at most once per session)
+
+---
+
 ## Lesson 1 — Gmail SPA Sidebar Detection (2026-03-03)
 
 **Mistake:** Used `MutationObserver` alone to detect when Gmail opens an email.

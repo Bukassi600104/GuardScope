@@ -32,11 +32,15 @@ export async function getAuthState(): Promise<AuthState> {
 }
 
 export async function setAuthState(state: AuthState): Promise<void> {
-  await chrome.storage.local.set({ guardscope_auth: state })
+  try {
+    await chrome.storage.local.set({ guardscope_auth: state })
+  } catch { /* ignore — storage unavailable during SW restart */ }
 }
 
 export async function clearAuthState(): Promise<void> {
-  await chrome.storage.local.remove(['guardscope_auth'])
+  try {
+    await chrome.storage.local.remove(['guardscope_auth'])
+  } catch { /* ignore */ }
 }
 
 export async function getToken(): Promise<string | null> {

@@ -11,7 +11,7 @@ const PAYSTACK_PRO_AMOUNT_KOBO = 750_000 // Paystack uses kobo (₦ × 100)
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  const jwtPayload = token ? decodeJwt(token) : null
+  const jwtPayload = token ? await decodeJwt(token) : null
 
   if (!jwtPayload?.sub || !jwtPayload?.email) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })

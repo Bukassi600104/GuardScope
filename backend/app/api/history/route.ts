@@ -20,7 +20,7 @@ export async function OPTIONS() {
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  const jwtPayload = token ? decodeJwt(token) : null
+  const jwtPayload = token ? await decodeJwt(token) : null
 
   if (!jwtPayload?.sub) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401, headers: SECURITY_HEADERS })
