@@ -139,15 +139,16 @@
 - [x] Data retention: usage 13 months, email analysis never retained
 - [x] Commit & push
 
-### 3C-11: First-Run Consent Screen (CWS Requirement)
-- [ ] Create extension/src/onboarding/onboarding.html + onboarding.tsx
-- [ ] Build in manifest.json as additional entry point
-- [ ] Show on first install via chrome.runtime.onInstalled
-- [ ] Content: what GuardScope reads (Gmail email content), what it does NOT store, how to uninstall
-- [ ] "I Understand — Activate GuardScope" button → sets chrome.storage.local { onboardingComplete: true }
-- [ ] Block analysis until onboarding complete
-- [ ] In content.ts: check onboardingComplete before injecting sidebar
-- [ ] Commit & push
+### 3C-11: First-Run Consent Screen (CWS Requirement) ✅
+- [x] Create extension/src/onboarding/onboarding.html + onboarding.tsx
+- [x] Registered in vite.config.ts + manifest web_accessible_resources
+- [x] background.ts: opens onboarding.html tab on first install (reason === 'install')
+- [x] content.ts: checks guardscope_onboarding_complete before starting sidebar; polls every 2s until set
+- [x] Onboarding: 3-step how-it-works, what we check, what we NEVER store, privacy link
+- [x] "I Understand — Activate GuardScope" → sets storage flag + opens Gmail
+- [x] manifest.json: description updated (single-purpose), homepage_url added
+- [x] Build verified: dist/src/onboarding/onboarding.html ✓
+- [x] Commit & push
 
 ### 3C-12: Manifest & Build Fixes for CWS
 - [ ] Add "homepage_url": "https://backend-gules-sigma-37.vercel.app" to manifest.json

@@ -7,8 +7,12 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
-chrome.runtime.onInstalled.addListener(() => {
-  console.log('[GuardScope] Extension installed')
+chrome.runtime.onInstalled.addListener((details) => {
+  console.log('[GuardScope] Extension installed:', details.reason)
+  if (details.reason === 'install') {
+    // First-time install: open onboarding tab
+    chrome.tabs.create({ url: chrome.runtime.getURL('src/onboarding/onboarding.html') })
+  }
 })
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

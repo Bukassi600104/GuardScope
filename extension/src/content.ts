@@ -121,4 +121,20 @@ function waitForGmail(retries = 20): void {
   }
 }
 
-waitForGmail()
+// Check onboarding completion before starting — if first install and user hasn't
+// completed onboarding, don't inject the sidebar (they'll be on the onboarding tab anyway)
+chrome.storage.local.get('guardscope_onboarding_complete', (result) => {
+  if (result.guardscope_onboarding_complete) {
+    waitForGmail()
+  } else {
+    // Poll until onboarding is completed (user clicks "Activate GuardScope")
+    const pollInterval = setInterval(() => {
+      chrome.storage.local.get('guardscope_onboarding_complete', (r) => {
+        if (r.guardscope_onboarding_complete) {
+          clearInterval(pollInterval)
+          waitForGmail()
+        }
+      })
+    }, 2000)
+  }
+})

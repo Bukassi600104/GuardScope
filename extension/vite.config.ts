@@ -13,6 +13,7 @@ export default defineConfig({
       input: {
         popup: 'popup.html',
         sidebar: 'src/sidebar/sidebar.html',
+        onboarding: 'src/onboarding/onboarding.html',
       },
     },
   },

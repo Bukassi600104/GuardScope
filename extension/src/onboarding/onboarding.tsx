@@ -1,0 +1,134 @@
+import React, { useState } from 'react'
+import { createRoot } from 'react-dom/client'
+import '../../tailwind.css'
+
+function ShieldCheck() {
+  return (
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" fill="#ef4343" />
+      <path d="M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z" fill="white" />
+    </svg>
+  )
+}
+
+function Step({ number, title, description }: { number: number; title: string; description: string }) {
+  return (
+    <div className="flex gap-4 items-start">
+      <div className="w-8 h-8 rounded-full bg-[#ef4343] text-white flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">
+        {number}
+      </div>
+      <div>
+        <p className="text-[#e2e8f0] font-semibold text-sm">{title}</p>
+        <p className="text-[#64748b] text-xs mt-0.5">{description}</p>
+      </div>
+    </div>
+  )
+}
+
+function CheckRow({ text, green = true }: { text: string; green?: boolean }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span className={`text-sm flex-shrink-0 mt-0.5 ${green ? 'text-[#22c55e]' : 'text-[#ef4343]'}`}>
+        {green ? '✓' : '✗'}
+      </span>
+      <span className="text-[#cbd5e1] text-sm">{text}</span>
+    </div>
+  )
+}
+
+function Onboarding() {
+  const [activating, setActivating] = useState(false)
+
+  function handleActivate() {
+    setActivating(true)
+    chrome.storage.local.set({ guardscope_onboarding_complete: true }, () => {
+      chrome.tabs.query({ url: 'https://mail.google.com/*' }, (tabs) => {
+        if (tabs.length > 0) {
+          chrome.tabs.update(tabs[0].id!, { active: true })
+          chrome.windows.update(tabs[0].windowId!, { focused: true })
+        } else {
+          chrome.tabs.create({ url: 'https://mail.google.com' })
+        }
+        window.close()
+      })
+    })
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0f1117] text-[#e2e8f0] font-['Inter',sans-serif] flex items-center justify-center p-6">
+      <div className="max-w-lg w-full">
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <ShieldCheck />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2">Welcome to GuardScope</h1>
+          <p className="text-[#64748b] text-sm">AI-powered email security for Gmail</p>
+        </div>
+
+        {/* How it works */}
+        <div className="bg-[#1a1d27] rounded-xl border border-[#2a2d3a] p-5 mb-4">
+          <h2 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wide mb-4">How it works</h2>
+          <div className="space-y-4">
+            <Step number={1} title="Open an email in Gmail" description="GuardScope detects when you open an email." />
+            <Step number={2} title="Click 'Analyze This Email'" description="The sidebar panel appears on the right side of Gmail." />
+            <Step number={3} title="Get your security report" description="AI analysis runs in seconds — risk score, flags, and recommendations." />
+          </div>
+        </div>
+
+        {/* What we check */}
+        <div className="bg-[#1a1d27] rounded-xl border border-[#2a2d3a] p-5 mb-4">
+          <h2 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wide mb-4">What GuardScope checks</h2>
+          <div className="space-y-2.5">
+            <CheckRow text="SPF, DKIM, and DMARC authentication records" />
+            <CheckRow text="Domain age and registration data" />
+            <CheckRow text="URLs against VirusTotal, Safe Browsing, PhishTank, and URLhaus" />
+            <CheckRow text="Email content for urgency, impersonation, and phishing patterns" />
+            <CheckRow text="Behavioral signals across all modules combined" />
+          </div>
+        </div>
+
+        {/* What we DON'T store */}
+        <div className="bg-[#0d1f14] rounded-xl border border-[#166534]/40 p-5 mb-6">
+          <h2 className="text-sm font-semibold text-[#22c55e] uppercase tracking-wide mb-4">What we NEVER store</h2>
+          <div className="space-y-2.5">
+            <CheckRow text="Email body, subject, or headers — discarded after analysis" green={false} />
+            <CheckRow text="Your contacts' email addresses" green={false} />
+            <CheckRow text="Your browsing history or activity outside Gmail" green={false} />
+            <CheckRow text="Your Gmail password or OAuth token" green={false} />
+          </div>
+          <p className="text-[#64748b] text-xs mt-3">
+            Read our full{' '}
+            <a
+              href="https://backend-gules-sigma-37.vercel.app/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#22c55e] hover:underline"
+            >
+              Privacy Policy
+            </a>
+            .
+          </p>
+        </div>
+
+        {/* CTA */}
+        <button
+          onClick={handleActivate}
+          disabled={activating}
+          className="w-full py-3 px-6 bg-[#ef4343] hover:bg-[#dc2626] disabled:opacity-50 text-white font-bold text-base rounded-xl transition-colors"
+        >
+          {activating ? 'Opening Gmail...' : 'I Understand — Activate GuardScope'}
+        </button>
+
+        <p className="text-center text-[#475569] text-xs mt-4">
+          You can uninstall GuardScope at any time from chrome://extensions
+        </p>
+
+      </div>
+    </div>
+  )
+}
+
+const root = createRoot(document.getElementById('root')!)
+root.render(<Onboarding />)
