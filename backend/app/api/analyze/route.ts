@@ -6,6 +6,7 @@ import { virusTotalScan } from '../../../lib/virustotal'
 import { safeBrowsingCheck } from '../../../lib/safebrowsing'
 import { rdapLookup } from '../../../lib/rdap'
 import { isTrustedDomain, getTrustCategory } from '../../../lib/allowlist'
+import { isTopDomain } from '../../../lib/tranco'
 import { applyHybridScore } from '../../../lib/scorer'
 import { phishTankScan } from '../../../lib/phishtank'
 import { urlHausScan } from '../../../lib/urlhaus'
@@ -146,9 +147,9 @@ export async function POST(req: NextRequest) {
   const domainMatch = email.fromEmail?.match(/@([\w.-]+)/)
   const senderDomain = domainMatch ? domainMatch[1].toLowerCase() : ''
 
-  // Allowlist check — will be passed to Mercury via intel object
-  const trusted = isTrustedDomain(senderDomain)
-  const trustCategory = getTrustCategory(senderDomain)
+  // Allowlist + Tranco check — will be passed to Mercury via intel object
+  const trusted = isTrustedDomain(senderDomain) || isTopDomain(senderDomain)
+  const trustCategory = getTrustCategory(senderDomain) ?? (isTopDomain(senderDomain) ? 'global_tech' : null)
 
   const NO_DOMAIN_DNS: DnsResult = { spf: 'none', dkim: 'error', dmarc: { policy: 'error', raw: '' }, error: 'no domain' }
   const NO_DOMAIN_RDAP: RdapResult = { registrationDate: null, ageInDays: null, riskLevel: 'UNKNOWN', registrar: null, error: 'no domain' }

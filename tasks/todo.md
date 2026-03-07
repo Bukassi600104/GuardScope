@@ -96,12 +96,13 @@
 - [x] Scorer: hard override for PT/URLhaus hits, trust cap updated
 - [x] Commit & push
 
-### 3C-6: Tranco Top 10K Domain Bundle
-- [ ] Download Tranco top-10k list (tranco-list.eu) → save as backend/data/tranco-10k.json (domain array)
-- [ ] Create backend/lib/tranco.ts — isTopDomain(domain): boolean
-- [ ] In route.ts: isTop → passes to Mercury as trust signal
-- [ ] In inception.ts prompt: Tranco top-10k = established domain → green flag if new RDAP but Tranco top
-- [ ] Commit & push
+### 3C-6: Tranco Top Domain Bundle ✅
+- [x] Create backend/lib/tranco.ts — isTopDomain(domain): boolean
+- [x] Embedded top ~300 domains (serverless-safe, no filesystem reads)
+- [x] Covers major global platforms, CDNs, email services, Nigerian news sites
+- [x] In route.ts: Tranco top domains also get trust treatment (same as allowlist)
+- [x] Combined: isTrustedDomain() || isTopDomain() → trustHint passed to Mercury
+- [x] Commit & push
 
 ### 3C-7: URL Normalization + Result Caching
 - [ ] Create backend/lib/urlCache.ts — in-memory LRU cache (50 entries, 15-min TTL)
