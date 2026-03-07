@@ -1,6 +1,11 @@
 // GuardScope Email Extractor — Gmail DOM parsing
 // Handles Gmail's obfuscated class names with multiple fallback selectors
 
+export interface GmailAuthResult {
+  signedBy: string | null   // DKIM signing domain (real result from Gmail header)
+  mailedBy: string | null   // SPF mailed-by domain (envelope sender)
+}
+
 export interface ExtractedEmail {
   fromName: string | null
   fromEmail: string | null
@@ -11,6 +16,7 @@ export interface ExtractedEmail {
   attachments: Attachment[]
   replyTo: string | null
   messageId: string | null
+  gmailAuth: GmailAuthResult
 }
 
 export interface Attachment {
@@ -34,7 +40,96 @@ export function extractEmailData(): ExtractedEmail {
     attachments: extractAttachments(),
     replyTo: extractReplyTo(),
     messageId: extractMessageId(),
+    gmailAuth: extractGmailAuthResults(),
   }
+}
+
+/**
+ * Extract Gmail's own "Signed-by" and "Mailed-by" fields from the expanded
+ * email header. These reflect real DKIM/SPF results as verified by Gmail itself,
+ * which is far more accurate than our DNS probe.
+ *
+ * Gmail renders these in the expanded header details panel. The DOM uses
+ * obfuscated class names so we use text-based matching as a reliable fallback.
+ */
+export function extractGmailAuthResults(): GmailAuthResult {
+  try {
+    const result: GmailAuthResult = { signedBy: null, mailedBy: null }
+
+    // Strategy 1: walk all elements in the header details area looking for
+    // text content that includes "signed-by" or "mailed-by"
+    // Gmail renders these as label spans followed by domain spans
+    const headerArea = document.querySelector('.aHl, .iJ, .cf.ix, [data-message-id]')
+      ?.closest('.gs') ?? document.querySelector('[role="main"]')
+
+    if (headerArea) {
+      // Look for spans/divs whose text exactly matches "signed-by:" or "mailed-by:"
+      // then get the next sibling's text or the parent's full text
+      const allEls = headerArea.querySelectorAll('span, div, td')
+      for (const el of allEls) {
+        const text = el.textContent?.trim().toLowerCase() ?? ''
+        if (text.startsWith('signed-by:') || text === 'signed-by') {
+          const domain = extractDomainFromElement(el)
+          if (domain) result.signedBy = domain
+        }
+        if (text.startsWith('mailed-by:') || text === 'mailed-by') {
+          const domain = extractDomainFromElement(el)
+          if (domain) result.mailedBy = domain
+        }
+      }
+    }
+
+    // Strategy 2: scan ALL text nodes in document for signed-by / mailed-by patterns
+    // This handles cases where the header details aren't in a predictable container
+    if (!result.signedBy && !result.mailedBy) {
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        null
+      )
+      let node: Text | null
+      while ((node = walker.nextNode() as Text | null)) {
+        const text = node.textContent?.trim() ?? ''
+        const lower = text.toLowerCase()
+        if (lower.includes('signed-by:')) {
+          const match = text.match(/signed-by:\s*([\w.-]+\.[a-z]{2,})/i)
+          if (match && !result.signedBy) result.signedBy = match[1].toLowerCase()
+        }
+        if (lower.includes('mailed-by:')) {
+          const match = text.match(/mailed-by:\s*([\w.-]+\.[a-z]{2,})/i)
+          if (match && !result.mailedBy) result.mailedBy = match[1].toLowerCase()
+        }
+      }
+    }
+
+    return result
+  } catch {
+    return { signedBy: null, mailedBy: null }
+  }
+}
+
+function extractDomainFromElement(el: Element): string | null {
+  // Check if this element's text includes the domain after ":"
+  const text = el.textContent?.trim() ?? ''
+  const colonMatch = text.match(/:\s*([\w.-]+\.[a-z]{2,})/i)
+  if (colonMatch) return colonMatch[1].toLowerCase()
+
+  // Try next sibling
+  const next = el.nextElementSibling
+  if (next) {
+    const nextText = next.textContent?.trim() ?? ''
+    if (/^[\w.-]+\.[a-z]{2,}$/i.test(nextText)) return nextText.toLowerCase()
+  }
+
+  // Try parent's full text minus the label
+  const parent = el.parentElement
+  if (parent) {
+    const parentText = parent.textContent?.trim() ?? ''
+    const domainMatch = parentText.match(/(?:signed-by|mailed-by):\s*([\w.-]+\.[a-z]{2,})/i)
+    if (domainMatch) return domainMatch[1].toLowerCase()
+  }
+
+  return null
 }
 
 function extractFromName(): string | null {

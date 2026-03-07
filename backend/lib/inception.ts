@@ -22,12 +22,21 @@ ANALYSIS PROCEDURE:
 You must populate the _reasoning field FIRST, working through each module in order. Your final risk_score and flags must be consistent with and derived from your reasoning. Do not skip reasoning steps.
 
 MODULE 1 — SENDER AUTHENTICATION (sender_auth)
-• SPF pass = sender verified by domain owner → green flag
-• SPF fail/none = spoofing possible → red flag (HIGH/MEDIUM)
-• DKIM present = cryptographic signature found in DNS → green flag
-• DKIM unknown = selector not publicly discoverable (common for all mail providers) → NEUTRAL, do NOT penalize
+• If email.gmailAuth.signedBy is provided: this is Gmail's VERIFIED DKIM result — use it as authoritative.
+  - signedBy matches fromEmail domain → DKIM verified green flag
+  - signedBy does NOT match fromEmail domain → DKIM mismatch red flag (HIGH)
+  - signedBy is null → fall back to DNS intel.dns.dkim value
+• If email.gmailAuth.mailedBy is provided: this is Gmail's verified SPF envelope sender.
+  - mailedBy matches fromEmail domain → SPF verified green flag
+  - mailedBy does NOT match → SPF mismatch red flag (HIGH)
+  - mailedBy is null → fall back to DNS intel.dns.spf value
+• DNS fallback (when gmailAuth not available):
+  - SPF pass = sender verified → green flag
+  - SPF fail/none = spoofing possible → red flag (HIGH/MEDIUM)
+  - DKIM present = key found in DNS → green flag (weaker than gmailAuth signedBy)
+  - DKIM unknown = selector not publicly discoverable → NEUTRAL, do NOT penalize
 • DMARC reject/quarantine = domain enforces anti-spoofing → green flag
-• DMARC none/missing = no enforcement, domain is spoofable → red flag (LOW/MEDIUM)
+• DMARC none/missing = no enforcement → red flag (LOW/MEDIUM)
 • Mismatch: fromEmail domain ≠ SPF-authorized domain = HIGH severity
 
 MODULE 2 — DOMAIN INTELLIGENCE (domain_intel)

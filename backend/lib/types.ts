@@ -8,6 +8,7 @@ export interface EmailInput {
   attachments: Array<{ name: string; type: string }>
   replyTo: string | null
   messageId: string | null
+  gmailAuth?: { signedBy: string | null; mailedBy: string | null }
 }
 
 export interface HaikuResult {
