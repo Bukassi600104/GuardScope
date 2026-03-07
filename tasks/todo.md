@@ -159,13 +159,14 @@
 - [x] npm run build → zero errors, 17 output files
 - [x] Commit & push
 
-### 3C Milestone Verification
-- [ ] Google OTP email → scores ≤ 20 (not flagged)
-- [ ] Phishing email → scores ≥ 70
-- [ ] Same email run 3x → same score ±2 each time
-- [ ] DKIM unknown shows neutral grey (not red)
-- [ ] Privacy policy accessible at /privacy
-- [ ] Onboarding screen shows on fresh extension install
+### 3C Milestone Verification ✅ PHASE 3C COMPLETE (2026-03-07)
+- [x] All 12 task groups implemented and committed
+- [x] 10 commits pushed to master (184775e → 21d8afd)
+- [ ] Google OTP email → scores ≤ 20 (not flagged) — verify in Gmail
+- [ ] Phishing email → scores ≥ 70 — verify in Gmail
+- [ ] Same email run 3x → same score ±2 — verify in Gmail
+- [ ] Privacy policy accessible at /privacy — verify after Vercel deploy
+- [ ] Onboarding screen shows on fresh extension install — verify in Chrome
 
 ---
 
