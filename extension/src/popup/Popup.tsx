@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import type { AuthState } from '../utils/auth'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
 
 // Decode JWT expiry without a library — Supabase JWTs are standard RS256 tokens.
 // Returns true if the token is expired or unparseable.
@@ -60,23 +59,14 @@ export default function Popup() {
     })
   }, [])
 
-  async function fetchUsage(userId: string, token: string) {
+  async function fetchUsage(_userId: string, token: string) {
     try {
-      const now = new Date()
-      const month = now.getMonth() + 1
-      const year = now.getFullYear()
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/usage?select=analysis_count&user_id=eq.${userId}&month=eq.${month}&year=eq.${year}`,
-        {
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      )
+      const res = await fetch(`${BACKEND_URL}/api/usage`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
       if (res.ok) {
-        const rows = await res.json() as Array<{ analysis_count: number }>
-        setUsageCount(rows[0]?.analysis_count ?? 0)
+        const data = await res.json() as { count: number; limit: number | null; tier: string }
+        setUsageCount(data.count)
       }
     } catch {
       // usage display is non-critical
@@ -197,6 +187,19 @@ export default function Popup() {
             >
               Open Gmail
             </button>
+            {(auth?.tier === 'free') && (
+              <a
+                href={`${BACKEND_URL}/api/paystack/initialize`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  // Send through background to add auth header
+                  chrome.tabs.create({ url: 'https://guardscope.io/upgrade' })
+                }}
+                className="block w-full py-2 px-4 text-center text-xs font-semibold text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/10 transition-colors"
+              >
+                Upgrade to Pro — $4.99/mo
+              </a>
+            )}
             <button
               onClick={handleSignOut}
               className="w-full py-2 px-4 bg-transparent text-[#64748b] text-xs rounded-lg border border-[#2a2d3a] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
@@ -269,7 +272,7 @@ export default function Popup() {
 
       {/* Footer */}
       <div className="px-4 py-2 border-t border-[#2a2d3a]">
-        <p className="text-[10px] text-[#64748b] text-center">Powered by GuardScope AI</p>
+        <p className="text-[10px] text-[#64748b] text-center">Powered by Mercury-2 AI</p>
       </div>
     </div>
   )
