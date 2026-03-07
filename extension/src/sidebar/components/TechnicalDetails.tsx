@@ -6,13 +6,50 @@ interface TechProps {
   email?: { fromEmail: string | null; subject: string | null }
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, highlight }: { label: string; value: string; highlight?: 'good' | 'bad' | 'warn' }) {
+  const colorClass = highlight === 'good' ? 'text-green-400' : highlight === 'bad' ? 'text-red-400' : highlight === 'warn' ? 'text-orange-400' : 'text-gs-text'
   return (
     <div className="flex gap-2">
       <span className="text-xs text-gs-muted w-28 flex-shrink-0">{label}:</span>
-      <span className="text-xs text-gs-text break-all">{value}</span>
+      <span className={`text-xs break-all ${colorClass}`}>{value}</span>
     </div>
   )
+}
+
+function spfLabel(spf: string): { text: string; highlight: 'good' | 'bad' | 'warn' | undefined } {
+  if (spf === 'pass') return { text: 'Verified — sender authorized', highlight: 'good' }
+  if (spf === 'fail') return { text: 'Failed — spoofing likely', highlight: 'bad' }
+  if (spf === 'softfail') return { text: 'Soft fail — weak protection', highlight: 'warn' }
+  if (spf === 'neutral') return { text: 'Permissive — minimal protection', highlight: 'warn' }
+  if (spf === 'none') return { text: 'Not configured', highlight: 'warn' }
+  return { text: 'Check failed', highlight: undefined }
+}
+
+function dkimLabel(dkim: string): { text: string; highlight: 'good' | 'bad' | 'warn' | undefined } {
+  if (dkim === 'present') return { text: 'Signing key found', highlight: 'good' }
+  if (dkim === 'absent') return { text: 'Not configured', highlight: 'warn' }
+  if (dkim === 'unknown') return { text: 'Unverifiable (common)', highlight: undefined }
+  return { text: 'Check failed', highlight: undefined }
+}
+
+function dmarcLabel(dmarc: string): { text: string; highlight: 'good' | 'bad' | 'warn' | undefined } {
+  if (dmarc === 'reject') return { text: 'Enforced — reject unauthorized', highlight: 'good' }
+  if (dmarc === 'quarantine') return { text: 'Enforced — quarantine', highlight: 'good' }
+  if (dmarc === 'none') return { text: 'Monitor only — no enforcement', highlight: 'warn' }
+  return { text: 'Not configured', highlight: 'warn' }
+}
+
+function domainRiskLabel(risk: string): { text: string; highlight: 'good' | 'bad' | 'warn' | undefined } {
+  if (risk === 'LOW') return { text: 'Established — low risk', highlight: 'good' }
+  if (risk === 'MEDIUM') return { text: 'Recently registered', highlight: 'warn' }
+  if (risk === 'HIGH') return { text: 'Newly registered — high risk', highlight: 'bad' }
+  return { text: 'Unknown', highlight: undefined }
+}
+
+function urgencyLabel(score: number): string {
+  if (score <= 3) return `${score}/10 — Low`
+  if (score <= 6) return `${score}/10 — Moderate`
+  return `${score}/10 — High`
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -44,40 +81,44 @@ export default function TechnicalDetails({ modules, email }: TechProps) {
           {modules ? (
             <>
               {/* DNS Authentication */}
-              <Section title="DNS Authentication">
-                <Row label="SPF" value={modules.sender_auth.spf} />
-                <Row label="DKIM" value={modules.sender_auth.dkim} />
-                <Row label="DMARC" value={modules.sender_auth.dmarc} />
+              <Section title="Email Authentication">
+                {(() => { const s = spfLabel(modules.sender_auth.spf); return <Row label="SPF" value={s.text} highlight={s.highlight} /> })()}
+                {(() => { const d = dkimLabel(modules.sender_auth.dkim); return <Row label="DKIM" value={d.text} highlight={d.highlight} /> })()}
+                {(() => { const m = dmarcLabel(modules.sender_auth.dmarc); return <Row label="DMARC" value={m.text} highlight={m.highlight} /> })()}
               </Section>
 
               {/* Domain Intelligence */}
-              <Section title="Domain Intelligence">
+              <Section title="Sender Domain">
                 <Row
-                  label="Domain Age"
-                  value={
-                    modules.domain_intel.age_days !== null
-                      ? `${modules.domain_intel.age_days} days`
-                      : 'Unknown'
-                  }
+                  label="Registered"
+                  value={modules.domain_intel.age_days !== null ? `${modules.domain_intel.age_days} days ago` : 'Unknown'}
                 />
-                <Row label="Risk Level" value={modules.domain_intel.risk_level} />
+                {(() => { const r = domainRiskLabel(modules.domain_intel.risk_level); return <Row label="Domain Risk" value={r.text} highlight={r.highlight} /> })()}
                 {modules.domain_intel.registrar && (
                   <Row label="Registrar" value={modules.domain_intel.registrar} />
                 )}
               </Section>
 
               {/* URL Analysis */}
-              <Section title="URL Analysis">
-                <Row label="VirusTotal" value={modules.url_analysis.vt_flagged ? 'FLAGGED' : 'Clean'} />
-                <Row label="Safe Browsing" value={modules.url_analysis.sb_flagged ? 'FLAGGED' : 'Clean'} />
+              <Section title="Link Safety">
+                <Row
+                  label="VirusTotal"
+                  value={modules.url_analysis.vt_flagged ? 'Malicious URL detected' : 'No threats found'}
+                  highlight={modules.url_analysis.vt_flagged ? 'bad' : 'good'}
+                />
+                <Row
+                  label="Safe Browsing"
+                  value={modules.url_analysis.sb_flagged ? 'Threat detected' : 'No threats found'}
+                  highlight={modules.url_analysis.sb_flagged ? 'bad' : 'good'}
+                />
                 {modules.url_analysis.flagged_urls.length > 0 && (
-                  <Row label="Flagged URLs" value={modules.url_analysis.flagged_urls.join(', ')} />
+                  <Row label="Flagged Links" value={modules.url_analysis.flagged_urls.join(', ')} highlight="bad" />
                 )}
               </Section>
 
               {/* Content Analysis */}
               <Section title="Content Analysis">
-                <Row label="Urgency Score" value={String(modules.content_analysis.urgency_score)} />
+                <Row label="Urgency" value={urgencyLabel(modules.content_analysis.urgency_score)} />
                 <Row label="Assessment" value={modules.content_analysis.assessment} />
               </Section>
 

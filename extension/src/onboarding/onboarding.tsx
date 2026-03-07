@@ -71,9 +71,9 @@ function Onboarding() {
         <div className="bg-[#1a1d27] rounded-xl border border-[#2a2d3a] p-5 mb-4">
           <h2 className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wide mb-4">How it works</h2>
           <div className="space-y-4">
-            <Step number={1} title="Open an email in Gmail" description="GuardScope detects when you open an email." />
-            <Step number={2} title="Click 'Analyze This Email'" description="The sidebar panel appears on the right side of Gmail." />
-            <Step number={3} title="Get your security report" description="AI analysis runs in seconds — risk score, flags, and recommendations." />
+            <Step number={1} title="Open an email in Gmail" description="GuardScope detects the email and a security panel slides in on the right." />
+            <Step number={2} title="Click 'Analyze This Email'" description="GuardScope scans the sender, links, and content in seconds using Mercury-2 AI." />
+            <Step number={3} title="Read your security report" description="See a risk score, plain-English verdict, and exactly what looks suspicious." />
           </div>
         </div>
 

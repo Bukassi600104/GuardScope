@@ -255,7 +255,9 @@ export default function App() {
 
             {/* Analysis metadata */}
             <p className="text-[10px] text-[#64748b] text-center">
-              via {report.analysis_path} · {(report.duration_ms / 1000).toFixed(1)}s
+              {report.analysis_path === 'mercury_deep' ? 'Mercury-2 AI deep scan' :
+               report.analysis_path === 'rule_based' ? 'Rule-based fallback' :
+               report.analysis_path} · {(report.duration_ms / 1000).toFixed(1)}s
             </p>
 
           </div>
@@ -274,7 +276,7 @@ export default function App() {
            'Analyze This Email'}
         </button>
         <p className="text-[11px] text-[#64748b] text-center">
-          Powered by GuardScope AI
+          Powered by Mercury-2 AI
         </p>
       </div>
     </div>
