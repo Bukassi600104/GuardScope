@@ -20,7 +20,7 @@ export interface HaikuResult {
 
 export interface DnsResult {
   spf: 'pass' | 'fail' | 'neutral' | 'none' | 'error'
-  dkim: 'present' | 'absent' | 'error'
+  dkim: 'present' | 'absent' | 'unknown' | 'error'
   dmarc: { policy: 'none' | 'quarantine' | 'reject' | 'error'; raw: string }
   error?: string
 }
@@ -75,6 +75,6 @@ export interface AnalysisReport {
     url_analysis: object
     behavioral: object
   }
-  analysis_path: 'haiku_fast' | 'sonnet_deep'
+  analysis_path: 'mercury_deep' | 'haiku_fast' | 'rule_based'
   duration_ms: number
 }

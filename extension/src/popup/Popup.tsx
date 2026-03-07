@@ -4,6 +4,17 @@ import type { AuthState } from '../utils/auth'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
+// Decode JWT expiry without a library — Supabase JWTs are standard RS256 tokens.
+// Returns true if the token is expired or unparseable.
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof payload.exp === 'number' && payload.exp * 1000 < Date.now()
+  } catch {
+    return true // unparseable = treat as expired
+  }
+}
+
 function ShieldIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -26,15 +37,23 @@ export default function Popup() {
   // Usage state
   const [usageCount, setUsageCount] = useState<number | null>(null)
 
-  // Load auth on mount — read storage directly (avoids service worker timing issues)
+  // Load auth on mount — read storage directly (avoids service worker timing issues).
+  // Also validate JWT expiry so stale sessions from previous installs don't persist.
   useEffect(() => {
     chrome.storage.local.get('guardscope_auth', (result) => {
       const stored = result.guardscope_auth as AuthState | undefined
-      // Only treat as authenticated if token + email are actually present
-      if (stored?.isAuthenticated && stored.token && stored.email) {
+      const isValid =
+        stored?.isAuthenticated &&
+        !!stored.token &&
+        !!stored.email &&
+        !isTokenExpired(stored.token)
+
+      if (isValid && stored) {
         setAuth(stored)
-        fetchUsage(stored.userId!, stored.token)
+        fetchUsage(stored.userId!, stored.token!)
       } else {
+        // Clear stale/expired auth and show sign-in form
+        if (stored) chrome.storage.local.remove('guardscope_auth')
         setAuth({ isAuthenticated: false, userId: null, email: null, tier: 'free', token: null })
       }
       setLoading(false)

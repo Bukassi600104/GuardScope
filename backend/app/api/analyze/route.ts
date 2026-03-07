@@ -34,9 +34,9 @@ function buildFallbackReport(
 
   if (intel.dns.dkim === 'present') {
     green_flags.push({ label: 'DKIM Configured', detail: 'Domain has DKIM signing configured', module: 'sender_auth' })
-  } else if (intel.dns.dkim === 'absent') {
-    red_flags.push({ label: 'No DKIM', evidence: 'Domain does not have DKIM signing configured', severity: 'MEDIUM', module: 'sender_auth' })
   }
+  // 'unknown' = selector not publicly discoverable — neutral, do not penalize
+  // 'absent' kept for completeness but should not occur with the new selector-probing logic
 
   if (intel.dns.dmarc.policy === 'reject') {
     green_flags.push({ label: 'DMARC Reject', detail: 'Strong DMARC policy enforced', module: 'sender_auth' })
@@ -96,7 +96,7 @@ function buildFallbackReport(
       url_analysis: { vt_flagged: intel.vt.flagged, sb_flagged: intel.sb.flagged, flagged_urls: [] },
       behavioral: {},
     },
-    analysis_path: 'haiku_fast',
+    analysis_path: 'rule_based',
   }
 }
 

@@ -24,8 +24,8 @@ You must populate the _reasoning field FIRST, working through each module in ord
 MODULE 1 — SENDER AUTHENTICATION (sender_auth)
 • SPF pass = sender verified by domain owner → green flag
 • SPF fail/none = spoofing possible → red flag (HIGH/MEDIUM)
-• DKIM present = cryptographic signature exists → green flag
-• DKIM absent = no tamper protection → red flag (MEDIUM)
+• DKIM present = cryptographic signature found in DNS → green flag
+• DKIM unknown = selector not publicly discoverable (common for all mail providers) → NEUTRAL, do NOT penalize
 • DMARC reject/quarantine = domain enforces anti-spoofing → green flag
 • DMARC none/missing = no enforcement, domain is spoofable → red flag (LOW/MEDIUM)
 • Mismatch: fromEmail domain ≠ SPF-authorized domain = HIGH severity
@@ -119,8 +119,8 @@ async function callMercury(userContent: string, timeoutMs: number): Promise<stri
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: userContent },
         ],
-        max_tokens: 6000,   // enough for _reasoning + full report
-        temperature: 0.1,   // slight creativity for thorough reasoning; 0 can be too rigid
+        max_tokens: 8000,   // increased — long _reasoning + full report can exceed 6k
+        temperature: 0,     // zero temperature = deterministic, same email = same score
         response_format: { type: 'json_object' },
       }),
       signal: controller.signal,
@@ -139,10 +139,52 @@ async function callMercury(userContent: string, timeoutMs: number): Promise<stri
   }
 }
 
+// Truncate email body to prevent token overflow.
+// Long bodies push _reasoning + full JSON report over max_tokens → truncated JSON → parse failure.
+const MAX_BODY_CHARS = 3000
+
+function truncateEmail(email: EmailInput): EmailInput {
+  if (!email.bodyText || email.bodyText.length <= MAX_BODY_CHARS) return email
+  return {
+    ...email,
+    bodyText: email.bodyText.slice(0, MAX_BODY_CHARS) + '\n[...body truncated for analysis...]',
+  }
+}
+
+// Try to extract valid JSON from a potentially-truncated Mercury response.
+// If the response was cut mid-string, JSON.parse will fail — this attempts recovery.
+function extractJson(raw: string): string {
+  // First try the raw string as-is
+  try {
+    JSON.parse(raw)
+    return raw
+  } catch {
+    // Find the outermost { ... } and try progressively shorter substrings
+    const start = raw.indexOf('{')
+    if (start === -1) throw new Error('No JSON object found in Mercury response')
+
+    // Walk back from the end to find a valid closing brace
+    let end = raw.lastIndexOf('}')
+    while (end > start) {
+      const candidate = raw.slice(start, end + 1)
+      try {
+        JSON.parse(candidate)
+        return candidate
+      } catch {
+        end = raw.lastIndexOf('}', end - 1)
+      }
+    }
+    throw new Error('Could not recover valid JSON from truncated Mercury response')
+  }
+}
+
 export async function mercuryAnalyze(email: EmailInput, intel: AnalysisIntel): Promise<AnalysisReport> {
-  const userContent = JSON.stringify({ email, intelligence: intel }, null, 2)
+  const trimmedEmail = truncateEmail(email)
+  const userContent = JSON.stringify({ email: trimmedEmail, intelligence: intel }, null, 2)
   const raw = await callMercury(userContent, 60000)
-  const parsed = JSON.parse(raw) as AnalysisReport & { _reasoning?: unknown }
+
+  const safeJson = extractJson(raw)
+  const parsed = JSON.parse(safeJson) as AnalysisReport & { _reasoning?: unknown }
 
   // Strip internal reasoning field — it's for Mercury's benefit, not the API consumer
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
