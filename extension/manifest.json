@@ -28,7 +28,10 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],
+  "side_panel": {
+    "default_path": "src/sidebar/sidebar.html"
+  },
+  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite", "sidePanel", "tabs"],
   "host_permissions": [
     "https://mail.google.com/*",
     "https://backend-gules-sigma-37.vercel.app/*",

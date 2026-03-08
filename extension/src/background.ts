@@ -43,6 +43,74 @@ chrome.runtime.onConnect.addListener((port) => {
   }
 })
 
+// ── Side Panel Setup ─────────────────────────────────────────────────────────
+//
+// Root-cause of "panel appears on all tabs":
+//   The manifest's "side_panel.default_path" globally enables the panel for
+//   every tab.  Per-tab setOptions({enabled:false}) only takes effect AFTER
+//   syncPanelForTab runs for that tab.  Tabs that were already open when the
+//   extension loaded never get processed, so they keep the global default
+//   (panel enabled) and the panel can open on them.
+//
+// Three-part fix:
+//   1. Globally disable the panel immediately on startup (overrides manifest default).
+//   2. Enumerate ALL already-open tabs and configure each one right away.
+//   3. Keep onActivated + onUpdated for tabs opened/navigated later.
+//   4. Guard onClicked: only open the panel for Gmail tabs.
+
+// Step 1 — kill global default immediately
+chrome.sidePanel.setOptions({ enabled: false }).catch(() => {})
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {})
+
+/**
+ * Enable side panel (Gmail) or restore popup (everything else) for one tab.
+ * Called on startup for all existing tabs AND whenever a tab loads/becomes active.
+ */
+async function syncPanelForTab(tabId: number, url: string): Promise<void> {
+  try {
+    const isGmail = url.includes('mail.google.com')
+    await chrome.sidePanel.setOptions({
+      tabId,
+      path: 'src/sidebar/sidebar.html',
+      enabled: isGmail,
+    })
+    // Gmail: empty popup so action.onClicked fires → we open the panel manually
+    // Other tabs: popup.html so the popup shows and onClicked never fires
+    await chrome.action.setPopup({ tabId, popup: isGmail ? '' : 'popup.html' })
+  } catch { /* non-critical — tab may have closed */ }
+}
+
+// Step 2 — process every tab that already exists right now
+chrome.tabs.query({}, (existingTabs) => {
+  for (const tab of existingTabs) {
+    if (tab.id != null) {
+      syncPanelForTab(tab.id, tab.url ?? '')
+    }
+  }
+})
+
+// Step 3 — keep processing new/navigated tabs
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    syncPanelForTab(tabId, tab.url ?? '')
+  }
+})
+
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  try {
+    const tab = await chrome.tabs.get(tabId)
+    await syncPanelForTab(tabId, tab.url ?? '')
+  } catch { /* ignore */ }
+})
+
+// Step 4 — open panel only on Gmail tabs; non-Gmail can't reach here because
+// popup.html is set for them (popup intercepts the click, onClicked never fires)
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id && (tab.url ?? '').includes('mail.google.com')) {
+    chrome.sidePanel.open({ tabId: tab.id }).catch(() => {})
+  }
+})
+
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('[GuardScope] Extension installed:', details.reason)
   if (details.reason === 'install') {
@@ -51,14 +119,29 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 })
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PING') {
     sendResponse({ type: 'PONG', version: '1.0.0' })
     return true
   }
 
+  // Sent by the content script when the mini-tab (collapsed indicator) is clicked.
+  if (message.type === 'OPEN_SIDE_PANEL') {
+    const tabId = sender.tab?.id
+    if (tabId) chrome.sidePanel.open({ tabId }).catch(() => {})
+    sendResponse({ success: true })
+    return true
+  }
+
+  // Content scripts can't access chrome.tabs — they ask the background for their own tabId.
+  if (message.type === 'GET_TAB_ID') {
+    sendResponse({ tabId: sender.tab?.id ?? null })
+    return true
+  }
+
   if (message.type === 'ANALYZE') {
-    handleAnalyze()
+    // tabId is passed by the side panel so we read the right tab's email
+    handleAnalyze(message.tabId as number | undefined)
       .then(sendResponse)
       .catch((e) => sendResponse({ success: false, error: String(e) }))
     return true // keep channel open for async response
@@ -91,9 +174,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 // ── Analyze ─────────────────────────────────────────────────────────────────
 
-async function handleAnalyze(): Promise<{ success: boolean; report?: unknown; error?: string; status?: number }> {
-  const stored = await chrome.storage.local.get('guardscope_current_email')
-  const email = stored.guardscope_current_email
+async function handleAnalyze(tabId?: number): Promise<{ success: boolean; report?: unknown; error?: string; status?: number }> {
+  // Use tab-specific email key so multi-tab sessions stay independent
+  const emailKey = tabId ? `guardscope_email_${tabId}` : 'guardscope_current_email'
+  const stored = await chrome.storage.local.get(emailKey)
+  const email = stored[emailKey]
 
   if (!email?.fromEmail) {
     return { success: false, error: 'No email data — please open an email first' }

@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Thin scrollbar for the sidebar panel */
+::-webkit-scrollbar {
+  width: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2d3a;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

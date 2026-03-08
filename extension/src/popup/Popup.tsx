@@ -26,6 +26,7 @@ function ShieldIcon() {
 export default function Popup() {
   const [auth, setAuth] = useState<AuthState | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isGmailTab, setIsGmailTab] = useState(false)
 
   // Sign-in form state
   const [email, setEmail] = useState('')
@@ -35,6 +36,13 @@ export default function Popup() {
 
   // Usage state
   const [usageCount, setUsageCount] = useState<number | null>(null)
+
+  // Check if the current tab is Gmail
+  useEffect(() => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      setIsGmailTab((tabs[0]?.url ?? '').includes('mail.google.com'))
+    })
+  }, [])
 
   // Load auth on mount — read storage directly (avoids service worker timing issues).
   // Also validate JWT expiry so stale sessions from previous installs don't persist.
@@ -149,6 +157,29 @@ export default function Popup() {
           {tierLabel}
         </span>
       </div>
+
+      {/* Not-on-Gmail notice */}
+      {!isGmailTab && (
+        <div className="px-4 py-3 border-b border-[#2a2d3a] bg-[#1a1d27]">
+          <div className="flex items-start gap-2.5">
+            <span className="text-base mt-0.5">📧</span>
+            <div>
+              <p className="text-xs font-semibold text-[#e2e8f0] leading-snug">
+                GuardScope runs inside Gmail
+              </p>
+              <p className="text-[10px] text-[#64748b] mt-1 leading-relaxed">
+                Open Gmail in any tab to start scanning emails. Sign in below to track your usage across devices.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={openGmail}
+            className="mt-2.5 w-full py-2 px-4 bg-[#ef4343] text-white text-xs font-semibold rounded-lg hover:bg-[#dc2626] transition-colors"
+          >
+            Open Gmail →
+          </button>
+        </div>
+      )}
 
       {auth?.isAuthenticated ? (
         /* ── SIGNED IN ── */

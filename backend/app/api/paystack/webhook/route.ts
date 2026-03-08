@@ -3,8 +3,8 @@ import * as crypto from 'crypto'
 import * as Sentry from '@sentry/nextjs'
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
+const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY)!
 
 async function updateUserTier(userId: string, tier: 'free' | 'pro', paystackCustomerCode?: string) {
   const patch: Record<string, unknown> = { tier }

@@ -1,20 +1,12 @@
-// GuardScope Content Script — Gmail sidebar injection
+// GuardScope Content Script — Gmail email extraction + collapsed mini-tab
+// The sidebar UI is now a Chrome Side Panel (no DOM injection needed).
 
 import { extractEmailData } from './utils/emailExtractor'
 
-const SIDEBAR_ID = 'guardscope-sidebar-container'
-const SIDEBAR_WIDTH = '360px'
+const MINI_TAB_ID = 'guardscope-mini-tab'
+const MINI_STYLE_ID = 'guardscope-mini-style'
 
-let sidebarMounted = false
-let sidebarCreating = false // prevents double-create during 300ms setTimeout window
-
-/**
- * Check if the extension context is still valid.
- * When an extension is reloaded/updated while Gmail is open, the old content
- * script loses the chrome runtime — chrome.runtime and chrome.storage both
- * become undefined, making all chrome.* calls throw TypeError.
- * This guard prevents those errors from surfacing.
- */
+// ── Context guard ─────────────────────────────────────────────────────────────
 function isContextValid(): boolean {
   try {
     return (
@@ -29,129 +21,144 @@ function isContextValid(): boolean {
   }
 }
 
-function createSidebar(): void {
-  sidebarCreating = false // clear the in-flight flag regardless of outcome
-  if (!isContextValid()) return
-  if (!isEmailOpen()) return // safety: re-check — user may have navigated away in 300ms
-  if (document.getElementById(SIDEBAR_ID)) { sidebarMounted = true; return }
-
-  // Wrap getURL in try-catch: context can die between isContextValid() and here
-  let sidebarUrl: string
-  try {
-    sidebarUrl = chrome.runtime.getURL('src/sidebar/sidebar.html')
-  } catch {
-    return // context invalidated — bail silently
-  }
-
-  const container = document.createElement('div')
-  container.id = SIDEBAR_ID
-  container.style.cssText = `
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: ${SIDEBAR_WIDTH};
-    height: 100vh;
-    z-index: 9999;
-    box-shadow: -4px 0 24px rgba(0,0,0,0.4);
-  `
-
-  // Shadow DOM prevents Gmail CSS from leaking in
-  const shadow = container.attachShadow({ mode: 'open' })
-  const iframe = document.createElement('iframe')
-  iframe.src = sidebarUrl
-  iframe.style.cssText = 'width:100%;height:100%;border:none;'
-  shadow.appendChild(iframe)
-
-  document.body.appendChild(container)
-  sidebarMounted = true
-  console.log('[GuardScope] Sidebar mounted')
-
-  // Capture email data immediately and store for sidebar/background to read
-  storeCurrentEmail()
-}
-
-function removeSidebar(): void {
-  sidebarCreating = false // cancel any pending create
-  const el = document.getElementById(SIDEBAR_ID)
-  if (el) {
-    el.remove()
-    console.log('[GuardScope] Sidebar removed')
-  }
-  sidebarMounted = false // always reset — keep flag in sync even if el was already gone
-}
-
-/**
- * Reliable Gmail email-open detection.
- *
- * Primary signal: URL hash — Gmail navigates to /#inbox/16HEXCHARS when opening an email.
- * Fallback: .adn.ads is the reading pane Gmail mounts only when an email is open.
- *
- * Deliberately NOT using .nH.if .gs (matches inbox list rows, causes false positives)
- * or [data-legacy-message-id] alone (present in list view too).
- * URL hash is the most reliable signal and is checked first.
- */
+// ── Email-open detection ──────────────────────────────────────────────────────
 function isEmailOpen(): boolean {
-  // Primary: URL hash contains a message ID (hex, 10+ chars after folder name)
-  if (/^#[^/]+\/[a-f0-9]{10,}/.test(window.location.hash)) {
-    return true
-  }
-  // Fallback: primary reading pane element (only present when email is fully open)
+  if (/^#[^/]+\/[a-f0-9]{10,}/.test(window.location.hash)) return true
   return !!document.querySelector('.adn.ads')
 }
 
-function syncSidebar(): void {
-  if (!isContextValid()) return
+// ── Email storage (tab-specific key) ─────────────────────────────────────────
+// Each Gmail tab stores its email under its own key so multiple open Gmail
+// tabs don't overwrite each other's state in the shared storage.
+let myTabId: number | null = null
+let emailSyncTimeout: ReturnType<typeof setTimeout> | null = null
 
-  // Resync flag with actual DOM state — prevents stale flag after external removal
-  const inDom = !!document.getElementById(SIDEBAR_ID)
-  if (sidebarMounted !== inDom) sidebarMounted = inDom
-
-  if (isEmailOpen() && !sidebarMounted && !sidebarCreating) {
-    sidebarCreating = true
-    setTimeout(createSidebar, 300)
-  } else if (!isEmailOpen() && sidebarMounted) {
-    removeSidebar()
-  }
+function getEmailKey(): string {
+  return myTabId ? `guardscope_email_${myTabId}` : 'guardscope_current_email'
 }
 
-function storeCurrentEmail(): void {
-  if (!isContextValid()) return
-  try {
-    const email = extractEmailData()
-    chrome.storage.local.set({ guardscope_current_email: email })
-    console.log('[GuardScope] Email data stored:', email.fromEmail, email.subject)
-  } catch (e) {
-    console.warn('[GuardScope] Failed to extract email data:', e)
-  }
+function syncEmail(): void {
+  if (emailSyncTimeout) clearTimeout(emailSyncTimeout)
+  emailSyncTimeout = setTimeout(() => {
+    if (!isContextValid()) return
+    const key = getEmailKey()
+    if (isEmailOpen()) {
+      try {
+        const email = extractEmailData()
+        chrome.storage.local.set({ [key]: email })
+      } catch (e) {
+        console.warn('[GuardScope] Failed to extract email data:', e)
+      }
+    } else {
+      chrome.storage.local.remove(key)
+    }
+  }, 300)
 }
 
-// ── Signal 1: URL hash changes (Gmail SPA navigation) ──────────────────────
+// ── Mini-tab (flashing shield when panel is collapsed) ────────────────────────
+
+function injectMiniStyles(): void {
+  if (document.getElementById(MINI_STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = MINI_STYLE_ID
+  style.textContent = `
+    @keyframes gs-shield-pulse {
+      0%, 100% { box-shadow: -2px 0 0 0 rgba(239,67,67,0), 0 0 0 0 rgba(239,67,67,0.8); }
+      50% { box-shadow: -4px 0 12px 0 rgba(239,67,67,0.4), 0 0 0 6px rgba(239,67,67,0); }
+    }
+    #${MINI_TAB_ID} {
+      animation: gs-shield-pulse 1.6s ease-in-out infinite;
+      transition: width 0.2s ease, background 0.2s ease;
+    }
+    #${MINI_TAB_ID}:hover {
+      width: 38px !important;
+      background: #22253a !important;
+    }
+  `
+  document.head.appendChild(style)
+}
+
+function showMiniTab(): void {
+  if (!isContextValid()) return
+  if (document.getElementById(MINI_TAB_ID)) return
+  injectMiniStyles()
+
+  const tab = document.createElement('button')
+  tab.id = MINI_TAB_ID
+  tab.title = 'Open GuardScope'
+  tab.setAttribute('aria-label', 'Open GuardScope security panel')
+  tab.style.cssText = `
+    position: fixed;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 64px;
+    background: #1a1d27;
+    border: 1.5px solid rgba(239,67,67,0.55);
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    cursor: pointer;
+    z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  `
+  // Shield icon SVG (same as App.tsx)
+  tab.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" fill="#ef4343"/>
+    <path d="M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z" fill="white"/>
+  </svg>`
+
+  tab.addEventListener('click', () => {
+    if (!isContextValid()) return
+    // Ask background to open the side panel (background has chrome.sidePanel access)
+    chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' })
+  })
+
+  document.body.appendChild(tab)
+}
+
+function hideMiniTab(): void {
+  document.getElementById(MINI_TAB_ID)?.remove()
+}
+
+// When the side panel opens/closes, App.tsx writes guardscope_panel_visible.
+// Content script reacts: visible=false → show mini-tab, visible=true → hide it.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local' || !isContextValid()) return
+  if (!('guardscope_panel_visible' in changes)) return
+  const visible = changes.guardscope_panel_visible.newValue as boolean
+  if (visible) {
+    hideMiniTab()
+  } else {
+    showMiniTab()
+  }
+})
+
+// ── Navigation listeners ──────────────────────────────────────────────────────
 window.addEventListener('hashchange', () => {
   if (!isContextValid()) return
-  syncSidebar()
-  if (isEmailOpen()) {
-    setTimeout(() => { if (isContextValid()) storeCurrentEmail() }, 600)
-  }
+  // Slight delay so Gmail finishes rendering the email DOM before we scrape it
+  setTimeout(syncEmail, 600)
 })
 
-// ── Signal 1b: popstate — Gmail occasionally uses history.pushState ──────────
 window.addEventListener('popstate', () => {
   if (!isContextValid()) return
-  syncSidebar()
+  syncEmail()
 })
 
-// ── Signal 2: DOM mutations (fallback for cases where hash doesn't change) ──
-// Observe the main area for DOM changes (e.g. inline reply, thread expand).
-const observer = new MutationObserver(syncSidebar)
+// ── DOM observer (fallback for Gmail actions that don't change the URL) ───────
+const observer = new MutationObserver(syncEmail)
 
 function startObserver(): void {
   const target = document.querySelector('[role="main"]') || document.body
   observer.observe(target, { childList: true, subtree: true })
   console.log('[GuardScope] Observer started')
-  syncSidebar() // check immediately on load
+  syncEmail() // initial check on load
 }
 
-// Gmail loads asynchronously — wait for [role="main"] to exist
 function waitForGmail(retries = 20): void {
   if (document.querySelector('[role="main"]')) {
     startObserver()
@@ -160,55 +167,50 @@ function waitForGmail(retries = 20): void {
   if (retries > 0) {
     setTimeout(() => waitForGmail(retries - 1), 500)
   } else {
-    // Fallback: observe body if Gmail's main area never appeared
     startObserver()
   }
 }
 
-// Guard: only start if the extension context is valid.
-// On extension reload/update while Gmail is open, chrome.runtime becomes undefined —
-// the old content script instance should silently stop rather than throw.
+// ── Initialize ────────────────────────────────────────────────────────────────
 if (!isContextValid()) {
   console.warn('[GuardScope] Extension context not valid — content script will not run')
 } else {
-  // Clean up any sidebar left behind by a previous extension instance.
-  // When the extension reloads, the old content script loses its context but
-  // the sidebar DOM element stays. The new instance must remove it first,
-  // otherwise syncSidebar() creates a second sidebar alongside the orphan.
-  const stale = document.getElementById(SIDEBAR_ID)
-  if (stale) {
-    stale.remove()
-    console.log('[GuardScope] Removed stale sidebar from previous instance')
-  }
-  sidebarMounted = false
-  sidebarCreating = false
-  // Check onboarding completion before starting.
-  // For dev reloads, skip the gate (onboarding_complete will already be set).
-  chrome.storage.local.get('guardscope_onboarding_complete', (result) => {
-    if (chrome.runtime.lastError) {
-      // Context invalidated between check and callback — bail silently
-      return
-    }
-    if (result.guardscope_onboarding_complete) {
-      waitForGmail()
-    } else {
-      // Poll until onboarding is completed (user clicks "Activate GuardScope")
-      const pollInterval = setInterval(() => {
-        if (!isContextValid()) {
-          clearInterval(pollInterval)
-          return
+  // Clean up any stale mini-tabs left by a previous extension instance
+  document.getElementById(MINI_TAB_ID)?.remove()
+
+  // Fetch our own tab ID first — used for tab-specific email storage keys
+  chrome.runtime.sendMessage({ type: 'GET_TAB_ID' }, (res) => {
+    if (chrome.runtime.lastError) return // context gone
+    myTabId = (res?.tabId as number) ?? null
+
+    chrome.storage.local.get(
+      ['guardscope_onboarding_complete', 'guardscope_panel_visible'],
+      (result) => {
+        if (chrome.runtime.lastError) return
+
+        if (result.guardscope_onboarding_complete) {
+          waitForGmail()
+          // If the panel was closed before Gmail reloaded, show the mini-tab
+          if (result.guardscope_panel_visible === false) {
+            setTimeout(showMiniTab, 800)
+          }
+        } else {
+          // Poll until onboarding is completed
+          const pollInterval = setInterval(() => {
+            if (!isContextValid()) { clearInterval(pollInterval); return }
+            chrome.storage.local.get('guardscope_onboarding_complete', (r) => {
+              if (chrome.runtime.lastError || !isContextValid()) {
+                clearInterval(pollInterval)
+                return
+              }
+              if (r.guardscope_onboarding_complete) {
+                clearInterval(pollInterval)
+                waitForGmail()
+              }
+            })
+          }, 2000)
         }
-        chrome.storage.local.get('guardscope_onboarding_complete', (r) => {
-          if (chrome.runtime.lastError || !isContextValid()) {
-            clearInterval(pollInterval)
-            return
-          }
-          if (r.guardscope_onboarding_complete) {
-            clearInterval(pollInterval)
-            waitForGmail()
-          }
-        })
-      }, 2000)
-    }
+      }
+    )
   })
 }

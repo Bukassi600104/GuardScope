@@ -3,8 +3,8 @@ import Stripe from 'stripe'
 import { getStripe } from '../../../../lib/stripe'
 import * as Sentry from '@sentry/nextjs'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
+const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY)!
 
 async function updateUserTier(userId: string, tier: 'free' | 'pro', stripeCustomerId?: string, stripeSubscriptionId?: string) {
   const patch: Record<string, unknown> = { tier }

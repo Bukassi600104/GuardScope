@@ -121,32 +121,97 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userTier, setUserTier] = useState<string>('free')
   const [anonCount, setAnonCount] = useState(0)
+  // Each side panel instance tracks its own tabId so email reads are tab-specific
+  const [myTabId, setMyTabId] = useState<number | null>(null)
 
-  // On mount: check email, history, and auth state
+  // On mount: resolve own tabId, then read tab-specific email + shared state
   useEffect(() => {
-    chrome.storage.local.get([
-      'guardscope_current_email',
-      'guardscope_history',
-      'guardscope_auth',
-      'guardscope_anon_count',
-    ], (result) => {
-      const email = result.guardscope_current_email as ExtractedEmail | undefined
-      if (email?.fromEmail) {
-        setCurrentEmail(email)
-        setAppState('idle')
-      } else {
-        setAppState('no_email')
-      }
-      setHistory((result.guardscope_history as HistoryEntry[]) ?? [])
+    // Side panels are associated with a tab — query the active tab in this window
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tabId = tabs[0]?.id ?? null
+      setMyTabId(tabId)
 
-      const auth = result.guardscope_auth as { isAuthenticated?: boolean; tier?: string } | undefined
-      if (auth?.isAuthenticated) {
-        setIsAuthenticated(true)
-        setUserTier(auth.tier ?? 'free')
-      }
-      setAnonCount((result.guardscope_anon_count as number) ?? 0)
+      const emailKey = tabId ? `guardscope_email_${tabId}` : 'guardscope_current_email'
+      chrome.storage.local.get(
+        [emailKey, 'guardscope_history', 'guardscope_auth', 'guardscope_anon_count'],
+        (result) => {
+          const email = result[emailKey] as ExtractedEmail | undefined
+          if (email?.fromEmail) {
+            setCurrentEmail(email)
+            setAppState('idle')
+          } else {
+            setAppState('no_email')
+          }
+          setHistory((result.guardscope_history as HistoryEntry[]) ?? [])
+
+          const auth = result.guardscope_auth as { isAuthenticated?: boolean; tier?: string } | undefined
+          if (auth?.isAuthenticated) {
+            setIsAuthenticated(true)
+            setUserTier(auth.tier ?? 'free')
+          }
+          const count = (result.guardscope_anon_count as number) ?? 0
+          setAnonCount(count)
+          // If already at limit, reflect that immediately
+          if (!auth?.isAuthenticated && count >= 5) setAppState('limit_reached')
+        }
+      )
     })
   }, [])
+
+  // Track side panel visibility so the content script can show/hide the mini-tab.
+  // - On mount (panel just opened): mark visible = true
+  // - On pagehide (panel closed by Chrome's × button): mark visible = false
+  useEffect(() => {
+    chrome.storage.local.set({ guardscope_panel_visible: true })
+    const onHide = () => chrome.storage.local.set({ guardscope_panel_visible: false })
+    const onShow = () => {
+      if (!document.hidden) chrome.storage.local.set({ guardscope_panel_visible: true })
+    }
+    window.addEventListener('pagehide', onHide)
+    document.addEventListener('visibilitychange', onShow)
+    return () => {
+      window.removeEventListener('pagehide', onHide)
+      document.removeEventListener('visibilitychange', onShow)
+    }
+  }, [])
+
+  // React to email/quota state changes from content.ts and other tabs.
+  useEffect(() => {
+    const onStorageChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string
+    ) => {
+      if (area !== 'local') return
+
+      // Tab-specific email key — only react to our own tab's email changes
+      const emailKey = myTabId ? `guardscope_email_${myTabId}` : 'guardscope_current_email'
+      if (emailKey in changes) {
+        const newEmail = changes[emailKey].newValue as ExtractedEmail | undefined
+        if (newEmail?.fromEmail) {
+          setCurrentEmail(newEmail)
+          setAppState(prev => prev === 'analyzing' ? prev : 'idle')
+        } else {
+          setCurrentEmail(null)
+          setAppState(prev => prev === 'idle' || prev === 'no_email' ? 'no_email' : prev)
+        }
+      }
+
+      // Shared anon quota — when another tab increments it past the limit,
+      // immediately reflect limit_reached on this tab too
+      if ('guardscope_anon_count' in changes) {
+        const newCount = changes.guardscope_anon_count.newValue as number
+        setAnonCount(newCount)
+        setIsAuthenticated(prev => {
+          if (!prev && newCount >= 5) {
+            setAppState(curr => curr === 'idle' ? 'limit_reached' : curr)
+          }
+          return prev
+        })
+      }
+    }
+    chrome.storage.onChanged.addListener(onStorageChange)
+    return () => chrome.storage.onChanged.removeListener(onStorageChange)
+  }, [myTabId])
 
   const handleAnalyze = () => {
     setAppState('analyzing')
@@ -167,7 +232,7 @@ export default function App() {
       port = null
     }
 
-    chrome.runtime.sendMessage({ type: 'ANALYZE' }, (response: {
+    chrome.runtime.sendMessage({ type: 'ANALYZE', tabId: myTabId }, (response: {
       success: boolean
       report?: AnalysisReport
       error?: string
@@ -231,6 +296,7 @@ export default function App() {
   const handleRetry = () => {
     setReport(null)
     setError('')
+    setPendingScore(undefined)
     setAppState(currentEmail?.fromEmail ? 'idle' : 'no_email')
   }
 
@@ -305,24 +371,28 @@ export default function App() {
         }}>
         <ShieldIcon color={shieldColor} />
         <span className="font-semibold text-sm tracking-wide">GuardScope</span>
-        {appState === 'result' && report && (
-          <span className={`ml-auto text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider ${RISK_BADGE_COLORS[report.risk_level]}`}>
-            {report.risk_level}
-          </span>
-        )}
-        {appState === 'analyzing' && (
-          <span className="ml-auto text-[10px] px-2 py-0.5 rounded border border-[#64748b]/40 text-[#64748b] font-semibold uppercase tracking-wider">
-            SCANNING
-          </span>
-        )}
-        {history.length > 0 && appState !== 'analyzing' && (
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className={`ml-auto text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider transition-colors ${showHistory ? 'border-[#64748b] text-[#94a3b8]' : 'border-[#2a2d3a] text-[#64748b] hover:text-[#94a3b8]'}`}
-          >
-            History ({history.length})
-          </button>
-        )}
+
+        {/* Right-side controls: badge + history */}
+        <div className="ml-auto flex items-center gap-1.5">
+          {appState === 'result' && report && (
+            <span className={`text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider ${RISK_BADGE_COLORS[report.risk_level]}`}>
+              {report.risk_level}
+            </span>
+          )}
+          {appState === 'analyzing' && (
+            <span className="text-[10px] px-2 py-0.5 rounded border border-[#64748b]/40 text-[#64748b] font-semibold uppercase tracking-wider">
+              SCANNING
+            </span>
+          )}
+          {history.length > 0 && appState !== 'analyzing' && (
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider transition-colors ${showHistory ? 'border-[#64748b] text-[#94a3b8]' : 'border-[#2a2d3a] text-[#64748b] hover:text-[#94a3b8]'}`}
+            >
+              History ({history.length})
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Scrollable content ── */}
