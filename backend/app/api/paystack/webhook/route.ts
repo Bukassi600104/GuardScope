@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as crypto from 'crypto'
 import * as Sentry from '@sentry/nextjs'
 
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
-const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY)!
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY ?? ''
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL) ?? ''
+const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY) ?? ''
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+function isValidUUID(id: string | undefined): id is string {
+  return !!id && UUID_RE.test(id)
+}
 
 async function updateUserTier(userId: string, tier: 'free' | 'pro', paystackCustomerCode?: string) {
   const patch: Record<string, unknown> = { tier }
@@ -75,8 +80,8 @@ export async function POST(req: NextRequest) {
           } catch { /* non-fatal */ }
         }
 
-        if (!userId) {
-          console.warn('[paystack] charge.success — no userId found for email:', metadata?.email)
+        if (!isValidUUID(userId)) {
+          console.warn('[paystack] charge.success — invalid userId:', userId)
           break
         }
 
@@ -89,7 +94,7 @@ export async function POST(req: NextRequest) {
         const data = event.data
         const metadata = (data.subscription as Record<string, unknown>)?.metadata as Record<string, string> | undefined
         const userId = metadata?.userId
-        if (!userId) break
+        if (!isValidUUID(userId)) break
 
         await updateUserTier(userId, 'free')
         console.log(`[paystack] User ${userId} subscription disabled — reverted to free`)

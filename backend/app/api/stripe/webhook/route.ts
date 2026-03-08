@@ -3,8 +3,13 @@ import Stripe from 'stripe'
 import { getStripe } from '../../../../lib/stripe'
 import * as Sentry from '@sentry/nextjs'
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
-const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY)!
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL) ?? ''
+const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY) ?? ''
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+function isValidUUID(id: string | undefined): id is string {
+  return !!id && UUID_RE.test(id)
+}
 
 async function updateUserTier(userId: string, tier: 'free' | 'pro', stripeCustomerId?: string, stripeSubscriptionId?: string) {
   const patch: Record<string, unknown> = { tier }
@@ -53,7 +58,7 @@ export async function POST(req: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.userId
-        if (!userId) break
+        if (!isValidUUID(userId)) break
         await updateUserTier(
           userId,
           'pro',
@@ -68,7 +73,7 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.paused': {
         const subscription = event.data.object as Stripe.Subscription
         const userId = subscription.metadata?.userId
-        if (!userId) break
+        if (!isValidUUID(userId)) break
         await updateUserTier(userId, 'free')
         console.log(`[stripe] User ${userId} reverted to free (${event.type})`)
         break

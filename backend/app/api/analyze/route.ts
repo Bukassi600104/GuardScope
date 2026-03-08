@@ -20,6 +20,7 @@ import { decodeJwt, checkAndIncrementQuota, getUserTier } from '../../../lib/quo
 import { checkRateLimit } from '../../../lib/ratelimit'
 import { getCachedResult, setCachedResult } from '../../../lib/cache'
 import { createHash } from 'crypto'
+import { buildCorsHeaders } from '../../../lib/cors'
 
 const MAX_BODY_BYTES = 500_000
 
@@ -151,21 +152,23 @@ async function saveAnalysisHistory(
   })
 }
 
-const SECURITY_HEADERS = {
+const STATIC_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'no-referrer',
-  'Access-Control-Allow-Origin': '*',  // extension origin varies by install — allow all, auth via JWT
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: SECURITY_HEADERS })
+function getHeaders(req: NextRequest): Record<string, string> {
+  return { ...STATIC_HEADERS, ...buildCorsHeaders(req) }
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: getHeaders(req) })
 }
 
 export async function POST(req: NextRequest) {
   const start = Date.now()
+  const SECURITY_HEADERS = getHeaders(req)
 
   const contentLength = req.headers.get('content-length')
   if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
