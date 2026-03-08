@@ -127,6 +127,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Sent by the content script when the mini-tab (collapsed indicator) is clicked.
   if (message.type === 'OPEN_SIDE_PANEL') {
+    // Only allow from Gmail content scripts
+    if (!sender.url?.includes('mail.google.com')) return true
     const tabId = sender.tab?.id
     if (tabId) chrome.sidePanel.open({ tabId }).catch(() => {})
     sendResponse({ success: true })
@@ -135,6 +137,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Content scripts can't access chrome.tabs — they ask the background for their own tabId.
   if (message.type === 'GET_TAB_ID') {
+    // Only allow from Gmail content scripts
+    if (!sender.url?.includes('mail.google.com')) {
+      sendResponse({ tabId: null })
+      return true
+    }
     sendResponse({ tabId: sender.tab?.id ?? null })
     return true
   }

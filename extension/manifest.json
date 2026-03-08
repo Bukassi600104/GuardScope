@@ -38,7 +38,7 @@
     "https://zfuxxoyjfedmtoeydcvp.supabase.co/*"
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://backend-gules-sigma-37.vercel.app https://zfuxxoyjfedmtoeydcvp.supabase.co; frame-src 'none'"
   },
   "web_accessible_resources": [
     {

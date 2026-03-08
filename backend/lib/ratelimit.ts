@@ -14,15 +14,16 @@ let redis: Redis | null = null
 let authRatelimit: Ratelimit | null = null
 let authHourlyRatelimit: Ratelimit | null = null
 let anonRatelimit: Ratelimit | null = null
+let anonDailyRatelimit: Ratelimit | null = null
 
 function getInstances() {
-  if (authRatelimit) return { authRatelimit, authHourlyRatelimit: authHourlyRatelimit!, anonRatelimit: anonRatelimit! }
+  if (authRatelimit) return { authRatelimit, authHourlyRatelimit: authHourlyRatelimit!, anonRatelimit: anonRatelimit!, anonDailyRatelimit: anonDailyRatelimit! }
 
   const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.UPSTASH_REDIS_URL ?? ''
   const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.UPSTASH_REDIS_TOKEN ?? ''
 
   if (!url || !token) {
-    return { authRatelimit: null, authHourlyRatelimit: null, anonRatelimit: null }
+    return { authRatelimit: null, authHourlyRatelimit: null, anonRatelimit: null, anonDailyRatelimit: null }
   }
 
   redis = new Redis({ url, token })
@@ -45,8 +46,15 @@ function getInstances() {
     analytics: false,
     prefix: 'gs_anon',
   })
+  // Daily cap: 30 analyses per day per IP — prevents API cost abuse
+  anonDailyRatelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(30, '1 d'),
+    analytics: false,
+    prefix: 'gs_anon_daily',
+  })
 
-  return { authRatelimit, authHourlyRatelimit, anonRatelimit }
+  return { authRatelimit, authHourlyRatelimit, anonRatelimit, anonDailyRatelimit }
 }
 
 export interface RateLimitResult {
@@ -81,8 +89,19 @@ export async function checkRateLimit(
 
     const limiter = anon
     if (!limiter) return { allowed: true, remaining: 99, resetAt: 0 }
+    // Check per-minute limit first
     const result = await limiter.limit(identifier)
-    return { allowed: result.success, remaining: result.remaining, resetAt: result.reset }
+    if (!result.success) {
+      return { allowed: false, remaining: result.remaining, resetAt: result.reset }
+    }
+    // Check daily cap to prevent cost abuse
+    if (anonDailyRatelimit) {
+      const dailyResult = await anonDailyRatelimit.limit(identifier)
+      if (!dailyResult.success) {
+        return { allowed: false, remaining: 0, resetAt: dailyResult.reset }
+      }
+    }
+    return { allowed: true, remaining: result.remaining, resetAt: result.reset }
   } catch {
     // Redis unreachable — allow request (fail open)
     return { allowed: true, remaining: 99, resetAt: 0 }
