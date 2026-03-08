@@ -245,12 +245,36 @@ export default function App() {
       ``,
       ...flagLines,
       ``,
-      `Analyzed by GuardScope — guardscope.io`,
+      `Analyzed by GuardScope — ${BACKEND_URL}`,
     ].join('\n')
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }).catch(() => { /* clipboard unavailable */ })
+
+    // navigator.clipboard is blocked in sandboxed iframes — use execCommand fallback
+    const doCopy = (): boolean => {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;'
+      document.body.appendChild(ta)
+      ta.focus()
+      ta.select()
+      try {
+        return document.execCommand('copy')
+      } finally {
+        document.body.removeChild(ta)
+      }
+    }
+
+    // Try modern API first; fall back to execCommand
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+        .catch(() => {
+          const ok = doCopy()
+          if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) }
+        })
+    } else {
+      const ok = doCopy()
+      if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) }
+    }
   }
 
   const riskLevel = report?.risk_level ?? 'HIGH'

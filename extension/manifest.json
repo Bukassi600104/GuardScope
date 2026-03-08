@@ -28,7 +28,7 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],
   "host_permissions": [
     "https://mail.google.com/*",
     "https://backend-gules-sigma-37.vercel.app/*",
