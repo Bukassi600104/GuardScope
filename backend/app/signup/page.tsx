@@ -30,6 +30,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [needsConfirmation, setNeedsConfirmation] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -51,11 +52,12 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
-      const data = await res.json() as { error?: string }
+      const data = await res.json() as { error?: string; needsConfirmation?: boolean }
       if (!res.ok) {
         setError(data.error ?? 'Registration failed')
         return
       }
+      setNeedsConfirmation(!!data.needsConfirmation)
       setSuccess(true)
     } catch {
       setError('Network error — please try again')
@@ -73,9 +75,13 @@ export default function SignupPage() {
               <path d="M20 6L9 17L4 12" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', marginBottom: 12 }}>Account created!</h1>
+          <h1 style={{ fontSize: 30, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
+            {needsConfirmation ? 'Check your email!' : 'Account created!'}
+          </h1>
           <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
-            Your GuardScope account is ready. Open the extension popup, click the shield icon in your toolbar, and sign in with your new credentials.
+            {needsConfirmation
+              ? `We sent a confirmation link to ${email}. Click it to activate your account, then sign in with the extension.`
+              : 'Your GuardScope account is ready. Open the extension popup, click the shield icon in your toolbar, and sign in with your new credentials.'}
           </p>
           <div style={{ background: '#1a1d27', border: '1px solid #2a2d3a', borderRadius: 14, padding: 24, marginBottom: 28, textAlign: 'left' }}>
             <p style={{ color: '#64748b', fontSize: 11, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', marginBottom: 16 }}>Next steps</p>

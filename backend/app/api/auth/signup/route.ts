@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
-const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY)!
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)
+  ?? 'https://zfuxxoyjfedmtoeydcvp.supabase.co'
+
+const SUPABASE_ANON_KEY = (process.env.SUPABASE_ANON_KEY)
+  ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdXh4b3lqZmVkbXRvZXlkY3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODA1NDEsImV4cCI6MjA4ODE1NjU0MX0.olHtzR3V41wzi7yBmgKRUI0etHWqLWCk1s0p4hf2vjU'
+
+// Service key is optional — if set, we use admin endpoint (auto-confirms email).
+// If not set, we use the standard signup endpoint (sends confirmation email).
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -38,37 +45,65 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password is too long' }, { status: 400, headers: CORS })
   }
 
-  if (!SUPABASE_SERVICE_KEY) {
-    return NextResponse.json({ error: 'Server configuration error' }, { status: 503, headers: CORS })
-  }
-
   try {
-    // Admin create — auto-confirms email (no confirmation email step)
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    if (SUPABASE_SERVICE_KEY) {
+      // Admin path: auto-confirms email — no confirmation step for the user.
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+        body: JSON.stringify({
+          email: email.toLowerCase().trim(),
+          password,
+          email_confirm: true,
+        }),
+      })
+
+      const data = await res.json() as { id?: string; message?: string }
+
+      if (!res.ok) {
+        const msg = data.message ?? 'Registration failed'
+        if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists') || res.status === 422) {
+          return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409, headers: CORS })
+        }
+        return NextResponse.json({ error: msg }, { status: 400, headers: CORS })
+      }
+
+      return NextResponse.json({ success: true }, { headers: CORS })
+    }
+
+    // Standard path: uses anon key — Supabase sends a confirmation email.
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
         email: email.toLowerCase().trim(),
         password,
-        email_confirm: true,
       }),
     })
 
-    const data = await res.json() as { id?: string; message?: string }
+    const data = await res.json() as { id?: string; error?: string; msg?: string; message?: string }
 
     if (!res.ok) {
-      const msg = data.message ?? 'Registration failed'
+      const msg = data.error ?? data.msg ?? data.message ?? 'Registration failed'
       if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists') || res.status === 422) {
         return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409, headers: CORS })
       }
       return NextResponse.json({ error: msg }, { status: 400, headers: CORS })
     }
 
-    return NextResponse.json({ success: true }, { headers: CORS })
+    // If email confirmation is disabled in Supabase dashboard, user is ready immediately.
+    // If enabled, they'll get a confirmation email — signal this to the frontend.
+    const needsConfirmation = !data.id
+    return NextResponse.json({ success: true, needsConfirmation }, { headers: CORS })
+
   } catch (err) {
     console.error('[auth/signup] error:', err)
     return NextResponse.json({ error: 'Registration failed — please try again' }, { status: 500, headers: CORS })
