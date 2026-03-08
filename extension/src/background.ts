@@ -295,7 +295,11 @@ async function getValidToken(): Promise<string | null> {
     await setAuthState(newAuth)
     return data.access_token
   } catch {
-    return auth.token // use existing token on network error
+    // On network error during refresh: return null so the caller treats the user
+    // as unauthenticated. Better UX to show "please sign in" than silently send
+    // an expired token that the backend will reject with 401.
+    await clearAuthState()
+    return null
   }
 }
 

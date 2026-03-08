@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
+
+// Extend Vercel function timeout beyond the default 10s.
+// Mercury-2 analysis can take 5–15s; DNS + VT + SB run in parallel.
+export const maxDuration = 60
 import type { EmailInput, AnalysisReport, DnsResult, VirusTotalResult, SafeBrowsingResult, RdapResult, AnalysisIntel } from '../../../lib/types'
 import { mercuryAnalyze } from '../../../lib/inception'
 import { dnsLookup } from '../../../lib/dns'

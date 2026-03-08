@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)
-  ?? 'https://zfuxxoyjfedmtoeydcvp.supabase.co'
-
-const SUPABASE_ANON_KEY = (process.env.SUPABASE_ANON_KEY)
-  ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdXh4b3lqZmVkbXRvZXlkY3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODA1NDEsImV4cCI6MjA4ODE1NjU0MX0.olHtzR3V41wzi7yBmgKRUI0etHWqLWCk1s0p4hf2vjU'
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!
 
 // Service key is optional — if set, we use admin endpoint (auto-confirms email).
 // If not set, we use the standard signup endpoint (sends confirmation email).

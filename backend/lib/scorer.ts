@@ -89,7 +89,7 @@ export function applyHybridScore(
 
 function scoreToLevel(score: number): AnalysisReport['risk_level'] {
   if (score <= 10) return 'SAFE'
-  if (score <= 25) return 'SAFE'
+  if (score <= 25) return 'LOW'   // was duplicate 'SAFE' — fixed
   if (score <= 49) return 'LOW'
   if (score <= 69) return 'MEDIUM'
   if (score <= 84) return 'HIGH'

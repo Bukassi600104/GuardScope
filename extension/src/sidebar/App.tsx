@@ -232,12 +232,20 @@ export default function App() {
       port = null
     }
 
+    // Safety timeout — force error state if backend takes > 90s (Vercel max is 60s)
+    const analysisTimeout = setTimeout(() => {
+      cleanup()
+      setError('Analysis timed out. Please try again.')
+      setAppState('error')
+    }, 90_000)
+
     chrome.runtime.sendMessage({ type: 'ANALYZE', tabId: myTabId }, (response: {
       success: boolean
       report?: AnalysisReport
       error?: string
       status?: number
     }) => {
+      clearTimeout(analysisTimeout)
       cleanup()
 
       if (chrome.runtime.lastError) {
@@ -273,21 +281,23 @@ export default function App() {
 
       if (response.report) {
         const reportData = response.report
+        // Increment anon counter immediately on successful response — before any delay
+        // so navigation/panel-close can't lose the increment.
+        chrome.storage.local.get(['guardscope_history', 'guardscope_anon_count', 'guardscope_auth'], (r) => {
+          setHistory((r.guardscope_history as HistoryEntry[]) ?? [])
+          const auth = r.guardscope_auth as { isAuthenticated?: boolean } | undefined
+          if (!auth?.isAuthenticated) {
+            const newCount = ((r.guardscope_anon_count as number) ?? 0) + 1
+            chrome.storage.local.set({ guardscope_anon_count: newCount })
+            setAnonCount(newCount)
+          }
+        })
         // Show gauge settling on real score for 1.8s before switching to result view
         setPendingScore(reportData.risk_score)
         setTimeout(() => {
           setReport(reportData)
           setAppState('result')
           setPendingScore(undefined)
-          chrome.storage.local.get(['guardscope_history', 'guardscope_anon_count', 'guardscope_auth'], (r) => {
-            setHistory((r.guardscope_history as HistoryEntry[]) ?? [])
-            const auth = r.guardscope_auth as { isAuthenticated?: boolean } | undefined
-            if (!auth?.isAuthenticated) {
-              const newCount = ((r.guardscope_anon_count as number) ?? 0) + 1
-              chrome.storage.local.set({ guardscope_anon_count: newCount })
-              setAnonCount(newCount)
-            }
-          })
         }, 1800)
       }
     })
@@ -349,8 +359,8 @@ export default function App() {
     }
   }
 
-  const riskLevel = report?.risk_level ?? 'HIGH'
-  const shieldColor = appState === 'result' ? SHIELD_COLORS[riskLevel] : '#ef4343'
+  const riskLevel = report?.risk_level ?? 'MEDIUM'
+  const shieldColor = appState === 'result' ? (SHIELD_COLORS[riskLevel] ?? '#ef4343') : '#ef4343'
   const theme = appState === 'result' ? (RISK_THEME[riskLevel] ?? DEFAULT_THEME) : null
 
   return (

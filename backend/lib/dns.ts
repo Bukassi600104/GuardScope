@@ -32,9 +32,12 @@ async function fetchTxt(name: string): Promise<string[]> {
 function parseSpf(records: string[]): DnsResult['spf'] {
   const spf = records.find((r) => r.startsWith('v=spf1'))
   if (!spf) return 'none'
-  if (spf.includes('+all') || spf.includes('~all')) return 'neutral'
+  // +all = any server may send mail as this domain — maximum phishing risk
+  if (spf.includes('+all')) return 'fail'
+  // ~all = soft fail, ?all = neutral
+  if (spf.includes('~all') || spf.includes('?all')) return 'neutral'
+  // -all = strict reject — properly configured SPF
   if (spf.includes('-all')) return 'pass'
-  if (spf.includes('?all')) return 'neutral'
   return 'pass'
 }
 

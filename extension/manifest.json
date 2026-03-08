@@ -31,7 +31,7 @@
   "side_panel": {
     "default_path": "src/sidebar/sidebar.html"
   },
-  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite", "sidePanel", "tabs"],
+  "permissions": ["storage", "clipboardWrite", "sidePanel", "tabs"],
   "host_permissions": [
     "https://mail.google.com/*",
     "https://backend-gules-sigma-37.vercel.app/*",

@@ -195,9 +195,15 @@ if (!isContextValid()) {
             setTimeout(showMiniTab, 800)
           }
         } else {
-          // Poll until onboarding is completed
+          // Poll until onboarding is completed — max 5 minutes (150 × 2s)
+          let pollRetries = 0
+          const MAX_POLL_RETRIES = 150
           const pollInterval = setInterval(() => {
-            if (!isContextValid()) { clearInterval(pollInterval); return }
+            if (!isContextValid() || pollRetries >= MAX_POLL_RETRIES) {
+              clearInterval(pollInterval)
+              return
+            }
+            pollRetries++
             chrome.storage.local.get('guardscope_onboarding_complete', (r) => {
               if (chrome.runtime.lastError || !isContextValid()) {
                 clearInterval(pollInterval)
