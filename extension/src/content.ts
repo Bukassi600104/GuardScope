@@ -75,35 +75,37 @@ function removeSidebar(): void {
   const el = document.getElementById(SIDEBAR_ID)
   if (el) {
     el.remove()
-    sidebarMounted = false
     console.log('[GuardScope] Sidebar removed')
   }
+  sidebarMounted = false // always reset — keep flag in sync even if el was already gone
 }
 
 /**
  * Reliable Gmail email-open detection.
  *
- * Two independent signals — either one triggers the sidebar:
- *  1. URL hash: Gmail navigates to /#inbox/16HEXCHARS when opening an email.
- *  2. DOM: .adn.ads is the reading pane Gmail mounts only when an email is open.
+ * Primary signal: URL hash — Gmail navigates to /#inbox/16HEXCHARS when opening an email.
+ * Fallback: .adn.ads is the reading pane Gmail mounts only when an email is open.
  *
- * Avoided: `.gs` (matches inbox list items), `[data-message-id]` (matches list rows).
+ * Deliberately NOT using .nH.if .gs (matches inbox list rows, causes false positives)
+ * or [data-legacy-message-id] alone (present in list view too).
+ * URL hash is the most reliable signal and is checked first.
  */
 function isEmailOpen(): boolean {
-  // Signal 1 — URL hash contains a message ID (hex, 10+ chars after folder name)
+  // Primary: URL hash contains a message ID (hex, 10+ chars after folder name)
   if (/^#[^/]+\/[a-f0-9]{10,}/.test(window.location.hash)) {
     return true
   }
-  // Signal 2 — reading pane is in the DOM
-  return !!(
-    document.querySelector('.adn.ads') ||          // primary reading pane
-    document.querySelector('[data-legacy-message-id]') || // thread within pane
-    document.querySelector('.nH.if .gs')            // opened thread container
-  )
+  // Fallback: primary reading pane element (only present when email is fully open)
+  return !!document.querySelector('.adn.ads')
 }
 
 function syncSidebar(): void {
   if (!isContextValid()) return
+
+  // Resync flag with actual DOM state — prevents stale flag after external removal
+  const inDom = !!document.getElementById(SIDEBAR_ID)
+  if (sidebarMounted !== inDom) sidebarMounted = inDom
+
   if (isEmailOpen() && !sidebarMounted && !sidebarCreating) {
     sidebarCreating = true
     setTimeout(createSidebar, 300)
@@ -124,14 +126,18 @@ function storeCurrentEmail(): void {
 }
 
 // ── Signal 1: URL hash changes (Gmail SPA navigation) ──────────────────────
-// This is the most reliable trigger — fires immediately when user clicks an email.
 window.addEventListener('hashchange', () => {
   if (!isContextValid()) return
   syncSidebar()
-  // Re-extract on each new email open — re-check context inside the timeout
   if (isEmailOpen()) {
     setTimeout(() => { if (isContextValid()) storeCurrentEmail() }, 600)
   }
+})
+
+// ── Signal 1b: popstate — Gmail occasionally uses history.pushState ──────────
+window.addEventListener('popstate', () => {
+  if (!isContextValid()) return
+  syncSidebar()
 })
 
 // ── Signal 2: DOM mutations (fallback for cases where hash doesn't change) ──
@@ -165,6 +171,17 @@ function waitForGmail(retries = 20): void {
 if (!isContextValid()) {
   console.warn('[GuardScope] Extension context not valid — content script will not run')
 } else {
+  // Clean up any sidebar left behind by a previous extension instance.
+  // When the extension reloads, the old content script loses its context but
+  // the sidebar DOM element stays. The new instance must remove it first,
+  // otherwise syncSidebar() creates a second sidebar alongside the orphan.
+  const stale = document.getElementById(SIDEBAR_ID)
+  if (stale) {
+    stale.remove()
+    console.log('[GuardScope] Removed stale sidebar from previous instance')
+  }
+  sidebarMounted = false
+  sidebarCreating = false
   // Check onboarding completion before starting.
   // For dev reloads, skip the gate (onboarding_complete will already be set).
   chrome.storage.local.get('guardscope_onboarding_complete', (result) => {

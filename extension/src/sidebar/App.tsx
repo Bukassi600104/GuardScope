@@ -30,6 +30,53 @@ const RISK_BADGE_COLORS: Record<string, string> = {
   CRITICAL: 'border-red-400/60 text-red-300',
 }
 
+// Full UI theme per risk level — applied when a result is showing
+const RISK_THEME: Record<string, {
+  topBar: string      // thick top accent bar color
+  headerBg: string    // header background
+  headerBorder: string
+  bodyBg: string      // scrollable content area tint
+  footerBg: string
+}> = {
+  SAFE: {
+    topBar: '#22c55e',
+    headerBg: 'rgba(20,40,25,0.98)',
+    headerBorder: 'rgba(34,197,94,0.35)',
+    bodyBg: 'rgba(34,197,94,0.03)',
+    footerBg: 'rgba(20,40,25,0.98)',
+  },
+  LOW: {
+    topBar: '#84cc16',
+    headerBg: 'rgba(22,38,10,0.98)',
+    headerBorder: 'rgba(132,204,22,0.3)',
+    bodyBg: 'rgba(132,204,22,0.025)',
+    footerBg: 'rgba(22,38,10,0.98)',
+  },
+  MEDIUM: {
+    topBar: '#f97316',
+    headerBg: 'rgba(40,22,8,0.98)',
+    headerBorder: 'rgba(249,115,22,0.4)',
+    bodyBg: 'rgba(249,115,22,0.04)',
+    footerBg: 'rgba(40,22,8,0.98)',
+  },
+  HIGH: {
+    topBar: '#ef4444',
+    headerBg: 'rgba(40,10,10,0.98)',
+    headerBorder: 'rgba(239,68,68,0.45)',
+    bodyBg: 'rgba(239,68,68,0.04)',
+    footerBg: 'rgba(40,10,10,0.98)',
+  },
+  CRITICAL: {
+    topBar: '#dc2626',
+    headerBg: 'rgba(50,5,5,0.99)',
+    headerBorder: 'rgba(220,38,38,0.6)',
+    bodyBg: 'rgba(239,68,68,0.06)',
+    footerBg: 'rgba(50,5,5,0.99)',
+  },
+}
+
+const DEFAULT_THEME = RISK_THEME.HIGH // fallback before result
+
 const SHIELD_COLORS: Record<string, string> = {
   SAFE: '#22c55e', LOW: '#84cc16', MEDIUM: '#f97316', HIGH: '#ef4343', CRITICAL: '#ef4343',
 }
@@ -208,12 +255,24 @@ export default function App() {
 
   const riskLevel = report?.risk_level ?? 'HIGH'
   const shieldColor = appState === 'result' ? SHIELD_COLORS[riskLevel] : '#ef4343'
+  const theme = appState === 'result' ? (RISK_THEME[riskLevel] ?? DEFAULT_THEME) : null
 
   return (
-    <div className="h-screen bg-[#0f1117] text-[#e2e8f0] font-['Inter',sans-serif] flex flex-col overflow-hidden">
+    <div className="h-screen text-[#e2e8f0] font-['Inter',sans-serif] flex flex-col overflow-hidden"
+      style={{ background: theme ? theme.bodyBg : 'transparent', backgroundColor: theme ? undefined : '#0f1117' }}>
+
+      {/* ── Risk-level accent bar (top) ── */}
+      {theme && (
+        <div style={{ height: 3, background: theme.topBar, flexShrink: 0, transition: 'background 0.4s ease' }} />
+      )}
 
       {/* ── Header ── */}
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#2a2d3a] bg-[#1a1d27] flex-shrink-0">
+      <div className="flex items-center gap-2.5 px-4 py-3 flex-shrink-0"
+        style={{
+          background: theme ? theme.headerBg : '#1a1d27',
+          borderBottom: `1px solid ${theme ? theme.headerBorder : '#2a2d3a'}`,
+          transition: 'background 0.4s ease, border-color 0.4s ease',
+        }}>
         <ShieldIcon color={shieldColor} />
         <span className="font-semibold text-sm tracking-wide">GuardScope</span>
         {appState === 'result' && report && (
@@ -237,7 +296,8 @@ export default function App() {
       </div>
 
       {/* ── Scrollable content ── */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin relative">
+      <div className="flex-1 overflow-y-auto scrollbar-thin relative"
+        style={{ background: theme ? theme.bodyBg : '#0f1117', transition: 'background 0.4s ease' }}>
 
         {/* HISTORY PANEL */}
         {showHistory && (
@@ -478,7 +538,12 @@ export default function App() {
       </div>
 
       {/* ── Footer ── */}
-      <div className="flex-shrink-0 px-4 py-3 border-t border-[#2a2d3a] bg-[#1a1d27] space-y-2">
+      <div className="flex-shrink-0 px-4 py-3 space-y-2"
+        style={{
+          background: theme ? theme.footerBg : '#1a1d27',
+          borderTop: `1px solid ${theme ? theme.headerBorder : '#2a2d3a'}`,
+          transition: 'background 0.4s ease, border-color 0.4s ease',
+        }}>
         <button
           onClick={appState === 'result' ? handleRetry : handleAnalyze}
           disabled={appState === 'analyzing' || appState === 'no_email' || appState === 'limit_reached'}
