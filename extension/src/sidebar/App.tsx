@@ -7,6 +7,8 @@ import type { AnalysisReport, AppState } from '../utils/analyze'
 import type { ExtractedEmail } from '../utils/emailExtractor'
 import { t } from '../utils/i18n'
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
+
 // Shield icon SVG
 function ShieldIcon({ color = '#ef4343' }: { color?: string }) {
   return (
@@ -68,10 +70,18 @@ export default function App() {
   const [currentEmail, setCurrentEmail] = useState<ExtractedEmail | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userTier, setUserTier] = useState<string>('free')
+  const [anonCount, setAnonCount] = useState(0)
 
-  // On mount: check if there's an email in storage + load history
+  // On mount: check email, history, and auth state
   useEffect(() => {
-    chrome.storage.local.get(['guardscope_current_email', 'guardscope_history'], (result) => {
+    chrome.storage.local.get([
+      'guardscope_current_email',
+      'guardscope_history',
+      'guardscope_auth',
+      'guardscope_anon_count',
+    ], (result) => {
       const email = result.guardscope_current_email as ExtractedEmail | undefined
       if (email?.fromEmail) {
         setCurrentEmail(email)
@@ -80,6 +90,13 @@ export default function App() {
         setAppState('no_email')
       }
       setHistory((result.guardscope_history as HistoryEntry[]) ?? [])
+
+      const auth = result.guardscope_auth as { isAuthenticated?: boolean; tier?: string } | undefined
+      if (auth?.isAuthenticated) {
+        setIsAuthenticated(true)
+        setUserTier(auth.tier ?? 'free')
+      }
+      setAnonCount((result.guardscope_anon_count as number) ?? 0)
     })
   }, [])
 
@@ -144,9 +161,15 @@ export default function App() {
       if (response.report) {
         setReport(response.report)
         setAppState('result')
-        // Refresh history after successful analysis
-        chrome.storage.local.get('guardscope_history', (r) => {
+        // Refresh history + increment anonymous usage counter
+        chrome.storage.local.get(['guardscope_history', 'guardscope_anon_count', 'guardscope_auth'], (r) => {
           setHistory((r.guardscope_history as HistoryEntry[]) ?? [])
+          const auth = r.guardscope_auth as { isAuthenticated?: boolean } | undefined
+          if (!auth?.isAuthenticated) {
+            const newCount = ((r.guardscope_anon_count as number) ?? 0) + 1
+            chrome.storage.local.set({ guardscope_anon_count: newCount })
+            setAnonCount(newCount)
+          }
         })
       }
     })
@@ -265,6 +288,26 @@ export default function App() {
               <p className="text-xs text-[#64748b] truncate w-full">{t('from')}: {currentEmail.fromEmail}</p>
             )}
             <p className="text-xs text-[#64748b] leading-relaxed">{t('idleBody')}</p>
+            {!isAuthenticated && (
+              <div className="w-full mt-1 pt-3 border-t border-[#2a2d3a] flex gap-2">
+                <a
+                  href={`${BACKEND_URL}/signup`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-1.5 text-center text-[11px] border border-[#2a2d3a] rounded-lg text-[#64748b] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+                >
+                  Create free account
+                </a>
+                <a
+                  href={`${BACKEND_URL}/upgrade`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-1.5 text-center text-[11px] border border-[#ef4343]/30 rounded-lg text-[#ef4444] hover:bg-[#ef4343]/10 transition-colors"
+                >
+                  Go Pro — $4.99/mo
+                </a>
+              </div>
+            )}
           </div>
         )}
 
@@ -301,20 +344,30 @@ export default function App() {
             <p className="text-sm font-semibold text-[#e2e8f0]">Monthly limit reached</p>
             <p className="text-xs text-[#64748b] leading-relaxed">
               You've used all 5 free analyses this month.<br />
-              Upgrade to Pro for unlimited scans, priority AI, and team features.
+              Upgrade to Pro for unlimited scans.
             </p>
             <div className="w-full space-y-2 mt-1">
               <a
-                href="https://guardscope.io/upgrade"
+                href={`${BACKEND_URL}/upgrade`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full px-4 py-2.5 bg-[#ef4343] text-white text-xs font-semibold rounded-lg hover:bg-[#dc2626] transition-colors"
               >
                 Upgrade to Pro — $4.99/mo
               </a>
+              {!isAuthenticated && (
+                <a
+                  href={`${BACKEND_URL}/signup`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full px-4 py-2 border border-[#2a2d3a] text-[#64748b] text-xs rounded-lg hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+                >
+                  Create free account to track usage
+                </a>
+              )}
               <button
                 onClick={handleRetry}
-                className="block w-full px-4 py-2 text-[#64748b] text-xs hover:text-[#e2e8f0] transition-colors"
+                className="block w-full px-4 py-2 text-[#475569] text-xs hover:text-[#64748b] transition-colors"
               >
                 Maybe later
               </button>
@@ -370,6 +423,55 @@ export default function App() {
                report.analysis_path === 'rule_based' ? 'Rule-based fallback' :
                report.analysis_path} · {(report.duration_ms / 1000).toFixed(1)}s
             </p>
+
+            {/* Auth CTA for anonymous users */}
+            {!isAuthenticated && (
+              <div className="rounded-lg border border-[#2a2d3a] bg-[#1a1d27] p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-[#64748b] uppercase tracking-wider font-semibold">
+                    Anonymous · {anonCount}/5 free this month
+                  </span>
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} className={`w-4 h-1.5 rounded-full ${i <= anonCount ? 'bg-[#ef4343]' : 'bg-[#2a2d3a]'}`} />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href={`${BACKEND_URL}/signup`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-1.5 text-center text-[11px] font-semibold border border-[#2a2d3a] rounded-md text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+                  >
+                    Create free account
+                  </a>
+                  <a
+                    href={`${BACKEND_URL}/upgrade`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-1.5 text-center text-[11px] font-semibold bg-[#ef4343]/10 border border-[#ef4343]/30 rounded-md text-[#ef4444] hover:bg-[#ef4343]/20 transition-colors"
+                  >
+                    Upgrade to Pro
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Signed-in free tier CTA */}
+            {isAuthenticated && userTier === 'free' && (
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 flex items-center justify-between gap-3">
+                <p className="text-[11px] text-amber-400/80">5 free analyses/month</p>
+                <a
+                  href={`${BACKEND_URL}/upgrade`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 whitespace-nowrap transition-colors"
+                >
+                  Upgrade →
+                </a>
+              </div>
+            )}
 
           </div>
         )}
