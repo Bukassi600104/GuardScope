@@ -14,6 +14,8 @@ import { urlHausScan } from '../../../lib/urlhaus'
 import { normalizeUrls } from '../../../lib/urlCache'
 import { decodeJwt, checkAndIncrementQuota, getUserTier } from '../../../lib/quota'
 import { checkRateLimit } from '../../../lib/ratelimit'
+import { getCachedResult, setCachedResult } from '../../../lib/cache'
+import { createHash } from 'crypto'
 
 const MAX_BODY_BYTES = 500_000
 
@@ -235,6 +237,18 @@ export async function POST(req: NextRequest) {
   }
   // Anonymous users: no quota enforcement yet (Phase 5 adds IP-based limiting)
 
+  // ── Result cache — same email always returns same score within 24h ─────────
+  // Eliminates AI non-determinism variance between repeated scans of the same email.
+  const cacheKey = 'gs:v1:' + createHash('sha256')
+    .update(`${email.fromEmail}:${email.subject}:${(email.bodyText ?? '').slice(0, 1000)}`)
+    .digest('hex')
+    .slice(0, 32)
+
+  const cached = await getCachedResult(cacheKey)
+  if (cached) {
+    return NextResponse.json(cached, { headers: SECURITY_HEADERS })
+  }
+
   const domainMatch = email.fromEmail?.match(/@([\w.-]+)/)
   const senderDomain = domainMatch ? domainMatch[1].toLowerCase() : ''
 
@@ -280,12 +294,16 @@ export async function POST(req: NextRequest) {
   }
 
   const duration_ms = Date.now() - start
+  const finalReport = { ...report, duration_ms }
+
+  // Cache the result — fire-and-forget, non-blocking
+  setCachedResult(cacheKey, finalReport).catch(() => { /* non-critical */ })
 
   // Fire-and-forget: save analysis metadata to history (no email content stored)
   if (userId) {
     saveAnalysisHistory(userId, senderDomain, report, duration_ms).catch(() => { /* non-critical */ })
   }
 
-  return NextResponse.json({ ...report, duration_ms }, { headers: SECURITY_HEADERS })
+  return NextResponse.json(finalReport, { headers: SECURITY_HEADERS })
 }
 

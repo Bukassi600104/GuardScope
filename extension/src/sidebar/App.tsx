@@ -113,6 +113,7 @@ const RISK_BADGE_DOT: Record<string, string> = {
 export default function App() {
   const [appState, setAppState] = useState<AppState>('idle')
   const [report, setReport] = useState<AnalysisReport | null>(null)
+  const [pendingScore, setPendingScore] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string>('')
   const [currentEmail, setCurrentEmail] = useState<ExtractedEmail | null>(null)
   const [showHistory, setShowHistory] = useState(false)
@@ -206,18 +207,23 @@ export default function App() {
       }
 
       if (response.report) {
-        setReport(response.report)
-        setAppState('result')
-        // Refresh history + increment anonymous usage counter
-        chrome.storage.local.get(['guardscope_history', 'guardscope_anon_count', 'guardscope_auth'], (r) => {
-          setHistory((r.guardscope_history as HistoryEntry[]) ?? [])
-          const auth = r.guardscope_auth as { isAuthenticated?: boolean } | undefined
-          if (!auth?.isAuthenticated) {
-            const newCount = ((r.guardscope_anon_count as number) ?? 0) + 1
-            chrome.storage.local.set({ guardscope_anon_count: newCount })
-            setAnonCount(newCount)
-          }
-        })
+        const reportData = response.report
+        // Show gauge settling on real score for 1.8s before switching to result view
+        setPendingScore(reportData.risk_score)
+        setTimeout(() => {
+          setReport(reportData)
+          setAppState('result')
+          setPendingScore(undefined)
+          chrome.storage.local.get(['guardscope_history', 'guardscope_anon_count', 'guardscope_auth'], (r) => {
+            setHistory((r.guardscope_history as HistoryEntry[]) ?? [])
+            const auth = r.guardscope_auth as { isAuthenticated?: boolean } | undefined
+            if (!auth?.isAuthenticated) {
+              const newCount = ((r.guardscope_anon_count as number) ?? 0) + 1
+              chrome.storage.local.set({ guardscope_anon_count: newCount })
+              setAnonCount(newCount)
+            }
+          })
+        }, 1800)
       }
     })
   }
@@ -349,9 +355,7 @@ export default function App() {
 
         {/* ANALYZING */}
         {appState === 'analyzing' && (
-          <div className="p-5">
-            <ProgressBar />
-          </div>
+          <ProgressBar finalScore={pendingScore} />
         )}
 
         {/* NO EMAIL */}
