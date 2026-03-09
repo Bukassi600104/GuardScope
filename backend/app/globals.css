@@ -1,6 +1,41 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #071C2C;
+  --navy2:  #0a2338;
+  --navy3:  #0d2d47;
+  --cyan:   #39B6FF;
+  --cyan2:  #1F8DFF;
+  --cyan3:  #6DD5FA;
+  --white:  #E7EEF4;
+  --muted:  #8ba3b8;
+  --muted2: #4a6478;
+  --border: rgba(57, 182, 255, 0.15);
+  --border2: rgba(57, 182, 255, 0.08);
+  --success: #1ED760;
+  --warning: #FFB020;
+  --danger:  #FF4D4F;
+  --card-bg: rgba(10, 35, 56, 0.6);
+}
+
 html { scroll-behavior: smooth; }
-body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.6; }
+
+body {
+  font-family: 'Sora', 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--navy);
+  color: var(--white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
 a { color: inherit; text-decoration: none; }
 button { cursor: pointer; border: none; background: none; font-family: inherit; }
 img { max-width: 100%; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--navy); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Selection */
+::selection { background: rgba(57, 182, 255, 0.25); color: var(--white); }
