@@ -17,7 +17,7 @@ function isTokenExpired(token: string): boolean {
 function ShieldIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" fill="#ef4343" />
+      <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" fill="#39B6FF" />
       <path d="M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z" fill="white" />
     </svg>
   )
@@ -127,7 +127,7 @@ export default function Popup() {
   }
 
   const TIER_BADGE: Record<string, string> = {
-    free: 'border-[#2a2d3a] text-[#64748b]',
+    free: 'border-[rgba(57,182,255,0.2)] text-[#64748b]',
     pro: 'border-amber-500/40 text-amber-400',
     team: 'border-blue-500/40 text-blue-400',
   }
@@ -140,17 +140,17 @@ export default function Popup() {
 
   if (loading) {
     return (
-      <div className="w-72 bg-[#0f1117] text-[#64748b] flex items-center justify-center py-10 text-xs font-['Inter',sans-serif]">
+      <div className="w-72 bg-[#071c2c] text-[#64748b] flex items-center justify-center py-10 text-xs font-['Inter',sans-serif]">
         Loading...
       </div>
     )
   }
 
   return (
-    <div className="w-72 bg-[#0f1117] text-[#e2e8f0] font-['Inter',sans-serif]">
+    <div className="w-72 bg-[#071c2c] text-[#e2e8f0] font-['Inter',sans-serif]">
 
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#2a2d3a]">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(57,182,255,0.15)]">
         <ShieldIcon />
         <span className="font-semibold text-sm">GuardScope</span>
         <span className={`ml-auto text-[10px] px-2 py-0.5 rounded border ${badgeClass}`}>
@@ -160,7 +160,7 @@ export default function Popup() {
 
       {/* Not-on-Gmail notice */}
       {!isGmailTab && (
-        <div className="px-4 py-3 border-b border-[#2a2d3a] bg-[#1a1d27]">
+        <div className="px-4 py-3 border-b border-[rgba(57,182,255,0.15)] bg-[#0a2338]">
           <div className="flex items-start gap-2.5">
             <span className="text-base mt-0.5">📧</span>
             <div>
@@ -174,7 +174,7 @@ export default function Popup() {
           </div>
           <button
             onClick={openGmail}
-            className="mt-2.5 w-full py-2 px-4 bg-[#ef4343] text-white text-xs font-semibold rounded-lg hover:bg-[#dc2626] transition-colors"
+            className="mt-2.5 w-full py-2 px-4 text-white text-xs font-semibold rounded-lg transition-colors" style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
           >
             Open Gmail →
           </button>
@@ -185,7 +185,7 @@ export default function Popup() {
         /* ── SIGNED IN ── */
         <>
           {/* User info */}
-          <div className="px-4 py-3 border-b border-[#2a2d3a]">
+          <div className="px-4 py-3 border-b border-[rgba(57,182,255,0.15)]">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-[#22c55e]"></div>
               <span className="text-xs text-[#e2e8f0] truncate">{auth.email}</span>
@@ -193,7 +193,7 @@ export default function Popup() {
           </div>
 
           {/* Usage */}
-          <div className="px-4 py-3 border-b border-[#2a2d3a]">
+          <div className="px-4 py-3 border-b border-[rgba(57,182,255,0.15)]">
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs text-[#64748b]">Monthly analyses</span>
               <span className="text-xs text-[#e2e8f0]">
@@ -201,7 +201,7 @@ export default function Popup() {
               </span>
             </div>
             {usageMax !== null && (
-              <div className="w-full bg-[#1a1d27] rounded-full h-1.5">
+              <div className="w-full bg-[#0a2338] rounded-full h-1.5">
                 <div
                   className="bg-[#22c55e] h-1.5 rounded-full transition-all"
                   style={{ width: `${usagePct}%` }}
@@ -214,7 +214,7 @@ export default function Popup() {
           <div className="px-4 py-3 space-y-2">
             <button
               onClick={openGmail}
-              className="w-full py-2 px-4 bg-[#ef4343] text-white text-sm font-semibold rounded-lg hover:bg-[#dc2626] transition-colors"
+              className="w-full py-2 px-4 text-white text-sm font-semibold rounded-lg transition-colors" style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
             >
               Open Gmail
             </button>
@@ -233,7 +233,7 @@ export default function Popup() {
             )}
             <button
               onClick={handleSignOut}
-              className="w-full py-2 px-4 bg-transparent text-[#64748b] text-xs rounded-lg border border-[#2a2d3a] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+              className="w-full py-2 px-4 bg-transparent text-[#64748b] text-xs rounded-lg border border-[rgba(57,182,255,0.15)] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
             >
               Sign Out
             </button>
@@ -252,7 +252,7 @@ export default function Popup() {
               placeholder="Email address"
               required
               autoFocus
-              className="w-full px-3 py-2 text-xs bg-[#1a1d27] border border-[#2a2d3a] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#ef4343] transition-colors"
+              className="w-full px-3 py-2 text-xs bg-[#0a2338] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#39B6FF] transition-colors"
             />
 
             <input
@@ -261,7 +261,7 @@ export default function Popup() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
               required
-              className="w-full px-3 py-2 text-xs bg-[#1a1d27] border border-[#2a2d3a] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#ef4343] transition-colors"
+              className="w-full px-3 py-2 text-xs bg-[#0a2338] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#39B6FF] transition-colors"
             />
 
             {signInError && (
@@ -271,7 +271,7 @@ export default function Popup() {
             <button
               type="submit"
               disabled={signingIn}
-              className="w-full py-2 px-4 bg-[#ef4343] text-white text-sm font-semibold rounded-lg hover:bg-[#dc2626] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-2 px-4 text-white text-sm font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors" style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
             >
               {signingIn ? 'Signing in...' : 'Sign In'}
             </button>
@@ -282,7 +282,7 @@ export default function Popup() {
                 href={`${BACKEND_URL}/signup`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#ef4343] hover:underline"
+                className="text-[#39B6FF] hover:underline"
               >
                 Create one free →
               </a>
@@ -293,7 +293,7 @@ export default function Popup() {
           <div className="px-4 pb-3">
             <button
               onClick={openGmail}
-              className="w-full py-2 px-4 bg-transparent text-[#64748b] text-xs rounded-lg border border-[#2a2d3a] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+              className="w-full py-2 px-4 bg-transparent text-[#64748b] text-xs rounded-lg border border-[rgba(57,182,255,0.15)] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
             >
               Open Gmail (without signing in)
             </button>
@@ -302,7 +302,7 @@ export default function Popup() {
       )}
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-[#2a2d3a]">
+      <div className="px-4 py-2 border-t border-[rgba(57,182,255,0.15)]">
         <p className="text-[10px] text-[#64748b] text-center">Powered by Mercury-2 AI</p>
       </div>
     </div>

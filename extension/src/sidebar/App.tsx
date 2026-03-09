@@ -378,12 +378,12 @@ export default function App() {
   }
 
   const riskLevel = report?.risk_level ?? 'MEDIUM'
-  const shieldColor = appState === 'result' ? (SHIELD_COLORS[riskLevel] ?? '#ef4343') : '#ef4343'
+  const shieldColor = appState === 'result' ? (SHIELD_COLORS[riskLevel] ?? '#ef4343') : '#39B6FF'
   const theme = appState === 'result' ? (RISK_THEME[riskLevel] ?? DEFAULT_THEME) : null
 
   return (
     <div className="h-screen text-[#e2e8f0] font-['Inter',sans-serif] flex flex-col overflow-hidden"
-      style={{ background: theme ? theme.bodyBg : 'transparent', backgroundColor: theme ? undefined : '#0f1117' }}>
+      style={{ background: theme ? theme.bodyBg : 'transparent', backgroundColor: theme ? undefined : '#071C2C' }}>
 
       {/* ── Risk-level accent bar (top) ── */}
       {theme && (
@@ -393,8 +393,8 @@ export default function App() {
       {/* ── Header ── */}
       <div className="flex items-center gap-2.5 px-4 py-3 flex-shrink-0"
         style={{
-          background: theme ? theme.headerBg : '#1a1d27',
-          borderBottom: `1px solid ${theme ? theme.headerBorder : '#2a2d3a'}`,
+          background: theme ? theme.headerBg : '#071C2C',
+          borderBottom: `1px solid ${theme ? theme.headerBorder : 'rgba(57,182,255,0.15)'}`,
           transition: 'background 0.4s ease, border-color 0.4s ease',
         }}>
         <ShieldIcon color={shieldColor} />
@@ -415,7 +415,7 @@ export default function App() {
           {history.length > 0 && appState !== 'analyzing' && (
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className={`text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider transition-colors ${showHistory ? 'border-[#64748b] text-[#94a3b8]' : 'border-[#2a2d3a] text-[#64748b] hover:text-[#94a3b8]'}`}
+              className={`text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider transition-colors ${showHistory ? 'border-[#64748b] text-[#94a3b8]' : 'border-[rgba(57,182,255,0.15)] text-[#64748b] hover:text-[#94a3b8]'}`}
             >
               History ({history.length})
             </button>
@@ -425,18 +425,18 @@ export default function App() {
 
       {/* ── Scrollable content ── */}
       <div className="flex-1 overflow-y-auto scrollbar-thin relative"
-        style={{ background: theme ? theme.bodyBg : '#0f1117', transition: 'background 0.4s ease' }}>
+        style={{ background: theme ? theme.bodyBg : '#071C2C', transition: 'background 0.4s ease' }}>
 
         {/* HISTORY PANEL */}
         {showHistory && (
-          <div className="absolute inset-0 top-[49px] bg-[#0f1117] z-10 flex flex-col">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#2a2d3a]">
+          <div className="absolute inset-0 top-[49px] bg-[#071c2c] z-10 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[rgba(57,182,255,0.15)]">
               <span className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider">Recent Scans</span>
               <button onClick={() => setShowHistory(false)} className="text-[#64748b] hover:text-[#e2e8f0] text-xs transition-colors">✕ Close</button>
             </div>
             <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
               {history.map((h, i) => (
-                <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[#1a1d27] border border-[#2a2d3a]">
+                <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[#0a2338] border border-[rgba(57,182,255,0.15)]">
                   <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${RISK_BADGE_DOT[h.risk_level] ?? 'bg-[#64748b]'}`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-[#e2e8f0] truncate">{h.subject}</p>
@@ -475,12 +475,12 @@ export default function App() {
             )}
             <p className="text-xs text-[#64748b] leading-relaxed">{t('idleBody')}</p>
             {!isAuthenticated && (
-              <div className="w-full mt-1 pt-3 border-t border-[#2a2d3a] flex gap-2">
+              <div className="w-full mt-1 pt-3 border-t border-[rgba(57,182,255,0.15)] flex gap-2">
                 <a
                   href={`${BACKEND_URL}/signup`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-1.5 text-center text-[11px] border border-[#2a2d3a] rounded-lg text-[#64748b] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+                  className="flex-1 py-1.5 text-center text-[11px] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#64748b] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
                 >
                   Create free account
                 </a>
@@ -488,7 +488,7 @@ export default function App() {
                   href={`${BACKEND_URL}/upgrade`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-1.5 text-center text-[11px] border border-[#ef4343]/30 rounded-lg text-[#ef4444] hover:bg-[#ef4343]/10 transition-colors"
+                  className="flex-1 py-1.5 text-center text-[11px] border border-[#39B6FF]/30 rounded-lg text-[#39B6FF] hover:bg-[#39B6FF]/10 transition-colors"
                 >
                   Go Pro — $4.99/mo
                 </a>
@@ -515,7 +515,7 @@ export default function App() {
             {!error.includes('reload') && !error.includes('updated') && (
               <button
                 onClick={handleRetry}
-                className="mt-1 text-xs px-4 py-2 border border-[#2a2d3a] rounded-lg text-[#64748b] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+                className="mt-1 text-xs px-4 py-2 border border-[rgba(57,182,255,0.15)] rounded-lg text-[#64748b] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
               >
                 Try again
               </button>
@@ -538,7 +538,7 @@ export default function App() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block w-full px-4 py-2.5 text-white text-xs font-semibold rounded-lg transition-colors"
-                style={{ background: '#ef4343' }}
+                style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
                 onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` }) }}
               >
                 Get Early Access — Free 30 Days
@@ -548,7 +548,7 @@ export default function App() {
                   href={`${BACKEND_URL}/signup`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full px-4 py-2 border border-[#2a2d3a] text-[#64748b] text-xs rounded-lg hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+                  className="block w-full px-4 py-2 border border-[rgba(57,182,255,0.15)] text-[#64748b] text-xs rounded-lg hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
                 >
                   Create free account to track usage
                 </a>
@@ -584,7 +584,7 @@ export default function App() {
             {/* Share button */}
             <button
               onClick={handleShare}
-              className="w-full py-1.5 px-3 border border-[#2a2d3a] rounded-lg text-[#64748b] text-xs hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+              className="w-full py-1.5 px-3 border border-[rgba(57,182,255,0.15)] rounded-lg text-[#64748b] text-xs hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
             >
               {copied ? t('copied') : t('copyReport')}
             </button>
@@ -616,8 +616,8 @@ export default function App() {
             {!isAuthenticated && (
               <div className="rounded-lg p-3 space-y-2"
                 style={{
-                  border: `1px solid ${theme ? theme.headerBorder : '#2a2d3a'}`,
-                  background: theme ? `${theme.btnBg}12` : '#1a1d27',
+                  border: `1px solid ${theme ? theme.headerBorder : 'rgba(57,182,255,0.2)'}`,
+                  background: theme ? `${theme.btnBg}12` : 'rgba(57,182,255,0.06)',
                 }}>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-[#64748b] uppercase tracking-wider font-semibold">
@@ -626,7 +626,7 @@ export default function App() {
                   <div className="flex gap-0.5">
                     {[1,2,3,4,5].map(i => (
                       <div key={i} className="w-4 h-1.5 rounded-full"
-                        style={{ background: i <= anonCount ? (theme?.btnBg ?? '#ef4343') : '#2a2d3a' }} />
+                        style={{ background: i <= anonCount ? (theme?.btnBg ?? '#39B6FF') : 'rgba(57,182,255,0.15)' }} />
                     ))}
                   </div>
                 </div>
@@ -635,7 +635,7 @@ export default function App() {
                     href={`${BACKEND_URL}/signup`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 py-1.5 text-center text-[11px] font-semibold border border-[#2a2d3a] rounded-md text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+                    className="flex-1 py-1.5 text-center text-[11px] font-semibold border border-[rgba(57,182,255,0.15)] rounded-md text-[#e2e8f0] hover:border-[#64748b] transition-colors"
                   >
                     Create free account
                   </a>
@@ -644,7 +644,7 @@ export default function App() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 py-1.5 text-center text-[11px] font-semibold rounded-md text-white transition-colors"
-                    style={{ background: theme?.btnBg ?? '#ef4343' }}
+                    style={{ background: theme?.btnBg ?? '#39B6FF' }}
                     onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` }) }}
                   >
                     Get Early Access
@@ -683,8 +683,8 @@ export default function App() {
       {/* ── Footer ── */}
       <div className="flex-shrink-0 px-4 py-3 space-y-2"
         style={{
-          background: theme ? theme.footerBg : '#1a1d27',
-          borderTop: `1px solid ${theme ? theme.headerBorder : '#2a2d3a'}`,
+          background: theme ? theme.footerBg : '#071C2C',
+          borderTop: `1px solid ${theme ? theme.headerBorder : 'rgba(57,182,255,0.15)'}`,
           transition: 'background 0.4s ease, border-color 0.4s ease',
         }}>
         <button
@@ -692,7 +692,7 @@ export default function App() {
           disabled={appState === 'analyzing' || appState === 'no_email' || appState === 'limit_reached'}
           className="w-full py-2.5 px-4 text-white text-sm font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           style={{
-            background: theme ? theme.btnBg : '#ef4343',
+            background: theme ? theme.btnBg : '#39B6FF',
             boxShadow: theme ? `0 2px 14px ${theme.btnGlow}` : 'none',
           }}
         >

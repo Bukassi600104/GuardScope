@@ -26,11 +26,11 @@ export function GuardScopeIcon({ size = 40, variant = 'color' }: { size?: number
   const ax2 = cx + r * Math.cos(toR(-30))   // 32.26
   const ay2 = cy + r * Math.sin(toR(-30))   // 17.50  (upper-right, SVG y-down)
 
-  // Outer detection dot: 310° SVG (= -50° standard = 1-o'clock upper-right)
-  // od large enough to clear arc stroke: gap = od - r - sw/2 - dot_r ≥ 3px
-  const od = r + 8   // 21 — clearly outside arc
-  const ox = cx + od * Math.cos(toR(-50))
-  const oy = cy + od * Math.sin(toR(-50))
+  // Outer detection dot: 325° SVG (= -35° standard = 1:30-o'clock, just past upper arc endpoint)
+  // Positioned beside the upper arc tip: y ≈ 12.5, clearly above arc & to the right
+  const od = r + 7   // 20 — outside arc with visible gap
+  const ox = cx + od * Math.cos(toR(-35))
+  const oy = cy + od * Math.sin(toR(-35))
 
   const dotFill   = variant === 'white' ? '#FFFFFF' : variant === 'dark' ? '#071C2C' : `url(#${gradId})`
   const arcStroke = variant === 'white' ? '#FFFFFF' : variant === 'dark' ? '#071C2C' : `url(#${gradId})`

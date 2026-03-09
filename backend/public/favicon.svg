@@ -15,6 +15,6 @@
   />
   <!-- Inner center dot -->
   <circle cx="21" cy="24" r="3.5" fill="url(#gs-fav)"/>
-  <!-- Outer detection dot at 310° SVG / -50° standard -->
-  <circle cx="34.50" cy="7.91" r="3.0" fill="url(#gs-fav)"/>
+  <!-- Outer dot at 325° SVG (-35° standard): ox=37.38, oy=12.53 -->
+  <circle cx="37.38" cy="12.53" r="3.0" fill="url(#gs-fav)"/>
 </svg>
