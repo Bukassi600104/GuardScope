@@ -113,7 +113,7 @@ export default function ProgressBar({ finalScore }: Props) {
           <circle cx="74" cy="74" r={ringRadius + 8} fill="none"
             stroke={`${ringColor}0f`} strokeWidth="16" />
           <circle cx="74" cy="74" r={ringRadius} fill="none"
-            stroke="#1a1d27" strokeWidth="7" />
+            stroke="#0a2338" strokeWidth="7" />
           <circle cx="74" cy="74" r={ringRadius} fill="none"
             stroke={ringColor} strokeWidth="7" strokeLinecap="round"
             strokeDasharray={`${filled} ${circumference - filled}`}
@@ -157,7 +157,7 @@ export default function ProgressBar({ finalScore }: Props) {
         ) : (
           <>
             <div className="flex items-center justify-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#39B6FF] animate-pulse" />
               <p className="text-xs text-[#94a3b8] font-medium">{STEPS[step]}</p>
             </div>
             <p className="text-[10px] text-[#475569]">Step {step + 1} of {STEPS.length}</p>
@@ -174,7 +174,7 @@ export default function ProgressBar({ finalScore }: Props) {
         <svg width="200" height="120" viewBox="0 0 200 120" style={{ overflow: 'visible' }}>
           {/* Track */}
           <path d={gaugePath(P_START, P_END)} fill="none"
-            stroke="#1a1d27" strokeWidth="13" strokeLinecap="round" />
+            stroke="#0a2338" strokeWidth="13" strokeLinecap="round" />
           {/* Safe zone */}
           <path d={gaugePath(P_START, P_35)} fill="none"
             stroke="#22c55e" strokeWidth="13" strokeLinecap="round" opacity="0.35" />
@@ -198,7 +198,7 @@ export default function ProgressBar({ finalScore }: Props) {
             <line x1="0" y1="4" x2="0" y2="-64" stroke={needleColor} strokeWidth="2.5" strokeLinecap="round"
               style={{ transition: isSettled ? 'none' : undefined }} />
           </g>
-          <circle cx={CX} cy={CY} r="5.5" fill="#0f1117" stroke={needleColor} strokeWidth="2" />
+          <circle cx={CX} cy={CY} r="5.5" fill="#071C2C" stroke={needleColor} strokeWidth="2" />
         </svg>
 
         <p className="text-[10px] text-[#334155]">
@@ -211,9 +211,9 @@ export default function ProgressBar({ finalScore }: Props) {
         <div className="flex gap-1.5 items-center">
           {Array.from({ length: STEPS.length }).map((_, i) => (
             <div key={i} className={`rounded-full transition-all duration-300 ${
-              i < step ? 'w-2 h-2 bg-[#ef4444]' :
-              i === step ? 'w-3 h-3 bg-[#ef4444] animate-pulse' :
-              'w-2 h-2 bg-[#1a1d27]'
+              i < step ? 'w-2 h-2 bg-[#39B6FF]' :
+              i === step ? 'w-3 h-3 bg-[#39B6FF] animate-pulse' :
+              'w-2 h-2 bg-[#0a2338]'
             }`} />
           ))}
         </div>

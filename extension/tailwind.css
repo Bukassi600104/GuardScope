@@ -10,7 +10,7 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2d3a;
+  background: rgba(57,182,255,0.25);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {

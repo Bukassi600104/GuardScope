@@ -23,7 +23,7 @@ export default function RiskScore({ score, level }: RiskScoreProps) {
   // Conic gradient: score% filled with risk color, remainder dark
   // Matches Stitch .gauge-conic implementation
   const gaugeStyle: React.CSSProperties = {
-    background: `conic-gradient(from 180deg at 50% 50%, ${config.hex} 0%, ${config.hex} ${clampedScore}%, #1e2128 ${clampedScore}%, #1e2128 100%)`,
+    background: `conic-gradient(from 180deg at 50% 50%, ${config.hex} 0%, ${config.hex} ${clampedScore}%, #0a1e30 ${clampedScore}%, #0a1e30 100%)`,
   }
 
   return (
@@ -31,7 +31,7 @@ export default function RiskScore({ score, level }: RiskScoreProps) {
       {/* Circular gauge */}
       <div className="relative w-32 h-32 rounded-full flex items-center justify-center" style={gaugeStyle}>
         {/* Inner circle (donut hole) */}
-        <div className="absolute w-24 h-24 rounded-full bg-[#0f1117] flex flex-col items-center justify-center">
+        <div className="absolute w-24 h-24 rounded-full bg-[#071c2c] flex flex-col items-center justify-center">
           <span className={`text-3xl font-bold leading-none ${config.color}`}>{clampedScore}</span>
           <span className="text-xs text-[#64748b] mt-0.5">/ 100</span>
         </div>

@@ -94,8 +94,8 @@ function showMiniTab(): void {
     transform: translateY(-50%);
     width: 32px;
     height: 64px;
-    background: #1a1d27;
-    border: 1.5px solid rgba(239,67,67,0.55);
+    background: #071C2C;
+    border: 1.5px solid rgba(57,182,255,0.5);
     border-right: none;
     border-radius: 8px 0 0 8px;
     cursor: pointer;
@@ -107,7 +107,7 @@ function showMiniTab(): void {
   `
   // Shield icon SVG (same as App.tsx)
   tab.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" fill="#ef4343"/>
+    <path d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z" fill="#39B6FF"/>
     <path d="M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z" fill="white"/>
   </svg>`
 

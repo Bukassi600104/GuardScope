@@ -9,15 +9,30 @@ import { t } from '../utils/i18n'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
 
-// Shield icon SVG
-function ShieldIcon({ color = '#ef4343' }: { color?: string }) {
+// GuardScope arc logo — uses brand gradient by default, solid color when risk theme is active
+function GuardScopeIcon({ color }: { color?: string }) {
+  const cx = 21, cy = 24, r = 13
+  const toR = (d: number) => (d * Math.PI) / 180
+  const ax1 = cx + r * Math.cos(toR(30)),  ay1 = cy + r * Math.sin(toR(30))
+  const ax2 = cx + r * Math.cos(toR(-30)), ay2 = cy + r * Math.sin(toR(-30))
+  const od = r + 7
+  const ox = cx + od * Math.cos(toR(-35)), oy = cy + od * Math.sin(toR(-35))
+  const useGradient = !color || color === '#39B6FF'
+  const fill = useGradient ? 'url(#gs-app-g)' : color
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M12 2L3 7V12C3 16.55 6.84 20.74 12 22C17.16 20.74 21 16.55 21 12V7L12 2Z"
-        fill={color}
-      />
-      <path d="M10 17L6 13L7.41 11.59L10 14.17L16.59 7.58L18 9L10 17Z" fill="white" />
+    <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+      {useGradient && (
+        <defs>
+          <linearGradient id="gs-app-g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#72D8FF"/>
+            <stop offset="100%" stopColor="#1A8FFF"/>
+          </linearGradient>
+        </defs>
+      )}
+      <path d={`M ${ax1.toFixed(2)} ${ay1.toFixed(2)} A ${r} ${r} 0 1 1 ${ax2.toFixed(2)} ${ay2.toFixed(2)}`}
+        stroke={fill} strokeWidth="3.2" strokeLinecap="round" fill="none"/>
+      <circle cx={cx} cy={cy} r="3.5" fill={fill}/>
+      <circle cx={ox.toFixed(2)} cy={oy.toFixed(2)} r="3.0" fill={fill}/>
     </svg>
   )
 }
@@ -397,7 +412,7 @@ export default function App() {
           borderBottom: `1px solid ${theme ? theme.headerBorder : 'rgba(57,182,255,0.15)'}`,
           transition: 'background 0.4s ease, border-color 0.4s ease',
         }}>
-        <ShieldIcon color={shieldColor} />
+        <GuardScopeIcon color={shieldColor} />
         <span className="font-semibold text-sm tracking-wide">GuardScope</span>
 
         {/* Right-side controls: badge + history */}
