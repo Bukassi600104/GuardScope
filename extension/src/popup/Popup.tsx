@@ -225,9 +225,10 @@ export default function Popup() {
                   e.preventDefault()
                   chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })
                 }}
-                className="block w-full py-2 px-4 text-center text-xs font-semibold text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/10 transition-colors"
+                className="block w-full py-2 px-4 text-center text-xs font-semibold border rounded-lg transition-colors"
+                style={{ color: '#39B6FF', borderColor: 'rgba(57,182,255,0.3)', background: 'rgba(57,182,255,0.06)' }}
               >
-                Upgrade to Pro — $4.99/mo
+                Get Early Access — Free 30 Days
               </a>
             )}
             <button

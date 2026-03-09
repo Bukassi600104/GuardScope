@@ -37,6 +37,9 @@ const RISK_THEME: Record<string, {
   headerBorder: string
   bodyBg: string      // scrollable content area tint
   footerBg: string
+  btnBg: string       // primary action button background
+  btnBgHover: string  // button hover background
+  btnGlow: string     // button box-shadow glow
 }> = {
   SAFE: {
     topBar: '#22c55e',
@@ -44,6 +47,9 @@ const RISK_THEME: Record<string, {
     headerBorder: 'rgba(34,197,94,0.35)',
     bodyBg: 'rgba(34,197,94,0.03)',
     footerBg: 'rgba(20,40,25,0.98)',
+    btnBg: '#16a34a',
+    btnBgHover: '#15803d',
+    btnGlow: 'rgba(34,197,94,0.35)',
   },
   LOW: {
     topBar: '#84cc16',
@@ -51,6 +57,9 @@ const RISK_THEME: Record<string, {
     headerBorder: 'rgba(132,204,22,0.3)',
     bodyBg: 'rgba(132,204,22,0.025)',
     footerBg: 'rgba(22,38,10,0.98)',
+    btnBg: '#65a30d',
+    btnBgHover: '#4d7c0f',
+    btnGlow: 'rgba(132,204,22,0.35)',
   },
   MEDIUM: {
     topBar: '#f97316',
@@ -58,6 +67,9 @@ const RISK_THEME: Record<string, {
     headerBorder: 'rgba(249,115,22,0.4)',
     bodyBg: 'rgba(249,115,22,0.04)',
     footerBg: 'rgba(40,22,8,0.98)',
+    btnBg: '#ea6a0a',
+    btnBgHover: '#c2570a',
+    btnGlow: 'rgba(249,115,22,0.4)',
   },
   HIGH: {
     topBar: '#ef4444',
@@ -65,6 +77,9 @@ const RISK_THEME: Record<string, {
     headerBorder: 'rgba(239,68,68,0.45)',
     bodyBg: 'rgba(239,68,68,0.04)',
     footerBg: 'rgba(40,10,10,0.98)',
+    btnBg: '#ef4343',
+    btnBgHover: '#dc2626',
+    btnGlow: 'rgba(239,68,68,0.4)',
   },
   CRITICAL: {
     topBar: '#dc2626',
@@ -72,6 +87,9 @@ const RISK_THEME: Record<string, {
     headerBorder: 'rgba(220,38,38,0.6)',
     bodyBg: 'rgba(239,68,68,0.06)',
     footerBg: 'rgba(50,5,5,0.99)',
+    btnBg: '#b91c1c',
+    btnBgHover: '#991b1b',
+    btnGlow: 'rgba(220,38,38,0.5)',
   },
 }
 
@@ -509,19 +527,21 @@ export default function App() {
         {appState === 'limit_reached' && (
           <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3">
             <div className="text-4xl">🔒</div>
-            <p className="text-sm font-semibold text-[#e2e8f0]">Monthly limit reached</p>
+            <p className="text-sm font-semibold text-[#e2e8f0]">Daily limit reached</p>
             <p className="text-xs text-[#64748b] leading-relaxed">
-              You've used all 5 free analyses this month.<br />
-              Upgrade to Pro for unlimited scans.
+              You've used all 5 free analyses today.<br />
+              Get a promo code for 30 days of unlimited Pro access — free.
             </p>
             <div className="w-full space-y-2 mt-1">
               <a
                 href={`${BACKEND_URL}/upgrade`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full px-4 py-2.5 bg-[#ef4343] text-white text-xs font-semibold rounded-lg hover:bg-[#dc2626] transition-colors"
+                className="block w-full px-4 py-2.5 text-white text-xs font-semibold rounded-lg transition-colors"
+                style={{ background: '#ef4343' }}
+                onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` }) }}
               >
-                Upgrade to Pro — $4.99/mo
+                Get Early Access — Free 30 Days
               </a>
               {!isAuthenticated && (
                 <a
@@ -594,14 +614,19 @@ export default function App() {
 
             {/* Auth CTA for anonymous users */}
             {!isAuthenticated && (
-              <div className="rounded-lg border border-[#2a2d3a] bg-[#1a1d27] p-3 space-y-2">
+              <div className="rounded-lg p-3 space-y-2"
+                style={{
+                  border: `1px solid ${theme ? theme.headerBorder : '#2a2d3a'}`,
+                  background: theme ? `${theme.btnBg}12` : '#1a1d27',
+                }}>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-[#64748b] uppercase tracking-wider font-semibold">
                     Anonymous · {anonCount}/5 free this month
                   </span>
                   <div className="flex gap-0.5">
                     {[1,2,3,4,5].map(i => (
-                      <div key={i} className={`w-4 h-1.5 rounded-full ${i <= anonCount ? 'bg-[#ef4343]' : 'bg-[#2a2d3a]'}`} />
+                      <div key={i} className="w-4 h-1.5 rounded-full"
+                        style={{ background: i <= anonCount ? (theme?.btnBg ?? '#ef4343') : '#2a2d3a' }} />
                     ))}
                   </div>
                 </div>
@@ -618,9 +643,11 @@ export default function App() {
                     href={`${BACKEND_URL}/upgrade`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 py-1.5 text-center text-[11px] font-semibold bg-[#ef4343]/10 border border-[#ef4343]/30 rounded-md text-[#ef4444] hover:bg-[#ef4343]/20 transition-colors"
+                    className="flex-1 py-1.5 text-center text-[11px] font-semibold rounded-md text-white transition-colors"
+                    style={{ background: theme?.btnBg ?? '#ef4343' }}
+                    onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` }) }}
                   >
-                    Upgrade to Pro
+                    Get Early Access
                   </a>
                 </div>
               </div>
@@ -628,15 +655,23 @@ export default function App() {
 
             {/* Signed-in free tier CTA */}
             {isAuthenticated && userTier === 'free' && (
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 flex items-center justify-between gap-3">
-                <p className="text-[11px] text-amber-400/80">5 free analyses/month</p>
+              <div className="rounded-lg p-3 flex items-center justify-between gap-3"
+                style={{
+                  border: `1px solid ${theme ? theme.headerBorder : 'rgba(245,158,11,0.2)'}`,
+                  background: theme ? `${theme.btnBg}10` : 'rgba(245,158,11,0.05)',
+                }}>
+                <p className="text-[11px]" style={{ color: theme?.topBar ?? '#f59e0b' }}>
+                  5 free analyses/day
+                </p>
                 <a
                   href={`${BACKEND_URL}/upgrade`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 whitespace-nowrap transition-colors"
+                  className="text-[11px] font-semibold whitespace-nowrap transition-colors"
+                  style={{ color: theme?.topBar ?? '#f59e0b' }}
+                  onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` }) }}
                 >
-                  Upgrade →
+                  Get Promo Code →
                 </a>
               </div>
             )}
@@ -655,7 +690,11 @@ export default function App() {
         <button
           onClick={appState === 'result' ? handleRetry : handleAnalyze}
           disabled={appState === 'analyzing' || appState === 'no_email' || appState === 'limit_reached'}
-          className="w-full py-2.5 px-4 bg-[#ef4343] text-white text-sm font-semibold rounded-lg hover:bg-[#dc2626] active:bg-[#b91c1c] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full py-2.5 px-4 text-white text-sm font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+          style={{
+            background: theme ? theme.btnBg : '#ef4343',
+            boxShadow: theme ? `0 2px 14px ${theme.btnGlow}` : 'none',
+          }}
         >
           {appState === 'analyzing' ? t('analyzing') :
            appState === 'result' ? t('analyzeAgainBtn') :

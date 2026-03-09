@@ -71,6 +71,325 @@ const s = {
 } as const
 
 // ─────────────────────────────────────────────────────────────
+// Background bug animation — cyber threats crawling & getting scanned
+// ─────────────────────────────────────────────────────────────
+function BugBackground() {
+  const bugs = [
+    { top: '8%',  left: '4%',   anim: 'bugCrawl1', dur: '18s', delay: '0s',   size: 18, trapped: false },
+    { top: '15%', left: '88%',  anim: 'bugCrawl2', dur: '22s', delay: '-4s',  size: 14, trapped: true  },
+    { top: '35%', left: '93%',  anim: 'bugCrawl3', dur: '16s', delay: '-8s',  size: 16, trapped: false },
+    { top: '55%', left: '2%',   anim: 'bugCrawl4', dur: '24s', delay: '-3s',  size: 12, trapped: true  },
+    { top: '72%', left: '78%',  anim: 'bugCrawl1', dur: '20s', delay: '-11s', size: 15, trapped: false },
+    { top: '82%', left: '18%',  anim: 'bugCrawl2', dur: '17s', delay: '-6s',  size: 13, trapped: false },
+    { top: '25%', left: '48%',  anim: 'bugCrawl3', dur: '26s', delay: '-14s', size: 10, trapped: true  },
+    { top: '65%', left: '55%',  anim: 'bugCrawl4', dur: '19s', delay: '-9s',  size: 17, trapped: false },
+    { top: '45%', left: '22%',  anim: 'bugCrawl1', dur: '23s', delay: '-2s',  size: 11, trapped: true  },
+    { top: '90%', left: '62%',  anim: 'bugCrawl2', dur: '15s', delay: '-7s',  size: 14, trapped: false },
+    { top: '5%',  left: '62%',  anim: 'bugCrawl3', dur: '21s', delay: '-12s', size: 12, trapped: true  },
+    { top: '48%', left: '72%',  anim: 'bugCrawl4', dur: '28s', delay: '-5s',  size: 16, trapped: false },
+  ]
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+      <style>{`
+        @keyframes bugCrawl1 {
+          0%   { transform: translate(0px,0px) rotate(0deg); }
+          20%  { transform: translate(28px,-18px) rotate(40deg); }
+          40%  { transform: translate(12px,32px) rotate(-20deg); }
+          60%  { transform: translate(-22px,16px) rotate(60deg); }
+          80%  { transform: translate(8px,-28px) rotate(-40deg); }
+          100% { transform: translate(0px,0px) rotate(0deg); }
+        }
+        @keyframes bugCrawl2 {
+          0%   { transform: translate(0px,0px) rotate(10deg); }
+          25%  { transform: translate(-30px,20px) rotate(-30deg); }
+          50%  { transform: translate(20px,40px) rotate(50deg); }
+          75%  { transform: translate(35px,-15px) rotate(-10deg); }
+          100% { transform: translate(0px,0px) rotate(10deg); }
+        }
+        @keyframes bugCrawl3 {
+          0%   { transform: translate(0px,0px) rotate(-15deg); }
+          30%  { transform: translate(22px,25px) rotate(35deg); }
+          55%  { transform: translate(-18px,38px) rotate(-45deg); }
+          80%  { transform: translate(-28px,-12px) rotate(20deg); }
+          100% { transform: translate(0px,0px) rotate(-15deg); }
+        }
+        @keyframes bugCrawl4 {
+          0%   { transform: translate(0px,0px) rotate(5deg); }
+          33%  { transform: translate(-25px,-22px) rotate(-35deg); }
+          66%  { transform: translate(30px,-35px) rotate(55deg); }
+          100% { transform: translate(0px,0px) rotate(5deg); }
+        }
+        @keyframes scanRing {
+          0%   { transform: scale(0.4); opacity: 0; }
+          15%  { transform: scale(1.1); opacity: 0.8; }
+          50%  { transform: scale(1); opacity: 0.6; }
+          85%  { transform: scale(1); opacity: 0.5; }
+          100% { transform: scale(0.4); opacity: 0; }
+        }
+        @keyframes trappedPulse {
+          0%, 100% { opacity: 0.07; }
+          50%       { opacity: 0.03; }
+        }
+        @keyframes freeBug {
+          0%, 100% { opacity: 0.055; }
+          50%       { opacity: 0.03; }
+        }
+      `}</style>
+
+      {bugs.map((b, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          top: b.top, left: b.left,
+          animation: `${b.anim} ${b.dur} ${b.delay} ease-in-out infinite`,
+        }}>
+          {/* Bug SVG */}
+          <div style={{
+            animation: b.trapped ? `trappedPulse 3s ease-in-out infinite` : `freeBug 4s ease-in-out infinite`,
+            color: b.trapped ? '#FF4D4F' : '#FFB020',
+          }}>
+            <svg width={b.size} height={b.size} viewBox="0 0 24 24" fill="currentColor">
+              {/* Body */}
+              <ellipse cx="12" cy="13" rx="4.5" ry="5.5" />
+              {/* Head */}
+              <circle cx="12" cy="6.5" r="2.8" />
+              {/* Antennae */}
+              <line x1="10.5" y1="4.2" x2="8" y2="1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="13.5" y1="4.2" x2="16" y2="1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              {/* Legs */}
+              <line x1="7.5" y1="10" x2="3" y2="8.5"  stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+              <line x1="7.5" y1="13" x2="3" y2="13"   stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+              <line x1="7.5" y1="16" x2="3" y2="17.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+              <line x1="16.5" y1="10" x2="21" y2="8.5"  stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+              <line x1="16.5" y1="13" x2="21" y2="13"   stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+              <line x1="16.5" y1="16" x2="21" y2="17.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          {/* Scan ring for trapped bugs */}
+          {b.trapped && (
+            <div style={{
+              position: 'absolute',
+              top: '50%', left: '50%',
+              transform: 'translate(-50%,-50%)',
+              width: b.size * 2.8, height: b.size * 2.8,
+              marginLeft: -(b.size * 2.8) / 2,
+              marginTop: -(b.size * 2.8) / 2,
+              animation: `scanRing 4s ease-in-out infinite`,
+            }}>
+              <svg width="100%" height="100%" viewBox="0 0 40 40" fill="none">
+                <circle cx="20" cy="20" r="17" stroke="#39B6FF" strokeWidth="1.5" strokeDasharray="4 3" />
+                <circle cx="20" cy="20" r="10" stroke="#39B6FF" strokeWidth="0.8" opacity="0.5" />
+              </svg>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Complete country list
+// ─────────────────────────────────────────────────────────────
+const COUNTRIES = [
+  // Africa first (primary market)
+  { code: 'NG', name: '🇳🇬 Nigeria' },
+  { code: 'GH', name: '🇬🇭 Ghana' },
+  { code: 'KE', name: '🇰🇪 Kenya' },
+  { code: 'ZA', name: '🇿🇦 South Africa' },
+  { code: 'ET', name: '🇪🇹 Ethiopia' },
+  { code: 'TZ', name: '🇹🇿 Tanzania' },
+  { code: 'UG', name: '🇺🇬 Uganda' },
+  { code: 'EG', name: '🇪🇬 Egypt' },
+  { code: 'MA', name: '🇲🇦 Morocco' },
+  { code: 'SN', name: '🇸🇳 Senegal' },
+  { code: 'CI', name: "🇨🇮 Côte d'Ivoire" },
+  { code: 'CM', name: '🇨🇲 Cameroon' },
+  { code: 'AO', name: '🇦🇴 Angola' },
+  { code: 'MZ', name: '🇲🇿 Mozambique' },
+  { code: 'MG', name: '🇲🇬 Madagascar' },
+  { code: 'DZ', name: '🇩🇿 Algeria' },
+  { code: 'SD', name: '🇸🇩 Sudan' },
+  { code: 'ZM', name: '🇿🇲 Zambia' },
+  { code: 'ZW', name: '🇿🇼 Zimbabwe' },
+  { code: 'RW', name: '🇷🇼 Rwanda' },
+  { code: 'TN', name: '🇹🇳 Tunisia' },
+  { code: 'BF', name: '🇧🇫 Burkina Faso' },
+  { code: 'ML', name: '🇲🇱 Mali' },
+  { code: 'ER', name: '🇪🇷 Eritrea' },
+  { code: 'GM', name: '🇬🇲 Gambia' },
+  { code: 'GW', name: '🇬🇼 Guinea-Bissau' },
+  { code: 'GN', name: '🇬🇳 Guinea' },
+  { code: 'LR', name: '🇱🇷 Liberia' },
+  { code: 'SL', name: '🇸🇱 Sierra Leone' },
+  { code: 'TG', name: '🇹🇬 Togo' },
+  { code: 'BJ', name: '🇧🇯 Benin' },
+  { code: 'NE', name: '🇳🇪 Niger' },
+  { code: 'TD', name: '🇹🇩 Chad' },
+  { code: 'SS', name: '🇸🇸 South Sudan' },
+  { code: 'SO', name: '🇸🇴 Somalia' },
+  { code: 'DJ', name: '🇩🇯 Djibouti' },
+  { code: 'BI', name: '🇧🇮 Burundi' },
+  { code: 'CF', name: '🇨🇫 Central African Republic' },
+  { code: 'CG', name: '🇨🇬 Republic of Congo' },
+  { code: 'CD', name: '🇨🇩 DR Congo' },
+  { code: 'GA', name: '🇬🇦 Gabon' },
+  { code: 'GQ', name: '🇬🇶 Equatorial Guinea' },
+  { code: 'ST', name: '🇸🇹 São Tomé and Príncipe' },
+  { code: 'CV', name: '🇨🇻 Cape Verde' },
+  { code: 'MW', name: '🇲🇼 Malawi' },
+  { code: 'LS', name: '🇱🇸 Lesotho' },
+  { code: 'SZ', name: '🇸🇿 Eswatini' },
+  { code: 'BW', name: '🇧🇼 Botswana' },
+  { code: 'NA', name: '🇳🇦 Namibia' },
+  { code: 'SC', name: '🇸🇨 Seychelles' },
+  { code: 'MU', name: '🇲🇺 Mauritius' },
+  { code: 'KM', name: '🇰🇲 Comoros' },
+  { code: 'LY', name: '🇱🇾 Libya' },
+  { code: 'MR', name: '🇲🇷 Mauritania' },
+  { code: 'EH', name: '🇪🇭 Western Sahara' },
+  // Rest of world — alphabetical
+  { code: 'AF', name: '🇦🇫 Afghanistan' },
+  { code: 'AL', name: '🇦🇱 Albania' },
+  { code: 'AD', name: '🇦🇩 Andorra' },
+  { code: 'AG', name: '🇦🇬 Antigua and Barbuda' },
+  { code: 'AR', name: '🇦🇷 Argentina' },
+  { code: 'AM', name: '🇦🇲 Armenia' },
+  { code: 'AU', name: '🇦🇺 Australia' },
+  { code: 'AT', name: '🇦🇹 Austria' },
+  { code: 'AZ', name: '🇦🇿 Azerbaijan' },
+  { code: 'BS', name: '🇧🇸 Bahamas' },
+  { code: 'BH', name: '🇧🇭 Bahrain' },
+  { code: 'BD', name: '🇧🇩 Bangladesh' },
+  { code: 'BB', name: '🇧🇧 Barbados' },
+  { code: 'BY', name: '🇧🇾 Belarus' },
+  { code: 'BE', name: '🇧🇪 Belgium' },
+  { code: 'BZ', name: '🇧🇿 Belize' },
+  { code: 'BT', name: '🇧🇹 Bhutan' },
+  { code: 'BO', name: '🇧🇴 Bolivia' },
+  { code: 'BA', name: '🇧🇦 Bosnia and Herzegovina' },
+  { code: 'BR', name: '🇧🇷 Brazil' },
+  { code: 'BN', name: '🇧🇳 Brunei' },
+  { code: 'BG', name: '🇧🇬 Bulgaria' },
+  { code: 'KH', name: '🇰🇭 Cambodia' },
+  { code: 'CA', name: '🇨🇦 Canada' },
+  { code: 'CL', name: '🇨🇱 Chile' },
+  { code: 'CN', name: '🇨🇳 China' },
+  { code: 'CO', name: '🇨🇴 Colombia' },
+  { code: 'CR', name: '🇨🇷 Costa Rica' },
+  { code: 'HR', name: '🇭🇷 Croatia' },
+  { code: 'CU', name: '🇨🇺 Cuba' },
+  { code: 'CY', name: '🇨🇾 Cyprus' },
+  { code: 'CZ', name: '🇨🇿 Czech Republic' },
+  { code: 'DK', name: '🇩🇰 Denmark' },
+  { code: 'DM', name: '🇩🇲 Dominica' },
+  { code: 'DO', name: '🇩🇴 Dominican Republic' },
+  { code: 'EC', name: '🇪🇨 Ecuador' },
+  { code: 'SV', name: '🇸🇻 El Salvador' },
+  { code: 'EE', name: '🇪🇪 Estonia' },
+  { code: 'FJ', name: '🇫🇯 Fiji' },
+  { code: 'FI', name: '🇫🇮 Finland' },
+  { code: 'FR', name: '🇫🇷 France' },
+  { code: 'GE', name: '🇬🇪 Georgia' },
+  { code: 'DE', name: '🇩🇪 Germany' },
+  { code: 'GR', name: '🇬🇷 Greece' },
+  { code: 'GD', name: '🇬🇩 Grenada' },
+  { code: 'GT', name: '🇬🇹 Guatemala' },
+  { code: 'GY', name: '🇬🇾 Guyana' },
+  { code: 'HT', name: '🇭🇹 Haiti' },
+  { code: 'HN', name: '🇭🇳 Honduras' },
+  { code: 'HU', name: '🇭🇺 Hungary' },
+  { code: 'IS', name: '🇮🇸 Iceland' },
+  { code: 'IN', name: '🇮🇳 India' },
+  { code: 'ID', name: '🇮🇩 Indonesia' },
+  { code: 'IR', name: '🇮🇷 Iran' },
+  { code: 'IQ', name: '🇮🇶 Iraq' },
+  { code: 'IE', name: '🇮🇪 Ireland' },
+  { code: 'IL', name: '🇮🇱 Israel' },
+  { code: 'IT', name: '🇮🇹 Italy' },
+  { code: 'JM', name: '🇯🇲 Jamaica' },
+  { code: 'JP', name: '🇯🇵 Japan' },
+  { code: 'JO', name: '🇯🇴 Jordan' },
+  { code: 'KZ', name: '🇰🇿 Kazakhstan' },
+  { code: 'KI', name: '🇰🇮 Kiribati' },
+  { code: 'KW', name: '🇰🇼 Kuwait' },
+  { code: 'KG', name: '🇰🇬 Kyrgyzstan' },
+  { code: 'LA', name: '🇱🇦 Laos' },
+  { code: 'LV', name: '🇱🇻 Latvia' },
+  { code: 'LB', name: '🇱🇧 Lebanon' },
+  { code: 'LI', name: '🇱🇮 Liechtenstein' },
+  { code: 'LT', name: '🇱🇹 Lithuania' },
+  { code: 'LU', name: '🇱🇺 Luxembourg' },
+  { code: 'MK', name: '🇲🇰 North Macedonia' },
+  { code: 'MV', name: '🇲🇻 Maldives' },
+  { code: 'MT', name: '🇲🇹 Malta' },
+  { code: 'MH', name: '🇲🇭 Marshall Islands' },
+  { code: 'MX', name: '🇲🇽 Mexico' },
+  { code: 'FM', name: '🇫🇲 Micronesia' },
+  { code: 'MD', name: '🇲🇩 Moldova' },
+  { code: 'MC', name: '🇲🇨 Monaco' },
+  { code: 'MN', name: '🇲🇳 Mongolia' },
+  { code: 'ME', name: '🇲🇪 Montenegro' },
+  { code: 'MM', name: '🇲🇲 Myanmar' },
+  { code: 'NR', name: '🇳🇷 Nauru' },
+  { code: 'NP', name: '🇳🇵 Nepal' },
+  { code: 'NL', name: '🇳🇱 Netherlands' },
+  { code: 'NZ', name: '🇳🇿 New Zealand' },
+  { code: 'NI', name: '🇳🇮 Nicaragua' },
+  { code: 'NO', name: '🇳🇴 Norway' },
+  { code: 'OM', name: '🇴🇲 Oman' },
+  { code: 'PK', name: '🇵🇰 Pakistan' },
+  { code: 'PW', name: '🇵🇼 Palau' },
+  { code: 'PA', name: '🇵🇦 Panama' },
+  { code: 'PG', name: '🇵🇬 Papua New Guinea' },
+  { code: 'PY', name: '🇵🇾 Paraguay' },
+  { code: 'PE', name: '🇵🇪 Peru' },
+  { code: 'PH', name: '🇵🇭 Philippines' },
+  { code: 'PL', name: '🇵🇱 Poland' },
+  { code: 'PT', name: '🇵🇹 Portugal' },
+  { code: 'QA', name: '🇶🇦 Qatar' },
+  { code: 'RO', name: '🇷🇴 Romania' },
+  { code: 'RU', name: '🇷🇺 Russia' },
+  { code: 'KN', name: '🇰🇳 Saint Kitts and Nevis' },
+  { code: 'LC', name: '🇱🇨 Saint Lucia' },
+  { code: 'VC', name: '🇻🇨 Saint Vincent and the Grenadines' },
+  { code: 'WS', name: '🇼🇸 Samoa' },
+  { code: 'SM', name: '🇸🇲 San Marino' },
+  { code: 'SA', name: '🇸🇦 Saudi Arabia' },
+  { code: 'RS', name: '🇷🇸 Serbia' },
+  { code: 'SG', name: '🇸🇬 Singapore' },
+  { code: 'SK', name: '🇸🇰 Slovakia' },
+  { code: 'SI', name: '🇸🇮 Slovenia' },
+  { code: 'SB', name: '🇸🇧 Solomon Islands' },
+  { code: 'ES', name: '🇪🇸 Spain' },
+  { code: 'LK', name: '🇱🇰 Sri Lanka' },
+  { code: 'SR', name: '🇸🇷 Suriname' },
+  { code: 'SE', name: '🇸🇪 Sweden' },
+  { code: 'CH', name: '🇨🇭 Switzerland' },
+  { code: 'SY', name: '🇸🇾 Syria' },
+  { code: 'TW', name: '🇹🇼 Taiwan' },
+  { code: 'TJ', name: '🇹🇯 Tajikistan' },
+  { code: 'TH', name: '🇹🇭 Thailand' },
+  { code: 'TL', name: '🇹🇱 Timor-Leste' },
+  { code: 'TO', name: '🇹🇴 Tonga' },
+  { code: 'TT', name: '🇹🇹 Trinidad and Tobago' },
+  { code: 'TR', name: '🇹🇷 Turkey' },
+  { code: 'TM', name: '🇹🇲 Turkmenistan' },
+  { code: 'TV', name: '🇹🇻 Tuvalu' },
+  { code: 'UA', name: '🇺🇦 Ukraine' },
+  { code: 'AE', name: '🇦🇪 United Arab Emirates' },
+  { code: 'GB', name: '🇬🇧 United Kingdom' },
+  { code: 'US', name: '🇺🇸 United States' },
+  { code: 'UY', name: '🇺🇾 Uruguay' },
+  { code: 'UZ', name: '🇺🇿 Uzbekistan' },
+  { code: 'VU', name: '🇻🇺 Vanuatu' },
+  { code: 'VE', name: '🇻🇪 Venezuela' },
+  { code: 'VN', name: '🇻🇳 Vietnam' },
+  { code: 'YE', name: '🇾🇪 Yemen' },
+]
+
+// ─────────────────────────────────────────────────────────────
 // Shared micro-components
 // ─────────────────────────────────────────────────────────────
 function CheckIcon({ color = C.success }: { color?: string }) {
@@ -213,6 +532,7 @@ const FAQS = [
 export default function Home() {
   return (
     <>
+      <BugBackground />
       {/* ── NAV ── */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
@@ -372,24 +692,47 @@ export default function Home() {
 
       {/* ── FEATURES ── */}
       <section id="features" style={s.section}>
-        <div style={{ textAlign: 'center', marginBottom: 60 }}>
+        <div style={{ textAlign: 'center', marginBottom: 64 }}>
           <span style={s.label}>Protection layers</span>
           <h2 style={s.h2}>5 layers of analysis<br />on every email</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-          {FEATURES.map((f) => (
-            <div key={f.title} style={s.card}>
-              <div style={{
-                width: 48, height: 48, borderRadius: 12,
-                background: 'rgba(57,182,255,0.08)',
-                border: '1px solid rgba(57,182,255,0.15)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 16,
-              }}>
-                {f.icon}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {FEATURES.map((f, i) => (
+            <div key={f.title} style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1px 1fr',
+              alignItems: 'center',
+              gap: 0,
+              padding: '32px 0',
+              borderTop: i === 0 ? '1px solid rgba(57,182,255,0.1)' : undefined,
+              borderBottom: '1px solid rgba(57,182,255,0.1)',
+              background: i % 2 === 0 ? 'transparent' : 'rgba(57,182,255,0.02)',
+            }}>
+              {/* Left — icon + title */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, paddingRight: 48 }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+                  background: 'rgba(57,182,255,0.08)',
+                  border: '1px solid rgba(57,182,255,0.18)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {f.icon}
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: C.cyan, marginBottom: 4, textTransform: 'uppercase' }}>
+                    Layer {i + 1}
+                  </div>
+                  <h3 style={{ ...s.h3, marginBottom: 0, fontSize: 17 }}>{f.title}</h3>
+                </div>
               </div>
-              <h3 style={s.h3}>{f.title}</h3>
-              <p style={{ ...s.body, fontSize: 14 }}>{f.desc}</p>
+
+              {/* Divider line */}
+              <div style={{ width: 1, height: 48, background: 'rgba(57,182,255,0.12)', margin: '0 auto' }} />
+
+              {/* Right — description */}
+              <div style={{ paddingLeft: 48 }}>
+                <p style={{ ...s.body, fontSize: 15, lineHeight: 1.7, margin: 0 }}>{f.desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -511,20 +854,9 @@ export default function Home() {
                   }}
                 >
                   <option value="">Select your country</option>
-                  <option value="NG">🇳🇬 Nigeria</option>
-                  <option value="GH">🇬🇭 Ghana</option>
-                  <option value="KE">🇰🇪 Kenya</option>
-                  <option value="ZA">🇿🇦 South Africa</option>
-                  <option value="SN">🇸🇳 Senegal</option>
-                  <option value="CI">🇨🇮 Côte d&apos;Ivoire</option>
-                  <option value="CM">🇨🇲 Cameroon</option>
-                  <option value="TZ">🇹🇿 Tanzania</option>
-                  <option value="UG">🇺🇬 Uganda</option>
-                  <option value="ET">🇪🇹 Ethiopia</option>
-                  <option value="GB">🇬🇧 United Kingdom</option>
-                  <option value="US">🇺🇸 United States</option>
-                  <option value="CA">🇨🇦 Canada</option>
-                  <option value="OTHER">🌍 Other</option>
+                  {COUNTRIES.map(c => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
                 </select>
               </div>
 
