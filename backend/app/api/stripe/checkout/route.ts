@@ -5,6 +5,14 @@ import { decodeJwt } from '../../../../lib/quota'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://backend-gules-sigma-37.vercel.app'
 
 export async function POST(req: NextRequest) {
+  // Payments suspended during early access promo period
+  if (process.env.PAYMENTS_ENABLED !== 'true') {
+    return NextResponse.json(
+      { error: 'payments_suspended', message: 'Payments are not yet active. Use your promo code to access Pro.' },
+      { status: 503 }
+    )
+  }
+
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
   const jwtPayload = token ? await decodeJwt(token) : null
