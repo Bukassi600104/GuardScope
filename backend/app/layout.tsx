@@ -5,7 +5,8 @@ export const metadata: Metadata = {
   title: 'GuardScope — AI Email Security for Gmail',
   description: 'Stop phishing before it stops you. GuardScope analyzes every email in seconds — SPF/DKIM/DMARC, VirusTotal, domain age, and Mercury-2 AI — all in a Chrome sidebar.',
   icons: {
-    icon: '/logo.png',
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
   },
   openGraph: {
     title: 'GuardScope — AI Email Security for Gmail',

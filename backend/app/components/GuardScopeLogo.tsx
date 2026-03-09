@@ -26,10 +26,11 @@ export function GuardScopeIcon({ size = 40, variant = 'color' }: { size?: number
   const ax2 = cx + r * Math.cos(toR(-30))   // 32.26
   const ay2 = cy + r * Math.sin(toR(-30))   // 17.50  (upper-right, SVG y-down)
 
-  // Outer detection dot: 315° in SVG (= -45° = upper-right), outside arc by 4px
-  const od = r + 4.5
-  const ox = cx + od * Math.cos(toR(-45))   // ~32.6
-  const oy = cy + od * Math.sin(toR(-45))   // ~11.4
+  // Outer detection dot: 310° SVG (= -50° standard = 1-o'clock upper-right)
+  // od large enough to clear arc stroke: gap = od - r - sw/2 - dot_r ≥ 3px
+  const od = r + 8   // 21 — clearly outside arc
+  const ox = cx + od * Math.cos(toR(-50))
+  const oy = cy + od * Math.sin(toR(-50))
 
   const dotFill   = variant === 'white' ? '#FFFFFF' : variant === 'dark' ? '#071C2C' : `url(#${gradId})`
   const arcStroke = variant === 'white' ? '#FFFFFF' : variant === 'dark' ? '#071C2C' : `url(#${gradId})`
@@ -62,10 +63,10 @@ export function GuardScopeIcon({ size = 40, variant = 'color' }: { size?: number
       />
 
       {/* Inner center node — detected threat */}
-      <circle cx={cx} cy={cy} r={2.6} fill={dotFill} />
+      <circle cx={cx} cy={cy} r={3.5} fill={dotFill} />
 
       {/* Outer detection signal node */}
-      <circle cx={ox.toFixed(2)} cy={oy.toFixed(2)} r={2.1} fill={dotFill} />
+      <circle cx={ox.toFixed(2)} cy={oy.toFixed(2)} r={3.0} fill={dotFill} />
     </svg>
   )
 }
