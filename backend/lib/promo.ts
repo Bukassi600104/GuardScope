@@ -1,7 +1,8 @@
 // Promo code system — uses Supabase REST API directly (same pattern as quota.ts)
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+// Match quota.ts fallback pattern — Vercel uses SUPABASE_URL, local uses NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? ''
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
 
 function headers() {
   return {
