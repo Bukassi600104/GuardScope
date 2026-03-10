@@ -12,9 +12,11 @@ import { safeBrowsingCheck } from '../../../lib/safebrowsing'
 import { rdapLookup } from '../../../lib/rdap'
 import { isTrustedDomain, getTrustCategory } from '../../../lib/allowlist'
 import { isTopDomain } from '../../../lib/tranco'
-import { applyHybridScore } from '../../../lib/scorer'
+import { applyHybridScore, calcRuleScore, scoreToLevel } from '../../../lib/scorer'
 import { phishTankScan } from '../../../lib/phishtank'
 import { urlHausScan } from '../../../lib/urlhaus'
+import { analyzeHeaders } from '../../../lib/headerAnalysis'
+import { analyzeDomainSimilarity } from '../../../lib/domainSimilarity'
 import { normalizeUrls } from '../../../lib/urlCache'
 import { decodeJwt, checkAndIncrementQuota, getUserTier } from '../../../lib/quota'
 import { checkRateLimit } from '../../../lib/ratelimit'
@@ -26,14 +28,7 @@ const MAX_BODY_BYTES = 500_000
 
 // ─── Rule-based fallback ─────────────────────────────────────────────────────
 // Used only when Mercury-2 fails entirely (network error, API down, etc.)
-
-function scoreToLevel(score: number): AnalysisReport['risk_level'] {
-  if (score <= 25) return 'SAFE'
-  if (score <= 49) return 'LOW'
-  if (score <= 69) return 'MEDIUM'
-  if (score <= 84) return 'HIGH'
-  return 'CRITICAL'
-}
+// scoreToLevel is imported from scorer.ts for consistency
 
 function buildFallbackReport(
   intel: AnalysisIntel,
@@ -88,20 +83,28 @@ function buildFallbackReport(
     green_flags.push({ label: 'URLs Clean', detail: 'No malicious URLs detected by threat intelligence', module: 'url_analysis' })
   }
 
-  // Score from intel signals since Mercury is unavailable
-  let score = 0
-  if (intel.dns.spf === 'fail') score += 20
-  else if (intel.dns.spf === 'none') score += 10
-  else if (intel.dns.spf === 'neutral') score += 5
-  if (intel.dns.dkim === 'absent') score += 10
-  if (intel.dns.dmarc.policy === 'none' || intel.dns.dmarc.policy === 'error') score += 5
-  if (intel.rdap.riskLevel === 'HIGH') score += 25
-  else if (intel.rdap.riskLevel === 'MEDIUM') score += 10
-  if (intel.vt.flagged) score += 40
-  if (intel.sb.flagged) score += 40
-  if (intel.trustHint) score = Math.max(0, score - 15)
-  score = Math.min(100, score)
+  // Header analysis flags
+  if (intel.headerAnalysis?.replyToMismatch) {
+    red_flags.push({ label: 'Reply-To Mismatch', evidence: `Reply-To domain (${intel.headerAnalysis.replyToDomain}) differs from sender domain — replies go to attacker`, severity: 'HIGH', module: 'header_integrity' })
+  }
+  if (intel.headerAnalysis?.displayNameMismatch) {
+    red_flags.push({ label: 'Display Name Impersonation', evidence: `Email appears to be from "${intel.headerAnalysis.displayNameBrand}" but sender domain doesn't match`, severity: 'HIGH', module: 'header_integrity' })
+  }
+  if (intel.headerAnalysis?.attachmentRiskLevel === 'HIGH') {
+    red_flags.push({ label: 'High-Risk Attachment', evidence: `Executable/script file attached: ${intel.headerAnalysis.riskyAttachments.join(', ')}`, severity: 'HIGH', module: 'attachments' })
+  } else if (intel.headerAnalysis?.attachmentRiskLevel === 'MEDIUM') {
+    red_flags.push({ label: 'Suspicious Attachment', evidence: `Potentially risky attachment: ${intel.headerAnalysis.riskyAttachments.join(', ')}`, severity: 'MEDIUM', module: 'attachments' })
+  }
+  if (intel.headerAnalysis?.ipAddressUrls.length) {
+    red_flags.push({ label: 'IP Address URL', evidence: `Links use raw IP addresses instead of domain names: ${intel.headerAnalysis.ipAddressUrls.join(', ')}`, severity: 'HIGH', module: 'url_analysis' })
+  }
+  if (intel.domainSimilarity?.isLookalike) {
+    const ds = intel.domainSimilarity
+    red_flags.push({ label: 'Lookalike Domain', evidence: ds.detail ?? `Sender domain resembles "${ds.targetBrand}" — ${ds.technique}`, severity: ds.confidence === 'HIGH' ? 'HIGH' : 'MEDIUM', module: 'domain_intel' })
+  }
 
+  // Use calcRuleScore for consistent fallback scoring (same as main path)
+  const score = Math.min(100, calcRuleScore(intel))
   const risk_level = scoreToLevel(score)
 
   return {
@@ -203,6 +206,7 @@ export async function POST(req: NextRequest) {
     date: body.date ?? null,
     bodyText: body.bodyText,
     urls: normalizeUrls(Array.isArray(body.urls) ? body.urls : []),
+    anchorLinks: Array.isArray(body.anchorLinks) ? body.anchorLinks : undefined,
     attachments: Array.isArray(body.attachments) ? body.attachments : [],
     replyTo: body.replyTo ?? null,
     messageId: body.messageId ?? null,
@@ -259,12 +263,27 @@ export async function POST(req: NextRequest) {
   const domainMatch = email.fromEmail?.match(/@([\w.-]+)/)
   const senderDomain = domainMatch ? domainMatch[1].toLowerCase() : ''
 
+  // Free email provider detection — gmail/yahoo/hotmail senders don't get trust cap benefit
+  // because attackers commonly send phishing from free providers
+  const FREE_PROVIDERS = new Set([
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.uk', 'yahoo.fr', 'yahoo.ng',
+    'hotmail.com', 'hotmail.co.uk', 'hotmail.fr', 'outlook.com', 'live.com', 'live.co.uk',
+    'ymail.com', 'icloud.com', 'me.com', 'mac.com', 'protonmail.com', 'proton.me',
+    'zoho.com', 'aol.com', 'mail.com', 'yandex.com', 'yandex.ru',
+  ])
+  const isFreeProvider = FREE_PROVIDERS.has(senderDomain)
+
   // Allowlist + Tranco check — will be passed to Mercury via intel object
-  const trusted = isTrustedDomain(senderDomain) || isTopDomain(senderDomain)
-  const trustCategory = getTrustCategory(senderDomain) ?? (isTopDomain(senderDomain) ? 'global_tech' : null)
+  // Free providers are intentionally excluded from trust benefit
+  const trusted = !isFreeProvider && (isTrustedDomain(senderDomain) || isTopDomain(senderDomain))
+  const trustCategory = trusted ? (getTrustCategory(senderDomain) ?? (isTopDomain(senderDomain) ? 'global_tech' : null)) : null
 
   const NO_DOMAIN_DNS: DnsResult = { spf: 'none', dkim: 'error', dmarc: { policy: 'error', raw: '' }, error: 'no domain' }
   const NO_DOMAIN_RDAP: RdapResult = { registrationDate: null, ageInDays: null, riskLevel: 'UNKNOWN', registrar: null, error: 'no domain' }
+
+  // Deterministic analysis (no network calls needed)
+  const headerAnalysis = analyzeHeaders(email)
+  const domainSimilarity = senderDomain ? analyzeDomainSimilarity(senderDomain) : undefined
 
   // Gather all external intel in parallel — no AI call during this phase
   const [dnsRes, vtRes, sbRes, rdapRes, ptRes, uhRes] = await Promise.allSettled([
@@ -277,15 +296,18 @@ export async function POST(req: NextRequest) {
   ])
 
   const intel: AnalysisIntel = {
-    dns: dnsRes.status === 'fulfilled' ? dnsRes.value : { spf: 'error', dkim: 'error', dmarc: { policy: 'error', raw: '' }, error: 'DNS failed' },
+    dns: dnsRes.status === 'fulfilled' ? dnsRes.value : { spf: 'error', dkim: 'error', dmarc: { policy: 'error', raw: '' }, hasMx: true, error: 'DNS failed' },
     vt: vtRes.status === 'fulfilled' ? vtRes.value : { flagged: false, results: [], error: 'VT failed' },
     sb: sbRes.status === 'fulfilled' ? sbRes.value : { flagged: false, threats: [], error: 'SB failed' },
     rdap: rdapRes.status === 'fulfilled' ? rdapRes.value : { registrationDate: null, ageInDays: null, riskLevel: 'UNKNOWN', registrar: null, error: 'RDAP failed' },
     phishtank: ptRes.status === 'fulfilled' ? ptRes.value : { flagged: false, phishingUrls: [], error: 'PhishTank failed' },
     urlhaus: uhRes.status === 'fulfilled' ? uhRes.value : { flagged: false, malwareUrls: [], error: 'URLhaus failed' },
+    headerAnalysis,
+    ...(domainSimilarity ? { domainSimilarity } : {}),
     ...(trusted && trustCategory ? {
       trustHint: `Sender domain "${senderDomain}" is a known-legitimate ${trustCategory} domain in GuardScope's allowlist.`
     } : {}),
+    ...(isFreeProvider ? { freeProvider: true } : {}),
   }
 
   // Mercury-2 deep analysis — every user gets full AI results

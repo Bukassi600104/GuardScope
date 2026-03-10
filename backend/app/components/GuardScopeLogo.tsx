@@ -1,5 +1,5 @@
 // GuardScope SVG Logo — matches brand image exactly
-// Arc gap at upper-right (330°–30°) | inner center dot | outer detection dot at 315°
+// Arc gap at RIGHT (330°–30°) | inner center dot | outer detection dot at 0° (center of gap)
 // Gradient: #72D8FF → #1A8FFF at 135°
 
 interface LogoProps {
@@ -26,11 +26,11 @@ export function GuardScopeIcon({ size = 40, variant = 'color' }: { size?: number
   const ax2 = cx + r * Math.cos(toR(-30))   // 32.26
   const ay2 = cy + r * Math.sin(toR(-30))   // 17.50  (upper-right, SVG y-down)
 
-  // Outer detection dot: 325° SVG (= -35° standard = 1:30-o'clock, just past upper arc endpoint)
-  // Positioned beside the upper arc tip: y ≈ 12.5, clearly above arc & to the right
-  const od = r + 7   // 20 — outside arc with visible gap
-  const ox = cx + od * Math.cos(toR(-35))
-  const oy = cy + od * Math.sin(toR(-35))
+  // Outer detection dot: 0° (due east, center of gap opening between -30° and +30°)
+  // Sits clearly inside the gap, symmetrically between the two arc endpoints
+  const od = r + 4   // 17 — comfortably outside arc radius with visible gap
+  const ox = cx + od * Math.cos(toR(0))
+  const oy = cy + od * Math.sin(toR(0))
 
   const dotFill   = variant === 'white' ? '#FFFFFF' : variant === 'dark' ? '#071C2C' : `url(#${gradId})`
   const arcStroke = variant === 'white' ? '#FFFFFF' : variant === 'dark' ? '#071C2C' : `url(#${gradId})`

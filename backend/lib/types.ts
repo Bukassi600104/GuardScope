@@ -5,7 +5,8 @@ export interface EmailInput {
   date: string | null
   bodyText: string | null
   urls: string[]
-  attachments: Array<{ name: string; type: string }>
+  anchorLinks?: Array<{ text: string; href: string }>  // link text + href pairs for mismatch detection
+  attachments: Array<{ name: string; type: string; extension?: string }>
   replyTo: string | null
   messageId: string | null
   gmailAuth?: { signedBy: string | null; mailedBy: string | null }
@@ -23,6 +24,7 @@ export interface DnsResult {
   spf: 'pass' | 'fail' | 'neutral' | 'none' | 'error'
   dkim: 'present' | 'absent' | 'unknown' | 'error'
   dmarc: { policy: 'none' | 'quarantine' | 'reject' | 'error'; raw: string }
+  hasMx?: boolean   // domain has MX records (false = domain can't receive email legitimately)
   error?: string
 }
 
@@ -66,7 +68,36 @@ export interface URLhausResult {
   error?: string
 }
 
-// Shared intel payload — same shape for both Mercury and Sonnet paths
+/**
+ * Header-level analysis results — computed deterministically from email metadata.
+ * No AI required — pure logic.
+ */
+export interface HeaderAnalysisResult {
+  replyToMismatch: boolean              // replyTo domain ≠ fromEmail domain
+  replyToDomain: string | null          // extracted replyTo domain
+  displayNameBrand: string | null       // brand detected in display name (e.g., "PayPal")
+  displayNameMismatch: boolean          // fromName contains a brand but domain doesn't match
+  attachmentRiskLevel: 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE'
+  riskyAttachments: string[]            // names of risky attachments
+  ipAddressUrls: string[]               // URLs using raw IP addresses
+  urlCount: number                      // total URL count
+  hasDataUri: boolean                   // data: URI scheme (always suspicious in email)
+  hasJavascriptUri: boolean             // javascript: URI scheme
+  anchorTextMismatches: Array<{ text: string; href: string; textDomain: string; hrefDomain: string }>
+}
+
+/**
+ * Domain similarity results — detects impersonation via lookalike domains.
+ */
+export interface DomainSimilarityResult {
+  isLookalike: boolean
+  targetBrand: string | null
+  technique: 'typosquatting' | 'homograph_idn' | 'combo_squatting' | 'subdomain_impersonation' | null
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW'
+  detail: string | null
+}
+
+// Shared intel payload — passed to Mercury and rule scorer
 export interface AnalysisIntel {
   dns: DnsResult
   vt: VirusTotalResult
@@ -74,8 +105,10 @@ export interface AnalysisIntel {
   rdap: RdapResult
   phishtank?: PhishTankResult
   urlhaus?: URLhausResult
+  headerAnalysis?: HeaderAnalysisResult    // header-level signals (reply-to, display name, attachments)
+  domainSimilarity?: DomainSimilarityResult // lookalike/typosquatting detection
   trustHint?: string      // set when sender domain is in the trusted allowlist
-  freeProvider?: boolean  // true for gmail.com, outlook.com etc — trust cap NOT applied
+  freeProvider?: boolean  // true for gmail.com, outlook.com etc — trust cap NOT applied for free providers
 }
 
 export interface AnalysisReport {

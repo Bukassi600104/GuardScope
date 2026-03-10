@@ -11,6 +11,26 @@ const COMMON_DKIM_SELECTORS = [
   'pm', 'mx', 's1', 's2', 'key1', 'key2',
 ]
 
+async function fetchMx(domain: string): Promise<boolean> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  try {
+    const res = await fetch(`${DOH_BASE}?name=${encodeURIComponent(domain)}&type=MX`, {
+      headers: { Accept: 'application/dns-json' },
+      signal: controller.signal,
+    })
+    if (!res.ok) return true  // fail open: assume MX exists on lookup error
+    const data = await res.json() as { Answer?: unknown[]; Status?: number }
+    // Status 3 = NXDOMAIN (domain doesn't exist), empty Answer = no MX records
+    if (data.Status === 3) return false
+    return Array.isArray(data.Answer) && data.Answer.length > 0
+  } catch {
+    return true  // fail open
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function fetchTxt(name: string): Promise<string[]> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
@@ -64,26 +84,30 @@ async function checkDkim(domain: string): Promise<'present' | 'unknown'> {
 
 export async function dnsLookup(domain: string): Promise<DnsResult> {
   try {
-    const [spfRecords, dkimResult, dmarcRecords] = await Promise.allSettled([
+    const [spfRecords, dkimResult, dmarcRecords, mxResult] = await Promise.allSettled([
       fetchTxt(domain),
       checkDkim(domain),
       fetchTxt(`_dmarc.${domain}`),
+      fetchMx(domain),
     ])
 
     const spfTxt = spfRecords.status === 'fulfilled' ? spfRecords.value : []
     const dkim = dkimResult.status === 'fulfilled' ? dkimResult.value : 'unknown'
     const dmarcTxt = dmarcRecords.status === 'fulfilled' ? dmarcRecords.value : []
+    const hasMx = mxResult.status === 'fulfilled' ? mxResult.value : true  // fail open
 
     return {
       spf: parseSpf(spfTxt),
       dkim,
       dmarc: parseDmarc(dmarcTxt),
+      hasMx,
     }
   } catch (err) {
     return {
       spf: 'error',
       dkim: 'unknown',
       dmarc: { policy: 'error', raw: '' },
+      hasMx: true,
       error: String(err),
     }
   }

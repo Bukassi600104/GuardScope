@@ -7,8 +7,8 @@ function GuardScopeIcon() {
   const toR = (d: number) => (d * Math.PI) / 180
   const ax1 = cx + r * Math.cos(toR(30)),  ay1 = cy + r * Math.sin(toR(30))
   const ax2 = cx + r * Math.cos(toR(-30)), ay2 = cy + r * Math.sin(toR(-30))
-  const od = r + 7
-  const ox = cx + od * Math.cos(toR(-35)), oy = cy + od * Math.sin(toR(-35))
+  const od = r + 4  // outer dot at 0° (center of gap), clearly inside gap opening
+  const ox = cx + od * Math.cos(toR(0)), oy = cy + od * Math.sin(toR(0))
   return (
     <svg width="64" height="64" viewBox="0 0 48 48" fill="none">
       <defs>
@@ -78,7 +78,10 @@ function Onboarding() {
           <div className="flex justify-center mb-4">
             <GuardScopeIcon />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Welcome to GuardScope</h1>
+          <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>
+            Welcome to{' '}
+            <span style={{ color: '#E7EEF4' }}>Guard</span><span style={{ color: '#39B6FF' }}>Scope</span>
+          </h1>
           <p className="text-[#64748b] text-sm">AI-powered email security for Gmail</p>
         </div>
 

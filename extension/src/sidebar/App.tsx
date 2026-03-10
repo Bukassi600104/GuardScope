@@ -15,8 +15,8 @@ function GuardScopeIcon({ color }: { color?: string }) {
   const toR = (d: number) => (d * Math.PI) / 180
   const ax1 = cx + r * Math.cos(toR(30)),  ay1 = cy + r * Math.sin(toR(30))
   const ax2 = cx + r * Math.cos(toR(-30)), ay2 = cy + r * Math.sin(toR(-30))
-  const od = r + 7
-  const ox = cx + od * Math.cos(toR(-35)), oy = cy + od * Math.sin(toR(-35))
+  const od = r + 4  // outer dot at 0° (center of gap), clearly inside gap opening
+  const ox = cx + od * Math.cos(toR(0)), oy = cy + od * Math.sin(toR(0))
   const useGradient = !color || color === '#39B6FF'
   const fill = useGradient ? 'url(#gs-app-g)' : color
   return (
@@ -413,7 +413,10 @@ export default function App() {
           transition: 'background 0.4s ease, border-color 0.4s ease',
         }}>
         <GuardScopeIcon color={shieldColor} />
-        <span className="font-semibold text-sm tracking-wide">GuardScope</span>
+        <span className="font-semibold text-sm tracking-wide" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>
+          <span style={{ color: shieldColor === '#39B6FF' ? '#E7EEF4' : '#fff' }}>Guard</span>
+          <span style={{ color: shieldColor }}>Scope</span>
+        </span>
 
         {/* Right-side controls: badge + history */}
         <div className="ml-auto flex items-center gap-1.5">

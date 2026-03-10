@@ -6,6 +6,11 @@ export interface GmailAuthResult {
   mailedBy: string | null   // SPF mailed-by domain (envelope sender)
 }
 
+export interface AnchorLink {
+  text: string   // visible link text (what user sees)
+  href: string   // actual destination URL
+}
+
 export interface ExtractedEmail {
   fromName: string | null
   fromEmail: string | null
@@ -13,6 +18,7 @@ export interface ExtractedEmail {
   date: string | null
   bodyText: string | null
   urls: string[]
+  anchorLinks: AnchorLink[]  // pairs of visible text + href for mismatch detection
   attachments: Attachment[]
   replyTo: string | null
   messageId: string | null
@@ -37,6 +43,7 @@ export function extractEmailData(): ExtractedEmail {
     date: extractDate(),
     bodyText: extractBodyText(),
     urls: extractUrls(),
+    anchorLinks: extractAnchorLinks(),
     attachments: extractAttachments(),
     replyTo: extractReplyTo(),
     messageId: extractMessageId(),
@@ -250,6 +257,49 @@ function extractBodyText(): string | null {
     return null
   } catch {
     return null
+  }
+}
+
+/**
+ * Extract anchor links with both visible text and href destination.
+ * Used to detect anchor text vs href mismatch attacks — where the link SHOWS
+ * "paypal.com" but the actual href destination is "evil.com".
+ */
+function extractAnchorLinks(): AnchorLink[] {
+  try {
+    const links: AnchorLink[] = []
+    const seen = new Set<string>()
+
+    const bodyContainers = [
+      document.querySelector('.a3s.aiL'),
+      document.querySelector('.a3s'),
+      document.querySelector('.ii.gt'),
+    ].filter(Boolean)
+
+    for (const container of bodyContainers) {
+      if (!container) continue
+      const anchors = container.querySelectorAll('a[href]')
+      for (const anchor of anchors) {
+        const href = (anchor as HTMLAnchorElement).href
+        if (!href || !isValidUrl(href)) continue
+
+        const text = (anchor.textContent ?? '').trim()
+        // Only include links where the visible text is non-empty and not the href itself
+        if (!text || text === href || text.length > 200) continue
+
+        const key = `${text.slice(0, 60)}|${href.slice(0, 120)}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          links.push({ text, href })
+        }
+      }
+      // Only use first matching container to avoid duplicates
+      if (links.length > 0) break
+    }
+
+    return links.slice(0, 50)  // cap at 50 to prevent payload bloat
+  } catch {
+    return []
   }
 }
 

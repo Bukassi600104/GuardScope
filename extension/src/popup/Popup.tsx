@@ -19,8 +19,8 @@ function GuardScopeIcon() {
   const toR = (d: number) => (d * Math.PI) / 180
   const ax1 = cx + r * Math.cos(toR(30)),  ay1 = cy + r * Math.sin(toR(30))
   const ax2 = cx + r * Math.cos(toR(-30)), ay2 = cy + r * Math.sin(toR(-30))
-  const od = r + 7
-  const ox = cx + od * Math.cos(toR(-35)), oy = cy + od * Math.sin(toR(-35))
+  const od = r + 4  // outer dot at 0° (center of gap), clearly inside gap opening
+  const ox = cx + od * Math.cos(toR(0)), oy = cy + od * Math.sin(toR(0))
   return (
     <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
       <defs>
@@ -166,7 +166,9 @@ export default function Popup() {
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(57,182,255,0.15)]">
         <GuardScopeIcon />
-        <span className="font-semibold text-sm">GuardScope</span>
+        <span className="font-semibold text-sm tracking-wide" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>
+          <span style={{ color: '#E7EEF4' }}>Guard</span><span style={{ color: '#39B6FF' }}>Scope</span>
+        </span>
         <span className={`ml-auto text-[10px] px-2 py-0.5 rounded border ${badgeClass}`}>
           {tierLabel}
         </span>
