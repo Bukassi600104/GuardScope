@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   try {
     event = getStripe().webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
-    console.error('[stripe/webhook] signature verification failed:', err)
+    // Signature mismatch — reject silently (Stripe will retry; no details to attacker)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -65,7 +65,6 @@ export async function POST(req: NextRequest) {
           session.customer as string,
           session.subscription as string
         )
-        console.log(`[stripe] User ${userId} upgraded to pro`)
         break
       }
 
@@ -75,21 +74,17 @@ export async function POST(req: NextRequest) {
         const userId = subscription.metadata?.userId
         if (!isValidUUID(userId)) break
         await updateUserTier(userId, 'free')
-        console.log(`[stripe] User ${userId} reverted to free (${event.type})`)
         break
       }
 
       case 'invoice.payment_failed': {
-        // Log but don't immediately downgrade — Stripe retries for several days
-        const invoice = event.data.object as Stripe.Invoice
-        console.warn(`[stripe] Payment failed for customer ${invoice.customer}`)
-        Sentry.captureMessage(`Stripe payment failed: ${invoice.customer}`, 'warning')
+        // Log to Sentry — Stripe retries for several days before we act
+        Sentry.captureMessage('Stripe invoice payment failed', 'warning')
         break
       }
     }
   } catch (err) {
     Sentry.captureException(err, { extra: { eventType: event.type } })
-    console.error(`[stripe/webhook] handler error for ${event.type}:`, err)
     // Return 200 so Stripe doesn't retry — we log + alert instead
   }
 

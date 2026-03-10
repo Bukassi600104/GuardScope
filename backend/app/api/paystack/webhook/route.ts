@@ -40,9 +40,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Verify HMAC-SHA512 signature
+  // Verify HMAC-SHA512 signature using constant-time comparison (prevents timing attacks)
   const hash = crypto.createHmac('sha512', PAYSTACK_SECRET).update(body).digest('hex')
-  if (hash !== signature) {
+  const hashBuf = Buffer.from(hash, 'hex')
+  const sigBuf  = Buffer.from(signature, 'hex')
+  const signatureValid = hashBuf.length === sigBuf.length && crypto.timingSafeEqual(hashBuf, sigBuf)
+  if (!signatureValid) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -80,13 +83,9 @@ export async function POST(req: NextRequest) {
           } catch { /* non-fatal */ }
         }
 
-        if (!isValidUUID(userId)) {
-          console.warn('[paystack] charge.success — invalid userId:', userId)
-          break
-        }
+        if (!isValidUUID(userId)) break
 
         await updateUserTier(userId, 'pro', customerCode)
-        console.log(`[paystack] User ${userId} upgraded to pro`)
         break
       }
 
@@ -97,19 +96,17 @@ export async function POST(req: NextRequest) {
         if (!isValidUUID(userId)) break
 
         await updateUserTier(userId, 'free')
-        console.log(`[paystack] User ${userId} subscription disabled — reverted to free`)
         break
       }
 
       case 'invoice.payment_failed': {
-        const data = event.data
-        console.warn('[paystack] Payment failed for customer:', (data.customer as Record<string, string>)?.email)
+        // Log to Sentry — no PII in the message
+        Sentry.captureMessage('Paystack invoice payment failed', 'warning')
         break
       }
     }
   } catch (err) {
     Sentry.captureException(err, { extra: { eventType: event.event } })
-    console.error(`[paystack/webhook] handler error for ${event.event}:`, err)
     // Return 200 — Paystack retries on non-200; we log instead
   }
 
