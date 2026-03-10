@@ -250,10 +250,12 @@ export async function POST(req: NextRequest) {
 
   // ── Result cache — same email always returns same score within 24h ─────────
   // Eliminates AI non-determinism variance between repeated scans of the same email.
-  const cacheKey = 'gs:v1:' + createHash('sha256')
-    .update(`${email.fromEmail}:${email.subject}:${(email.bodyText ?? '').slice(0, 1000)}`)
+  // Hash full body (not just first 1000 chars) to avoid cache collisions where two emails
+  // share the same header+opening but differ in the payload (e.g., phishing link at char 1001).
+  const cacheKey = 'gs:v2:' + createHash('sha256')
+    .update(`${email.fromEmail}:${email.subject}:${email.bodyText ?? ''}:${email.urls.join(',')}`)
     .digest('hex')
-    .slice(0, 32)
+    .slice(0, 40)
 
   const cached = await getCachedResult(cacheKey)
   if (cached) {
@@ -310,17 +312,46 @@ export async function POST(req: NextRequest) {
     ...(isFreeProvider ? { freeProvider: true } : {}),
   }
 
-  // Mercury-2 deep analysis — every user gets full AI results
+  // Mercury-2 deep analysis — comprehensive AI report for every request.
+  // EXCEPTION: Skip Mercury if confirmed CRITICAL threat intel hit exists.
+  // When VT/SB/PhishTank/URLhaus flags a URL, score is already pinned to 85+
+  // by the hard override. Mercury can't add meaningful information — skip the
+  // 10-15s latency and return a high-quality rule-based CRITICAL report immediately.
+  const confirmedThreat = intel.vt.flagged || intel.sb.flagged ||
+    intel.phishtank?.flagged || intel.urlhaus?.flagged
+  const confirmedImpersonation = intel.headerAnalysis?.displayNameMismatch ||
+    intel.domainSimilarity?.isLookalike && intel.domainSimilarity.confidence === 'HIGH'
+
   let report: Omit<AnalysisReport, 'duration_ms'>
-  try {
-    const mercuryReport = await mercuryAnalyze(email, intel)
-    // Apply hybrid scoring: rule_score * 0.35 + mercury_score * 0.65 + hard overrides
-    report = applyHybridScore(mercuryReport, intel)
-  } catch (err) {
-    // Mercury unavailable — return rule-based fallback so users always get a response
-    Sentry.captureException(err, { extra: { fromEmail: email.fromEmail, senderDomain } })
-    report = buildFallbackReport(intel, String(err))
+
+  if (confirmedThreat) {
+    // Fast path: confirmed threat intel hit — no need to invoke Mercury
+    report = buildFallbackReport(intel, 'fast_path_threat_confirmed')
+    // Override the "fallback" labels since this is a deliberate fast path, not a failure
+    report = {
+      ...report,
+      verdict: report.verdict.replace('Fallback report — AI analysis unavailable', 'Confirmed threat detected by security intelligence'),
+      analysis_path: 'rule_based',
+    }
+    report = applyHybridScore(report, intel)  // still apply scoring overrides
+  } else {
+    // Normal path: full Mercury-2 deep analysis
+    try {
+      const mercuryReport = await mercuryAnalyze(email, intel)
+      report = applyHybridScore(mercuryReport, intel)
+    } catch (err) {
+      // Mercury unavailable — return rule-based fallback so users always get a response
+      Sentry.captureException(err, { extra: { fromEmail: email.fromEmail, senderDomain } })
+      // Obfuscate internal error details from user-facing response
+      const userFacingError = (err instanceof Error && err.message.includes('API'))
+        ? 'AI analysis temporarily unavailable'
+        : 'AI analysis temporarily unavailable'
+      report = buildFallbackReport(intel, userFacingError)
+    }
   }
+
+  // Note: confirmedImpersonation (display name mismatch / lookalike domain) still goes
+  // through Mercury for a full AI analysis — the verdict and explanation are valuable for users.
 
   const duration_ms = Date.now() - start
   const finalReport = { ...report, duration_ms }

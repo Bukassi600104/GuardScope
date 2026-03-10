@@ -25,8 +25,10 @@ async function checkUrl(url: string): Promise<boolean> {
     })
     if (!res.ok) return false
     const data = await res.json() as { query_status: string; url_status?: string }
-    // "is_malware" or url_status = "online"/"offline" with malware tags
-    return data.query_status === 'is_malware' || data.url_status === 'online'
+    // ONLY flag on explicit "is_malware" confirmation.
+    // url_status "online"/"offline" just means the URL is accessible — NOT a threat indicator.
+    // Treating "online" as malicious causes false positives on any accessible URL.
+    return data.query_status === 'is_malware'
   } catch {
     return false
   } finally {
