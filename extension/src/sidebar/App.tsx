@@ -620,6 +620,8 @@ export default function App() {
             {/* Technical details */}
             <TechnicalDetails
               modules={report.modules}
+              red_flags={report.red_flags}
+              green_flags={report.green_flags}
               email={currentEmail ? { fromEmail: currentEmail.fromEmail, subject: currentEmail.subject } : undefined}
             />
 

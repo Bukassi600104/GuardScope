@@ -3,6 +3,8 @@ import type { AnalysisReport } from '../../utils/analyze'
 
 interface TechProps {
   modules?: AnalysisReport['modules']
+  red_flags?: AnalysisReport['red_flags']
+  green_flags?: AnalysisReport['green_flags']
   email?: { fromEmail: string | null; subject: string | null }
 }
 
@@ -63,8 +65,47 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-export default function TechnicalDetails({ modules, email }: TechProps) {
+// Renders flags from a specific module as structured rows
+function FlagRows({ flags }: { flags: Array<{ label: string; evidence?: string; detail?: string; severity?: string }> }) {
+  return (
+    <>
+      {flags.map((f, i) => {
+        const highlight: 'bad' | 'warn' | 'good' =
+          f.severity === 'CRITICAL' || f.severity === 'HIGH' ? 'bad' :
+          f.severity === 'MEDIUM' ? 'warn' : 'good'
+        return (
+          <Row
+            key={i}
+            label={f.label}
+            value={f.evidence ?? f.detail ?? ''}
+            highlight={highlight}
+          />
+        )
+      })}
+    </>
+  )
+}
+
+export default function TechnicalDetails({ modules, red_flags, green_flags, email }: TechProps) {
   const [expanded, setExpanded] = useState(false)
+
+  // Extract new-engine signals from red/green flags by module name
+  const headerFlags = [
+    ...(red_flags ?? []).filter(f => f.module === 'header_integrity'),
+    ...(green_flags ?? []).filter(f => f.module === 'header_integrity'),
+  ]
+  const attachmentFlags = [
+    ...(red_flags ?? []).filter(f => f.module === 'attachments'),
+    ...(green_flags ?? []).filter(f => f.module === 'attachments'),
+  ]
+  const domainSimilarityFlags = [
+    ...(red_flags ?? []).filter(f => f.module === 'domain_intel' && (
+      f.label === 'Lookalike Domain' || f.label?.toLowerCase().includes('lookalike') || f.label?.toLowerCase().includes('typosquat')
+    )),
+  ]
+  const ipUrlFlags = [
+    ...(red_flags ?? []).filter(f => f.module === 'url_analysis' && f.label === 'IP Address URL'),
+  ]
 
   return (
     <div className="rounded-lg border border-gs-border">
@@ -97,7 +138,25 @@ export default function TechnicalDetails({ modules, email }: TechProps) {
                 {modules.domain_intel.registrar && (
                   <Row label="Registrar" value={modules.domain_intel.registrar} />
                 )}
+                {/* Lookalike domain detection results */}
+                {domainSimilarityFlags.length > 0 && (
+                  <FlagRows flags={domainSimilarityFlags} />
+                )}
               </Section>
+
+              {/* Header Integrity — reply-to mismatch, display name impersonation */}
+              {headerFlags.length > 0 && (
+                <Section title="Header Integrity">
+                  <FlagRows flags={headerFlags} />
+                </Section>
+              )}
+
+              {/* Attachment Risk */}
+              {attachmentFlags.length > 0 && (
+                <Section title="Attachments">
+                  <FlagRows flags={attachmentFlags} />
+                </Section>
+              )}
 
               {/* URL Analysis */}
               <Section title="Link Safety">
@@ -113,6 +172,10 @@ export default function TechnicalDetails({ modules, email }: TechProps) {
                 />
                 {modules.url_analysis.flagged_urls.length > 0 && (
                   <Row label="Flagged Links" value={modules.url_analysis.flagged_urls.join(', ')} highlight="bad" />
+                )}
+                {/* IP address URLs */}
+                {ipUrlFlags.length > 0 && (
+                  <FlagRows flags={ipUrlFlags} />
                 )}
               </Section>
 
