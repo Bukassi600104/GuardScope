@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   // Fire-and-forget confirmation email
   sendRedemptionConfirmation({
     to:           email,
-    name:         email.split('@')[0],
+    name:         result.requesterName ?? email.split('@')[0],
     proExpiresAt: new Date(result.proExpiresAt),
   }).catch(err => console.error('[promo/validate] confirmation email failed:', err))
 

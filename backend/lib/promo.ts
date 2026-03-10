@@ -95,7 +95,7 @@ export async function validateCode(code: string): Promise<ValidateResult> {
 
 // ─── Redeem code: claim + upgrade user tier ───────────────────────────────────
 export type RedeemResult =
-  | { success: true; proExpiresAt: string }
+  | { success: true; proExpiresAt: string; requesterName: string | null }
   | { success: false; reason: string }
 
 export async function redeemCode(code: string, userEmail: string): Promise<RedeemResult> {
@@ -150,7 +150,7 @@ export async function redeemCode(code: string, userEmail: string): Promise<Redee
     return { success: false, reason: 'Upgrade failed after code claim. Email support@guardscope.io with your code for manual fix.' }
   }
 
-  return { success: true, proExpiresAt }
+  return { success: true, proExpiresAt, requesterName: validation.code.requester_name }
 }
 
 // ─── Count remaining unused spots ────────────────────────────────────────────
