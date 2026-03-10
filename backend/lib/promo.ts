@@ -147,7 +147,6 @@ export async function redeemCode(code: string, userEmail: string): Promise<Redee
     body: JSON.stringify({ tier: 'pro', pro_expires_at: proExpiresAt }),
   })
   if (!upgradeRes.ok) {
-    console.error('[promo] tier upgrade failed after claim for user:', user.id)
     return { success: false, reason: 'Upgrade failed after code claim. Email support@guardscope.io with your code for manual fix.' }
   }
 

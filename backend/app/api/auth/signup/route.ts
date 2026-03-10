@@ -18,8 +18,9 @@ export async function OPTIONS(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const cors = buildCorsHeaders(req)
 
-  // Rate limit signups — 5 attempts per hour per IP to prevent mass account creation
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  // Rate limit signups — 5 attempts per minute per IP to prevent mass account creation
+  const rawIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? ''
+  const ip = /^[0-9a-fA-F.:]{3,45}$/.test(rawIp) ? rawIp : 'unknown'
   const rateResult = await checkRateLimit(`signup:${ip}`, false)
   if (!rateResult.allowed) {
     return NextResponse.json(
@@ -109,8 +110,7 @@ export async function POST(req: NextRequest) {
     const needsConfirmation = !data.id
     return NextResponse.json({ success: true, needsConfirmation }, { headers: cors })
 
-  } catch (err) {
-    console.error('[auth/signup] error:', err)
+  } catch {
     return NextResponse.json({ error: 'Registration failed — please try again' }, { status: 500, headers: cors })
   }
 }

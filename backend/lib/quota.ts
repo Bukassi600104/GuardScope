@@ -12,6 +12,14 @@
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? ''
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
 
+// Security invariant: SUPABASE_JWT_SECRET must be set in production.
+// Without it, decodeJwt() cannot verify signatures and falls back to decode-only,
+// allowing forged JWTs to bypass quota enforcement.
+if (!process.env.SUPABASE_JWT_SECRET && process.env.NODE_ENV === 'production') {
+  // Non-throwing warning — we still function, but this MUST be fixed in production
+  console.error('[SECURITY] SUPABASE_JWT_SECRET is not set. JWT signatures are NOT verified. Set this env var immediately.')
+}
+
 const FREE_LIMIT = 5
 
 export interface QuotaResult {

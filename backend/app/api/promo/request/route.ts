@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { assignCodeToLead, getCodeForEmail, countRemainingCodes } from '../../../../lib/promo'
 import { sendWelcomeEmail } from '../../../../lib/email'
+import { checkRateLimit } from '../../../../lib/ratelimit'
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
 }
 
+// Input length limits — prevent oversized payloads
+const MAX_NAME_LEN = 100
+const MAX_EMAIL_LEN = 254  // RFC 5321 max email length
+const MAX_COUNTRY_LEN = 100
+
 export async function POST(req: NextRequest) {
+  // Rate limit by IP — 3 requests per minute, 10 per day per IP
+  const rawIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const ip = /^[0-9a-fA-F.:]{3,45}$/.test(rawIp) ? rawIp : 'unknown'
+  const rateLimit = await checkRateLimit(`promo:${ip}`, false)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait a moment before trying again.' },
+      { status: 429, headers: SECURITY_HEADERS }
+    )
+  }
+
   let body: { name?: string; email?: string; country?: string } = {}
   try { body = await req.json() } catch { /* form fallback below */ }
 
@@ -23,10 +40,13 @@ export async function POST(req: NextRequest) {
     } catch { /* ignore */ }
   }
 
-  const { name, email, country } = body
+  // Normalize and length-cap all string inputs
+  const name    = typeof body.name    === 'string' ? body.name.trim().slice(0, MAX_NAME_LEN)    : ''
+  const email   = typeof body.email   === 'string' ? body.email.trim().slice(0, MAX_EMAIL_LEN)  : ''
+  const country = typeof body.country === 'string' ? body.country.trim().slice(0, MAX_COUNTRY_LEN) : ''
 
   // Validate inputs
-  if (!name || typeof name !== 'string' || name.trim().length < 2) {
+  if (!name || name.length < 2) {
     return NextResponse.json(
       { error: 'Please provide your full name.' },
       { status: 400, headers: SECURITY_HEADERS }
@@ -38,7 +58,7 @@ export async function POST(req: NextRequest) {
       { status: 400, headers: SECURITY_HEADERS }
     )
   }
-  if (!country || typeof country !== 'string') {
+  if (!country) {
     return NextResponse.json(
       { error: 'Please select your country.' },
       { status: 400, headers: SECURITY_HEADERS }

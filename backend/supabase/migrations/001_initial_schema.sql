@@ -24,11 +24,9 @@ create policy "Users can read own row"
   for select
   using (auth.uid() = id);
 
--- Users can update their own row (tier is only updated by service key)
-create policy "Users can update own row"
-  on public.users
-  for update
-  using (auth.uid() = id);
+-- Users CANNOT update their own row via client — tier and billing fields are service-only.
+-- All user profile mutations go through service-role API calls.
+-- (Intentionally no client-side update policy on public.users)
 
 -- Service role can insert new user rows (via trigger)
 create policy "Service can insert users"
@@ -76,10 +74,9 @@ create policy "Users can read own usage"
   for select
   using (auth.uid() = user_id);
 
--- Service role manages usage (insert + update via service key)
-create policy "Service can manage usage"
-  on public.usage
-  using (true);
+-- Service role bypasses RLS by default — no explicit policy needed for backend writes.
+-- Authenticated users can only read their own usage row (no insert/update/delete via client).
+-- All quota mutations happen server-side via service-role key.
 
 -- ─────────────────────────────────────────────────────
 -- Updated_at trigger (auto-update timestamp)

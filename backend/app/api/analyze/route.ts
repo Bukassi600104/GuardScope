@@ -219,8 +219,11 @@ export async function POST(req: NextRequest) {
   const jwtPayload = token ? await decodeJwt(token) : null
   const userId = jwtPayload?.sub ?? null
 
-  // Rate limit: per user_id if authed, per IP if anon
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  // Rate limit: per user_id if authed, per IP if anon.
+  // Sanitize the IP — on Vercel the CDN sets this, but we validate it defensively.
+  // Accept only IPv4/IPv6-looking strings to prevent Redis key injection.
+  const rawIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? ''
+  const ip = /^[0-9a-fA-F.:]{3,45}$/.test(rawIp) ? rawIp : 'unknown'
   const rateLimitId = userId ?? `ip:${ip}`
   const rateLimit = await checkRateLimit(rateLimitId, !!userId)
   if (!rateLimit.allowed) {

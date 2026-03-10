@@ -18,8 +18,10 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backend-gules-si
 export function getAllowedOrigin(req: { headers: { get: (k: string) => string | null } }): string {
   const origin = req.headers.get('origin') ?? ''
 
-  // Same-origin requests or background service worker (no origin)
-  if (!origin) return '*'
+  // Requests with no Origin header: server-to-server or extension background service worker.
+  // These cannot be initiated from a browser cross-origin context so ACAO: * is safe here.
+  // We return the backend URL so CDN caches don't mix credentialed/non-credentialed responses.
+  if (!origin) return BACKEND_URL
 
   // Chrome extension (sidebar, popup) — IDs vary, allow all chrome-extension:// origins
   if (origin.startsWith('chrome-extension://')) return origin

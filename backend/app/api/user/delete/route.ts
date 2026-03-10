@@ -84,7 +84,6 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to delete account. Please contact support.' }, { status: 500, headers: cors })
     }
 
-    console.log(`[user/delete] User ${userId} account deleted (GDPR erasure)`)
     return NextResponse.json({ success: true, message: 'Account and all data deleted.' }, { headers: cors })
   } catch (err) {
     console.error('[user/delete] error:', err)

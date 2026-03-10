@@ -155,7 +155,6 @@ const observer = new MutationObserver(syncEmail)
 function startObserver(): void {
   const target = document.querySelector('[role="main"]') || document.body
   observer.observe(target, { childList: true, subtree: true })
-  console.log('[GuardScope] Observer started')
   syncEmail() // initial check on load
 }
 
@@ -173,7 +172,7 @@ function waitForGmail(retries = 20): void {
 
 // ── Initialize ────────────────────────────────────────────────────────────────
 if (!isContextValid()) {
-  console.warn('[GuardScope] Extension context not valid — content script will not run')
+  // Extension context invalid — exit silently (no console output in production)
 } else {
   // Clean up any stale mini-tabs left by a previous extension instance
   document.getElementById(MINI_TAB_ID)?.remove()

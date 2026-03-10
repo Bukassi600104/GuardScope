@@ -133,10 +133,11 @@ The extension sidebar doesn't show: reply-to mismatch, domain similarity results
 - [ ] Update `extractEmailData()` to include anchorLinks
 
 ### Step 9: Update extension/src/sidebar/components/TechnicalDetails.tsx
-- [ ] Add display for reply-to mismatch flag
-- [ ] Add domain similarity warning
-- [ ] Add attachment risk display
-- [ ] Ensure new red flags render cleanly
+- [x] Add display for reply-to mismatch flag
+- [x] Add domain similarity warning
+- [x] Add attachment risk display
+- [x] IP address URL display in Link Safety
+- [x] Ensure new red flags render cleanly
 
 ### Step 10: Verify + commit
 - [ ] Build backend (npx tsc --noEmit)

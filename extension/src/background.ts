@@ -112,16 +112,28 @@ chrome.action.onClicked.addListener((tab) => {
 })
 
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('[GuardScope] Extension installed:', details.reason)
   if (details.reason === 'install') {
     // First-time install: open onboarding tab
     chrome.tabs.create({ url: chrome.runtime.getURL('src/onboarding/onboarding.html') })
   }
 })
 
+// Trusted internal origins: the extension's own pages (popup, sidebar, onboarding)
+// plus Gmail content scripts. Reject messages from any other origin.
+function isInternalSender(sender: chrome.runtime.MessageSender): boolean {
+  // Messages from extension's own pages (popup, sidebar, background) have no tab/url
+  // and have the extension's own origin
+  if (!sender.tab && sender.id === chrome.runtime.id) return true
+  // Messages from extension pages that have a tab (e.g. onboarding)
+  if (sender.id === chrome.runtime.id) return true
+  // Content scripts from Gmail
+  if (sender.url?.startsWith('https://mail.google.com/')) return true
+  return false
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PING') {
-    sendResponse({ type: 'PONG', version: '1.0.0' })
+    sendResponse({ type: 'PONG' })
     return true
   }
 
@@ -146,6 +158,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
+  // All sensitive handlers below require an internal trusted sender
+  if (!isInternalSender(sender)) {
+    sendResponse({ success: false, error: 'Unauthorized' })
+    return true
+  }
+
   if (message.type === 'ANALYZE') {
     // tabId is passed by the side panel so we read the right tab's email
     handleAnalyze(message.tabId as number | undefined)
@@ -160,6 +178,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'SIGN_IN') {
+    // Validate input types before passing to signIn
+    if (typeof message.email !== 'string' || typeof message.password !== 'string') {
+      sendResponse({ success: false, error: 'Invalid credentials format' })
+      return true
+    }
     signIn(message.email, message.password).then(sendResponse)
     return true
   }
