@@ -322,9 +322,6 @@ export async function POST(req: NextRequest) {
   // 10-15s latency and return a high-quality rule-based CRITICAL report immediately.
   const confirmedThreat = intel.vt.flagged || intel.sb.flagged ||
     intel.phishtank?.flagged || intel.urlhaus?.flagged
-  const confirmedImpersonation = intel.headerAnalysis?.displayNameMismatch ||
-    intel.domainSimilarity?.isLookalike && intel.domainSimilarity.confidence === 'HIGH'
-
   let report: Omit<AnalysisReport, 'duration_ms'>
 
   if (confirmedThreat) {
@@ -352,9 +349,6 @@ export async function POST(req: NextRequest) {
       report = buildFallbackReport(intel, userFacingError)
     }
   }
-
-  // Note: confirmedImpersonation (display name mismatch / lookalike domain) still goes
-  // through Mercury for a full AI analysis — the verdict and explanation are valuable for users.
 
   const duration_ms = Date.now() - start
   const finalReport = { ...report, duration_ms }

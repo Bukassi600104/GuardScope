@@ -401,11 +401,11 @@ function extractMessageId(): string | null {
 // ── Utilities ────────────────────────────────────────────────────────────────
 
 function stripHtml(html: string): string {
-  const tmp = document.createElement('div')
-  tmp.innerHTML = html
-  // Remove script and style elements
-  tmp.querySelectorAll('script, style').forEach((el) => el.remove())
-  return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim()
+  // DOMParser creates a detached document — inline event handlers (onerror, onclick, etc.)
+  // do NOT fire during parsing, unlike innerHTML assignment on a live DOM node.
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  doc.querySelectorAll('script, style, iframe, object, embed').forEach((el) => el.remove())
+  return (doc.body.textContent ?? '').replace(/\s+/g, ' ').trim()
 }
 
 function isValidUrl(url: string): boolean {

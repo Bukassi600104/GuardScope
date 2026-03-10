@@ -9,6 +9,7 @@ export default defineConfig({
     crx({ manifest }),
   ],
   build: {
+    sourcemap: false,
     rollupOptions: {
       input: {
         popup: 'popup.html',

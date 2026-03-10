@@ -3,7 +3,9 @@ import { Resend } from 'resend'
 // Lazy-initialized to avoid module-level errors when RESEND_API_KEY is not set at build time
 let _resend: Resend | null = null
 function getResend(): Resend {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY ?? 'missing')
+  const key = process.env.RESEND_API_KEY
+  if (!key) throw new Error('RESEND_API_KEY is not configured')
+  if (!_resend) _resend = new Resend(key)
   return _resend
 }
 
