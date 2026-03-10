@@ -74,7 +74,8 @@ export interface AnalysisIntel {
   rdap: RdapResult
   phishtank?: PhishTankResult
   urlhaus?: URLhausResult
-  trustHint?: string  // set when sender domain is in the trusted allowlist
+  trustHint?: string      // set when sender domain is in the trusted allowlist
+  freeProvider?: boolean  // true for gmail.com, outlook.com etc — trust cap NOT applied
 }
 
 export interface AnalysisReport {
