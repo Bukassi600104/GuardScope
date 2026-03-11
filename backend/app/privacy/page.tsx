@@ -1,8 +1,10 @@
 import { GuardScopeLogo } from '../components/GuardScopeLogo'
 
 export const metadata = {
-  title: 'Privacy Policy — GuardScope',
-  description: 'GuardScope Privacy Policy — what we collect, what we never store, and your rights.',
+  title: 'Privacy Policy',
+  description: 'GuardScope Privacy Policy — what we collect, what we never store, and your rights under NDPR and GDPR.',
+  alternates: { canonical: '/privacy' },
+  openGraph: { url: '/privacy', type: 'website' },
 }
 
 const C = {

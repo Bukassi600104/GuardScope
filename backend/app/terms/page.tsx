@@ -2,7 +2,10 @@ import type { Metadata } from 'next'
 import { GuardScopeLogo } from '../components/GuardScopeLogo'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — GuardScope',
+  title: 'Terms of Service',
+  description: 'GuardScope Terms of Service — usage rules, acceptable use policy, and governing law for the GuardScope email security extension.',
+  alternates: { canonical: '/terms' },
+  openGraph: { url: '/terms', type: 'website' },
 }
 
 const EFFECTIVE_DATE = 'March 7, 2026'

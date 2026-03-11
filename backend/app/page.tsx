@@ -1,5 +1,16 @@
 import { GuardScopeLogo } from './components/GuardScopeLogo'
 import type { CSSProperties } from 'react'
+import type { Metadata } from 'next'
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://backend-gules-sigma-37.vercel.app'
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+  openGraph: {
+    url: '/',
+    type: 'website',
+  },
+}
 
 // ─────────────────────────────────────────────────────────────
 // Design tokens
@@ -529,9 +540,33 @@ const FAQS = [
 // ─────────────────────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────────────────────
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+}
+
+const webSiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'GuardScope',
+  url: SITE_URL,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${SITE_URL}/?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+}
+
 export default function Home() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }} />
       <BugBackground />
       {/* ── NAV ── */}
       <nav style={{
