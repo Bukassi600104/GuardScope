@@ -13,7 +13,7 @@
  * for API routes (they can't be called from the browser without an origin).
  */
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://backend-gules-sigma-37.vercel.app'
+const BACKEND_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://guardscope.app'
 
 export function getAllowedOrigin(req: { headers: { get: (k: string) => string | null } }): string {
   const origin = req.headers.get('origin') ?? ''

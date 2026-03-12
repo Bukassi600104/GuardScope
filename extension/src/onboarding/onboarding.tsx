@@ -119,7 +119,7 @@ function Onboarding() {
           <p className="text-[#64748b] text-xs mt-3">
             Read our full{' '}
             <a
-              href="https://backend-gules-sigma-37.vercel.app/privacy"
+              href="https://guardscope.app/privacy"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#22c55e] hover:underline"

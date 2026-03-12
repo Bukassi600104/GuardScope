@@ -7,8 +7,8 @@ export async function GET() {
     'Contact: mailto:security@guardscope.io',
     'Expires: 2027-03-08T00:00:00.000Z',
     'Preferred-Languages: en',
-    'Canonical: https://backend-gules-sigma-37.vercel.app/.well-known/security.txt',
-    'Policy: https://backend-gules-sigma-37.vercel.app/privacy',
+    'Canonical: https://guardscope.app/.well-known/security.txt',
+    'Policy: https://guardscope.app/privacy',
   ].join('\n')
 
   return new NextResponse(body, {

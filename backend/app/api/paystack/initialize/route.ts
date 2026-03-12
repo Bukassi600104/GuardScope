@@ -3,7 +3,7 @@ import { decodeJwt } from '../../../../lib/quota'
 import * as crypto from 'crypto'
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://backend-gules-sigma-37.vercel.app'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://guardscope.app'
 
 // NGN pricing: Pro = ₦7,500/month
 const PAYSTACK_PRO_AMOUNT_KOBO = 750_000 // Paystack uses kobo (₦ × 100)

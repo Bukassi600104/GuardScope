@@ -3,7 +3,7 @@
   "name": "GuardScope — Email Security",
   "version": "1.0.0",
   "description": "AI-powered phishing detection for Gmail. Analyzes sender authentication, domain age, URLs, and email content to detect phishing and social engineering attacks.",
-  "homepage_url": "https://backend-gules-sigma-37.vercel.app",
+  "homepage_url": "https://guardscope.app",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -34,11 +34,11 @@
   "permissions": ["storage", "clipboardWrite", "sidePanel", "tabs"],
   "host_permissions": [
     "https://mail.google.com/*",
-    "https://backend-gules-sigma-37.vercel.app/*",
+    "https://guardscope.app/*",
     "https://zfuxxoyjfedmtoeydcvp.supabase.co/*"
   ],
   "content_security_policy": {
-    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src https://backend-gules-sigma-37.vercel.app https://zfuxxoyjfedmtoeydcvp.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'"
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src https://guardscope.app https://zfuxxoyjfedmtoeydcvp.supabase.co; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'"
   },
   "web_accessible_resources": [
     {

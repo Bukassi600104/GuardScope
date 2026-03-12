@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
 const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY)!
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://backend-gules-sigma-37.vercel.app'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://guardscope.app'
 
 // ₦7,500/month in kobo
 const PAYSTACK_PRO_AMOUNT_KOBO = 750_000

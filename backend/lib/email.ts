@@ -11,7 +11,7 @@ function getResend(): Resend {
 
 // Use a verified domain; fall back to Resend's default sender for development
 const FROM = process.env.EMAIL_FROM ?? 'GuardScope <onboarding@resend.dev>'
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://backend-gules-sigma-37.vercel.app'
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://guardscope.app'
 
 // ─────────────────────────────────────────────────────────────
 // Welcome email — sent when user requests a promo code

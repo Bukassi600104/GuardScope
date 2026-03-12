@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe, STRIPE_PRICES } from '../../../../lib/stripe'
 import { decodeJwt } from '../../../../lib/quota'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://backend-gules-sigma-37.vercel.app'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://guardscope.app'
 
 export async function POST(req: NextRequest) {
   // Payments suspended during early access promo period
