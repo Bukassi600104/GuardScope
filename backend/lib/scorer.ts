@@ -66,12 +66,17 @@ export function calcRuleScore(intel: AnalysisIntel, subject?: string | null): nu
   if (intel.spamhaus?.dblMalware)     score += 45
   if (intel.spamhaus?.dblSpam)        score += 25
 
-  // ── Email Reputation ─────────────────────────────────────────────────────
+  // ── Email / Sender Reputation ────────────────────────────────────────────
   if (intel.emailRep?.blacklisted)    score += 35
   if (intel.emailRep?.maliciousActivity) score += 30
   if (intel.emailRep?.suspicious)     score += 20
   if (intel.emailRep?.disposable)     score += 25
   if (intel.emailRep?.spoofing)       score += 20
+
+  // ── AlienVault OTX Community Threat Intel ────────────────────────────────
+  if (intel.otx?.malicious)          score += 35
+  else if ((intel.otx?.pulseCount ?? 0) > 3) score += 20  // multiple community reports
+  else if ((intel.otx?.pulseCount ?? 0) > 0) score += 12  // at least one report
 
   // ── Gmail Security Warning ───────────────────────────────────────────────
   if (intel.gmailWarning)             score += 30
@@ -233,6 +238,11 @@ export function applyHybridScore(
   // emailrep blacklisted sender → HIGH minimum
   if (intel.emailRep?.blacklisted) {
     finalScore = Math.max(finalScore, 65)
+  }
+
+  // OTX community flagged as malicious → HIGH minimum
+  if (intel.otx?.malicious) {
+    finalScore = Math.max(finalScore, 70)
   }
 
   // Gmail's own warning → MEDIUM minimum

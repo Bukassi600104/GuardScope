@@ -31,6 +31,9 @@ TRUST CONTEXT
   CRITICAL RULE: A passing SPF/DKIM result from a free provider proves ONLY that Gmail/Yahoo's servers sent it — NOT that the person is trustworthy. Do NOT let technical green flags from free providers reduce your risk assessment. Judge free provider emails ENTIRELY on their content merit. A criminal can have a perfectly valid Gmail account with perfect DKIM.
   If fromName suggests a bank, government, or corporation but freeProvider=true → STRONG impersonation signal regardless of DKIM.
 • intelligence.gmailWarning = true → Gmail's own security system flagged this email as suspicious. Weight this heavily — Google's systems have seen billions of phishing emails.
+• intelligence.emailRep.disposable = true → sender used a throwaway/disposable email service. HIGHLY suspicious for any financial, business, or official communication.
+• intelligence.otx.malicious = true → AlienVault OTX community (security researchers worldwide) reported this domain as malicious. Hard evidence.
+• intelligence.otx.pulseCount > 0 → community threat reports exist for this domain. Higher count = more established malicious reputation.
 
 ═══════════════════════════════════════════════════════
 MODULE 1 — SENDER AUTHENTICATION (sender_auth)

@@ -115,11 +115,19 @@ export interface SpamhausResult {
 }
 
 export interface EmailRepResult {
-  suspicious: boolean      // emailrep.io flagged as suspicious
-  blacklisted: boolean     // emailrep.io blacklisted sender
-  disposable: boolean      // disposable/temporary email address
+  suspicious: boolean      // flagged as suspicious (disposable = suspicious)
+  blacklisted: boolean     // in known malicious sender lists (via SpamHaus/OTX)
+  disposable: boolean      // disposable/temporary email address (deterministic check)
   maliciousActivity: boolean // linked to malicious campaigns
   spoofing: boolean        // known spoofing patterns
+  error?: string
+}
+
+export interface OTXResult {
+  checked: boolean
+  malicious: boolean       // community-reported as malicious
+  pulseCount: number       // number of OTX threat reports for this domain
+  tags: string[]           // threat categories (phishing, malware, etc.)
   error?: string
 }
 
@@ -138,7 +146,8 @@ export interface AnalysisIntel {
   phishtank?: PhishTankResult
   urlhaus?: URLhausResult
   spamhaus?: SpamhausResult            // Spamhaus DBL domain reputation (free, DNS-based)
-  emailRep?: EmailRepResult            // emailrep.io sender address reputation
+  emailRep?: EmailRepResult            // disposable email + sender pattern checks (deterministic)
+  otx?: OTXResult                      // AlienVault OTX community threat intel (free commercial key)
   headerAnalysis?: HeaderAnalysisResult    // header-level signals (reply-to, display name, attachments)
   domainSimilarity?: DomainSimilarityResult // lookalike/typosquatting detection on sender domain
   urlDomainSimilarity?: DomainSimilarityResult[] // lookalike detection on URL domains

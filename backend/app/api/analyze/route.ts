@@ -17,6 +17,7 @@ import { phishTankScan } from '../../../lib/phishtank'
 import { urlHausScan } from '../../../lib/urlhaus'
 import { spamhausCheck } from '../../../lib/spamhaus'
 import { emailRepCheck } from '../../../lib/emailrep'
+import { otxCheck } from '../../../lib/otx'
 import { analyzeHeaders } from '../../../lib/headerAnalysis'
 import { analyzeDomainSimilarity } from '../../../lib/domainSimilarity'
 import { assessTldRisk } from '../../../lib/tldRisk'
@@ -308,8 +309,13 @@ export async function POST(req: NextRequest) {
     .map(d => analyzeDomainSimilarity(d))
     .filter(r => r.isLookalike)
 
+  // emailRepCheck is synchronous (deterministic disposable domain check — no network)
+  const emailRepResult = email.fromEmail
+    ? emailRepCheck(email.fromEmail)
+    : { suspicious: false, blacklisted: false, disposable: false, maliciousActivity: false, spoofing: false }
+
   // Gather all external intel in parallel — no AI call during this phase
-  const [dnsRes, vtRes, sbRes, rdapRes, ptRes, uhRes, spamhausRes, emailRepRes] = await Promise.allSettled([
+  const [dnsRes, vtRes, sbRes, rdapRes, ptRes, uhRes, spamhausRes, otxRes] = await Promise.allSettled([
     senderDomain ? dnsLookup(senderDomain) : Promise.resolve(NO_DOMAIN_DNS),
     virusTotalScan(email.urls),
     safeBrowsingCheck(email.urls),
@@ -317,7 +323,7 @@ export async function POST(req: NextRequest) {
     phishTankScan(email.urls),
     urlHausScan(email.urls, senderDomain || undefined),
     senderDomain ? spamhausCheck(senderDomain) : Promise.resolve({ checked: false, dblPhishing: false, dblMalware: false, dblSpam: false, sblListed: false }),
-    email.fromEmail ? emailRepCheck(email.fromEmail) : Promise.resolve({ suspicious: false, blacklisted: false, disposable: false, maliciousActivity: false, spoofing: false }),
+    senderDomain ? otxCheck(senderDomain) : Promise.resolve({ checked: false, malicious: false, pulseCount: 0, tags: [] }),
   ])
 
   const intel: AnalysisIntel = {
@@ -328,7 +334,8 @@ export async function POST(req: NextRequest) {
     phishtank: ptRes.status === 'fulfilled' ? ptRes.value : { flagged: false, phishingUrls: [], error: 'PhishTank failed' },
     urlhaus: uhRes.status === 'fulfilled' ? uhRes.value : { flagged: false, malwareUrls: [], error: 'URLhaus failed' },
     spamhaus: spamhausRes.status === 'fulfilled' ? spamhausRes.value : { checked: false, dblPhishing: false, dblMalware: false, dblSpam: false, sblListed: false, error: 'Spamhaus failed' },
-    emailRep: emailRepRes.status === 'fulfilled' ? emailRepRes.value : { suspicious: false, blacklisted: false, disposable: false, maliciousActivity: false, spoofing: false, error: 'emailrep failed' },
+    emailRep: emailRepResult,
+    otx: otxRes.status === 'fulfilled' ? otxRes.value : { checked: false, malicious: false, pulseCount: 0, tags: [], error: 'OTX failed' },
     headerAnalysis,
     ...(domainSimilarity ? { domainSimilarity } : {}),
     ...(urlDomainSimilarityResults.length > 0 ? { urlDomainSimilarity: urlDomainSimilarityResults } : {}),
