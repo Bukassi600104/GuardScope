@@ -96,7 +96,7 @@ const BRAND_DOMAINS: Array<{ brand: string; registrable: string[] }> = [
   { brand: 'First Bank',      registrable: ['firstbanknigeria.com'] },
   { brand: 'UBA',             registrable: ['uba.com', 'ubagroup.com'] },
   { brand: 'Kuda',            registrable: ['kuda.com'] },
-  { brand: 'OPay',            registrable: ['opayweb.com'] },
+  { brand: 'OPay',            registrable: ['opayweb.com', 'opay.ng', 'opay-nigeria.com', 'opay.com'] },
   { brand: 'PalmPay',         registrable: ['palmpay.com'] },
   { brand: 'PiggyVest',       registrable: ['piggyvest.com'] },
   { brand: 'Flutterwave',     registrable: ['flutterwave.com'] },

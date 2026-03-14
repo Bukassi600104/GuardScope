@@ -125,7 +125,7 @@ const BRAND_IMPERSONATION_LIST: Array<{ brand: string; officialDomains: string[]
   { brand: 'Fidelity Bank',   officialDomains: ['fidelitybank.ng'] },
   { brand: 'Union Bank',      officialDomains: ['unionbankng.com'] },
   { brand: 'Kuda',            officialDomains: ['kuda.com'] },
-  { brand: 'OPay',            officialDomains: ['opayweb.com', 'opay.ng'] },
+  { brand: 'OPay',            officialDomains: ['opayweb.com', 'opay.ng', 'opay-nigeria.com', 'opay.com'] },
   { brand: 'PalmPay',         officialDomains: ['palmpay.com'] },
   { brand: 'PiggyVest',       officialDomains: ['piggyvest.com'] },
   { brand: 'Flutterwave',     officialDomains: ['flutterwave.com'] },
@@ -328,6 +328,21 @@ function detectAuthorityTitle(fromName: string | null): {
 
 // ── Brand impersonation detection ────────────────────────────────────────────
 
+/**
+ * Extract the registrable domain from a hostname.
+ * Handles common ccSLD patterns (co.uk, com.ng, co.ke, com.au etc.)
+ * so that "mail.opay-nigeria.com" → "opay-nigeria.com" (not "nigeria.com")
+ */
+function getRegistrableDomain(hostname: string): string {
+  const parts = hostname.split('.')
+  if (parts.length <= 2) return hostname
+  const ccSlds = new Set(['co', 'com', 'gov', 'org', 'net', 'edu', 'ac', 'ne'])
+  if (parts.length >= 3 && ccSlds.has(parts[parts.length - 2])) {
+    return parts.slice(-3).join('.')
+  }
+  return parts.slice(-2).join('.')
+}
+
 function detectDisplayNameBrand(
   fromName: string | null,
   fromDomain: string | null
@@ -345,8 +360,20 @@ function detectDisplayNameBrand(
     const isOfficialDomain = fromDomain != null && officialDomains.some(
       d => fromDomain === d || fromDomain.endsWith('.' + d)
     )
+    if (isOfficialDomain) return { brand, mismatch: false }
 
-    return { brand, mismatch: !isOfficialDomain }
+    // Permanent false-positive fix: accept any domain whose registrable part STARTS WITH
+    // the brand's core slug. This handles transactional/country domains like:
+    //   opay-nigeria.com (OPay), gtbank-alerts.com (GTBank), wellsfargo-notifications.com
+    // But still catches: scam-opay.com (starts with "scam" → mismatch), evil-paypal.com, etc.
+    if (fromDomain != null) {
+      const brandSlug = brand.toLowerCase().replace(/[^a-z0-9]/g, '')
+      const registrable = getRegistrableDomain(fromDomain)
+      const registrableSlug = registrable.split('.')[0].replace(/[^a-z0-9]/g, '')
+      if (registrableSlug.startsWith(brandSlug)) return { brand, mismatch: false }
+    }
+
+    return { brand, mismatch: true }
   }
   return { brand: null, mismatch: false }
 }

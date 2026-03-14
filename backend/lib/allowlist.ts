@@ -55,7 +55,7 @@ const NIGERIA_BANKS = new Set([
   'titantrustbank.com',
   'optimusbank.com',
   'palmpay.com',
-  'opay.ng', 'opay.com',
+  'opay.ng', 'opay.com', 'opay-nigeria.com',
   'kuda.com',
   'moniepoint.com',
   'piggyvest.com',
