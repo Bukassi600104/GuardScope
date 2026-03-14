@@ -123,14 +123,6 @@ export interface EmailRepResult {
   error?: string
 }
 
-export interface OTXResult {
-  checked: boolean
-  malicious: boolean       // community-reported as malicious
-  pulseCount: number       // number of OTX threat reports for this domain
-  tags: string[]           // threat categories (phishing, malware, etc.)
-  error?: string
-}
-
 export interface TldRiskResult {
   tld: string
   isHighRisk: boolean      // .xyz, .top, .tk, .ml, .ga, .cf etc.
@@ -147,7 +139,6 @@ export interface AnalysisIntel {
   urlhaus?: URLhausResult
   spamhaus?: SpamhausResult            // Spamhaus DBL domain reputation (free, DNS-based)
   emailRep?: EmailRepResult            // disposable email + sender pattern checks (deterministic)
-  otx?: OTXResult                      // AlienVault OTX community threat intel (free commercial key)
   headerAnalysis?: HeaderAnalysisResult    // header-level signals (reply-to, display name, attachments)
   domainSimilarity?: DomainSimilarityResult // lookalike/typosquatting detection on sender domain
   urlDomainSimilarity?: DomainSimilarityResult[] // lookalike detection on URL domains

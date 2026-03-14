@@ -32,8 +32,7 @@ TRUST CONTEXT
   If fromName suggests a bank, government, or corporation but freeProvider=true → STRONG impersonation signal regardless of DKIM.
 • intelligence.gmailWarning = true → Gmail's own security system flagged this email as suspicious. Weight this heavily — Google's systems have seen billions of phishing emails.
 • intelligence.emailRep.disposable = true → sender used a throwaway/disposable email service. HIGHLY suspicious for any financial, business, or official communication.
-• intelligence.otx.malicious = true → AlienVault OTX community (security researchers worldwide) reported this domain as malicious. Hard evidence.
-• intelligence.otx.pulseCount > 0 → community threat reports exist for this domain. Higher count = more established malicious reputation.
+• intelligence.rdap.registrar context: registrars with documented high abuse rates (Eranet, Shinjiru, Bizcn, West263, Xinnet) are disproportionately used by phishing campaigns and bulletproof hosting operators. Weight this negatively when combined with new domain age or suspicious TLD.
 
 ═══════════════════════════════════════════════════════
 MODULE 1 — SENDER AUTHENTICATION (sender_auth)

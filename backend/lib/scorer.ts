@@ -25,6 +25,42 @@ import type { AnalysisIntel, AnalysisReport } from './types'
 // Business/financial claim subjects from free providers — red flag
 const BUSINESS_CLAIM_SUBJECT_RE = /\b(invoice|payment|transaction|order confirmation|receipt|account|wire transfer|bank transfer|funds|remittance|settlement|refund|compensation|beneficiary|inheritance|lottery|prize|winning|job offer|employment|investment|opportunity)\b/i
 
+// ─── Self-Built Registrar Risk Engine ────────────────────────────────────────
+// Source: Spamhaus abuse statistics, CISA advisories, brand protection research.
+// Registrar risk is NOT standalone — it compounds with other signals.
+// High-risk registrars have disproportionate abuse rates in phishing/malware campaigns.
+// Reference: https://www.spamhaus.org/statistics/registrars/
+
+const HIGH_RISK_REGISTRAR_KEYWORDS = [
+  'eranet',       // Eranet International Limited — bulletproof-adjacent, China
+  'shinjiru',     // Shinjiru Technology — bulletproof hosting, Malaysia
+  'bizcn',        // Bizcn.com — high phishing/malware, China
+  'west263',      // West263 International — high spam, China
+  'xinnet',       // Xin Net Technology — China, high abuse
+  'hichina',      // HiChina / Alibaba Cloud domain arm
+  'todaynic',     // Todaynic.com — China-based, spam-heavy
+  'webnic',       // Web Commerce / WebNic — Southeast Asia, moderate abuse
+]
+
+const MEDIUM_RISK_REGISTRAR_KEYWORDS = [
+  'openprovider',           // Hosting Concepts B.V. — European, moderate abuse
+  'hosting concepts',       // same company
+  'publicdomainregistry',   // PDR Ltd. — high volume, moderate abuse rate
+  'pdr ltd',                // same company
+]
+
+/**
+ * Returns the abuse-risk tier of a registrar based on industry research.
+ * Only meaningful when COMBINED with other signals (new domain, bad TLD, etc.).
+ */
+function registrarRisk(registrar: string | null): 'HIGH' | 'MEDIUM' | 'NONE' {
+  if (!registrar) return 'NONE'
+  const lower = registrar.toLowerCase()
+  if (HIGH_RISK_REGISTRAR_KEYWORDS.some(k => lower.includes(k))) return 'HIGH'
+  if (MEDIUM_RISK_REGISTRAR_KEYWORDS.some(k => lower.includes(k))) return 'MEDIUM'
+  return 'NONE'
+}
+
 /**
  * Calculate the deterministic rule-based pre-score from all available intel signals.
  * This score anchors the LLM to prevent hallucinated risk level drift.
@@ -73,10 +109,13 @@ export function calcRuleScore(intel: AnalysisIntel, subject?: string | null): nu
   if (intel.emailRep?.disposable)     score += 25
   if (intel.emailRep?.spoofing)       score += 20
 
-  // ── AlienVault OTX Community Threat Intel ────────────────────────────────
-  if (intel.otx?.malicious)          score += 35
-  else if ((intel.otx?.pulseCount ?? 0) > 3) score += 20  // multiple community reports
-  else if ((intel.otx?.pulseCount ?? 0) > 0) score += 12  // at least one report
+  // ── Registrar Risk ────────────────────────────────────────────────────────
+  // High-risk registrars are NOT penalized alone (millions of legit users).
+  // Only meaningful compound with new domain or bad TLD.
+  const regRisk = registrarRisk(intel.rdap.registrar)
+  if (regRisk === 'HIGH' && intel.rdap.riskLevel === 'HIGH')   score += 20  // high-risk registrar + brand-new domain
+  else if (regRisk === 'HIGH' && intel.rdap.riskLevel === 'MEDIUM') score += 10
+  else if (regRisk === 'MEDIUM' && intel.rdap.riskLevel === 'HIGH') score += 8
 
   // ── Gmail Security Warning ───────────────────────────────────────────────
   if (intel.gmailWarning)             score += 30
@@ -153,6 +192,12 @@ export function calcRuleScore(intel: AnalysisIntel, subject?: string | null): nu
 
   // High risk TLD + new domain + privacy proxy-style registrar
   if (intel.tldRisk?.isHighRisk && rdap.riskLevel !== 'LOW' && rdap.riskLevel !== 'UNKNOWN') score += 10
+
+  // High-risk registrar + high-risk TLD = classic phishing campaign infrastructure
+  if (regRisk === 'HIGH' && intel.tldRisk?.isHighRisk) score += 15
+
+  // High-risk registrar + new domain + no SPF = throwaway attack domain
+  if (regRisk === 'HIGH' && rdap.riskLevel === 'HIGH' && dns.spf === 'none') score += 10
 
   // ── Trust allowlist: known-good senders get benefit of doubt ─────────────
   if (intel.trustHint) score = Math.max(0, score - 15)
@@ -238,11 +283,6 @@ export function applyHybridScore(
   // emailrep blacklisted sender → HIGH minimum
   if (intel.emailRep?.blacklisted) {
     finalScore = Math.max(finalScore, 65)
-  }
-
-  // OTX community flagged as malicious → HIGH minimum
-  if (intel.otx?.malicious) {
-    finalScore = Math.max(finalScore, 70)
   }
 
   // Gmail's own warning → MEDIUM minimum
