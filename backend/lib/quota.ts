@@ -97,31 +97,10 @@ export async function checkAndIncrementQuota(
   const year = now.getFullYear()
 
   try {
-    // Try to increment — if count is already at limit, the WHERE clause fails
-    // and we get 0 rows back, meaning quota exceeded.
-    const updateRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}&month=eq.${month}&year=eq.${year}&analysis_count=lt.${FREE_LIMIT}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_SERVICE_KEY,
-          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'Prefer': 'return=representation',
-        },
-        body: JSON.stringify({ analysis_count: { increment: 1 } }),
-      }
-    )
-
-    if (updateRes.ok) {
-      const rows = await updateRes.json() as Array<{ analysis_count: number }>
-      if (rows.length > 0) {
-        return { allowed: true, count: rows[0].analysis_count, limit: FREE_LIMIT, tier }
-      }
-    }
-
-    // UPDATE returned 0 rows — either no row exists yet OR count is at limit.
-    // Check current count to distinguish.
+    // Step 1: Read current count for this month
+    // PostgREST REST API does NOT support { increment: 1 } in PATCH body — that is
+    // Supabase JS client syntax. Raw REST requires an explicit new value, so we do
+    // a read-then-increment with an optimistic-concurrency WHERE guard.
     const checkRes = await fetch(
       `${SUPABASE_URL}/rest/v1/usage?select=analysis_count&user_id=eq.${userId}&month=eq.${month}&year=eq.${year}`,
       {
@@ -132,21 +111,65 @@ export async function checkAndIncrementQuota(
       }
     )
 
-    if (checkRes.ok) {
-      const rows = await checkRes.json() as Array<{ analysis_count: number }>
-      if (rows.length === 0) {
-        // No row for this month yet — insert and allow
-        await upsertUsageRow(userId, month, year)
-        return { allowed: true, count: 1, limit: FREE_LIMIT, tier }
+    if (!checkRes.ok) {
+      // Network/auth issue — fail open (don't block legitimate users for infra problems)
+      return { allowed: true, count: 0, limit: FREE_LIMIT, tier }
+    }
+
+    const rows = await checkRes.json() as Array<{ analysis_count: number }>
+
+    if (rows.length === 0) {
+      // No row for this month yet — upsert with count=1 and allow
+      await upsertUsageRow(userId, month, year)
+      return { allowed: true, count: 1, limit: FREE_LIMIT, tier }
+    }
+
+    const currentCount = rows[0].analysis_count
+
+    // Step 2: Enforce limit before incrementing
+    if (currentCount >= FREE_LIMIT) {
+      return { allowed: false, count: currentCount, limit: FREE_LIMIT, tier }
+    }
+
+    // Step 3: Increment — use WHERE analysis_count=eq.{current} as optimistic-concurrency guard.
+    // If a concurrent request already changed the count, PATCH returns 0 rows and we deny safely.
+    const newCount = currentCount + 1
+    const updateRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}&month=eq.${month}&year=eq.${year}&analysis_count=eq.${currentCount}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Prefer': 'return=representation',
+        },
+        body: JSON.stringify({ analysis_count: newCount }),
       }
-      const currentCount = rows[0].analysis_count
-      if (currentCount >= FREE_LIMIT) {
-        return { allowed: false, count: currentCount, limit: FREE_LIMIT, tier }
+    )
+
+    if (updateRes.ok) {
+      const updated = await updateRes.json() as Array<{ analysis_count: number }>
+      if (updated.length > 0) {
+        return { allowed: true, count: updated[0].analysis_count, limit: FREE_LIMIT, tier }
+      }
+      // 0 rows matched — concurrent request already incremented the count.
+      // Re-read and enforce limit strictly.
+      const recheck = await fetch(
+        `${SUPABASE_URL}/rest/v1/usage?select=analysis_count&user_id=eq.${userId}&month=eq.${month}&year=eq.${year}`,
+        { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+      )
+      if (recheck.ok) {
+        const recheckRows = await recheck.json() as Array<{ analysis_count: number }>
+        const latest = recheckRows[0]?.analysis_count ?? FREE_LIMIT
+        return latest >= FREE_LIMIT
+          ? { allowed: false, count: latest, limit: FREE_LIMIT, tier }
+          : { allowed: true, count: latest, limit: FREE_LIMIT, tier }
       }
     }
 
-    // Fallback: allow if we can't determine (network issue)
-    return { allowed: true, count: 0, limit: FREE_LIMIT, tier }
+    // Fallback: allow if we can't determine (network issue during update)
+    return { allowed: true, count: currentCount, limit: FREE_LIMIT, tier }
   } catch {
     // Network error — allow request but don't enforce
     return { allowed: true, count: 0, limit: FREE_LIMIT, tier }
