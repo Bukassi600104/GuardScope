@@ -22,11 +22,14 @@
 
 import type { AnalysisIntel, AnalysisReport } from './types'
 
+// Business/financial claim subjects from free providers — red flag
+const BUSINESS_CLAIM_SUBJECT_RE = /\b(invoice|payment|transaction|order confirmation|receipt|account|wire transfer|bank transfer|funds|remittance|settlement|refund|compensation|beneficiary|inheritance|lottery|prize|winning|job offer|employment|investment|opportunity)\b/i
+
 /**
  * Calculate the deterministic rule-based pre-score from all available intel signals.
  * This score anchors the LLM to prevent hallucinated risk level drift.
  */
-export function calcRuleScore(intel: AnalysisIntel): number {
+export function calcRuleScore(intel: AnalysisIntel, subject?: string | null): number {
   let score = 0
 
   // ── Sender Authentication ────────────────────────────────────────────────
@@ -48,18 +51,40 @@ export function calcRuleScore(intel: AnalysisIntel): number {
   if (intel.rdap.riskLevel === 'HIGH')   score += 25   // < 30 days old
   else if (intel.rdap.riskLevel === 'MEDIUM') score += 12  // 30–90 days old
 
+  // ── TLD Risk ─────────────────────────────────────────────────────────────
+  if (intel.tldRisk?.isFreeRegistration) score += 18   // .tk/.ml/.ga/.cf/.gq — massively abused
+  else if (intel.tldRisk?.isHighRisk)    score += 10   // .xyz/.top/.click etc.
+
   // ── URL Threat Intelligence ───────────────────────────────────────────────
   if (intel.vt.flagged)               score += 40
   if (intel.sb.flagged)               score += 40
   if (intel.phishtank?.flagged)       score += 35
   if (intel.urlhaus?.flagged)         score += 35
 
-  // ── Header Analysis Signals (NEW) ─────────────────────────────────────────
+  // ── Spamhaus DBL ─────────────────────────────────────────────────────────
+  if (intel.spamhaus?.dblPhishing)    score += 40
+  if (intel.spamhaus?.dblMalware)     score += 45
+  if (intel.spamhaus?.dblSpam)        score += 25
+
+  // ── Email Reputation ─────────────────────────────────────────────────────
+  if (intel.emailRep?.blacklisted)    score += 35
+  if (intel.emailRep?.maliciousActivity) score += 30
+  if (intel.emailRep?.suspicious)     score += 20
+  if (intel.emailRep?.disposable)     score += 25
+  if (intel.emailRep?.spoofing)       score += 20
+
+  // ── Gmail Security Warning ───────────────────────────────────────────────
+  if (intel.gmailWarning)             score += 30
+
+  // ── Header Analysis Signals ──────────────────────────────────────────────
   if (intel.headerAnalysis) {
     const ha = intel.headerAnalysis
 
     // Reply-To mismatch: HIGH signal — attacker intercepts replies
     if (ha.replyToMismatch)            score += 25
+
+    // Return-Path mismatch: spoofing indicator
+    if (ha.returnPathMismatch)         score += 20
 
     // Display name brand impersonation: CRITICAL signal
     if (ha.displayNameMismatch)        score += 30
@@ -74,17 +99,55 @@ export function calcRuleScore(intel: AnalysisIntel): number {
     // data:/javascript: URIs — always malicious in email
     if (ha.hasDataUri || ha.hasJavascriptUri) score += 35
 
+    // URL shorteners: destination unknown — phishers commonly abuse them
+    if (ha.shortenerUrls.length > 0)   score += 12
+    if (ha.shortenerUrls.length >= 3)  score += 8   // multiple shorteners = higher risk
+
+    // URL path impersonation: brand name in path on non-brand domain
+    if (ha.urlPathImpersonations.length > 0) score += 25
+
+    // Suspicious mailer software
+    if (ha.suspiciousMailer)           score += 8
+
     // Anchor text mismatch: link text domain ≠ href domain
     if (ha.anchorTextMismatches.length > 0)  score += 20
     if (ha.anchorTextMismatches.length >= 3) score += 10  // multiple = coordinated attack
   }
 
-  // ── Domain Similarity (NEW) ───────────────────────────────────────────────
+  // ── Domain Similarity ────────────────────────────────────────────────────
   if (intel.domainSimilarity?.isLookalike) {
     const ds = intel.domainSimilarity
     if (ds.confidence === 'HIGH')      score += 30
     else if (ds.confidence === 'MEDIUM') score += 18
   }
+
+  // URL domain similarity: lookalike in email links (not just sender domain)
+  if (intel.urlDomainSimilarity?.some(r => r.isLookalike && r.confidence === 'HIGH')) {
+    score += 28
+  } else if (intel.urlDomainSimilarity?.some(r => r.isLookalike)) {
+    score += 15
+  }
+
+  // ── Compound Signal Synergy ───────────────────────────────────────────────
+  // Multiple weak signals together compound into a stronger signal
+  const dns = intel.dns
+  const rdap = intel.rdap
+  const ha = intel.headerAnalysis
+
+  // New domain + no DMARC + no SPF
+  if (rdap.riskLevel === 'HIGH' && dns.spf === 'none' && dns.dmarc.policy === 'error') score += 10
+
+  // Free provider + business/financial subject line
+  if (intel.freeProvider && subject && BUSINESS_CLAIM_SUBJECT_RE.test(subject)) score += 15
+
+  // Reply-To mismatch + free provider
+  if (ha?.replyToMismatch && intel.freeProvider) score += 15
+
+  // URL shortener + free provider + suspicious context
+  if (ha?.shortenerUrls.length && intel.freeProvider) score += 10
+
+  // High risk TLD + new domain + privacy proxy-style registrar
+  if (intel.tldRisk?.isHighRisk && rdap.riskLevel !== 'LOW' && rdap.riskLevel !== 'UNKNOWN') score += 10
 
   // ── Trust allowlist: known-good senders get benefit of doubt ─────────────
   if (intel.trustHint) score = Math.max(0, score - 15)
@@ -98,21 +161,28 @@ export function calcRuleScore(intel: AnalysisIntel): number {
  */
 export function applyHybridScore(
   report: Omit<AnalysisReport, 'duration_ms'>,
-  intel: AnalysisIntel
+  intel: AnalysisIntel,
+  subject?: string | null
 ): Omit<AnalysisReport, 'duration_ms'> {
   const mercuryScore = report.risk_score
-  const ruleScore = calcRuleScore(intel)
+  const ruleScore = calcRuleScore(intel, subject)
 
   // Hybrid blend: rule anchors Mercury's score
   let finalScore = Math.round(ruleScore * 0.35 + mercuryScore * 0.65)
 
-  // ── Hard overrides — floor minimums ──────────────────────────────────────
+  // ── Hard overrides — floor minimums (technical) ───────────────────────────
   const anyThreatHit = intel.vt.flagged || intel.sb.flagged ||
-    intel.phishtank?.flagged || intel.urlhaus?.flagged
+    intel.phishtank?.flagged || intel.urlhaus?.flagged ||
+    intel.spamhaus?.dblPhishing || intel.spamhaus?.dblMalware
 
   // Confirmed threat intel → CRITICAL minimum
   if (anyThreatHit) {
     finalScore = Math.max(finalScore, 85)
+  }
+
+  // Spamhaus DBL spam (not phishing — lower confidence) → HIGH minimum
+  if (intel.spamhaus?.dblSpam) {
+    finalScore = Math.max(finalScore, 55)
   }
 
   // Display name brand impersonation → HIGH minimum
@@ -120,14 +190,24 @@ export function applyHybridScore(
     finalScore = Math.max(finalScore, 70)
   }
 
-  // Domain similarity HIGH confidence → HIGH minimum
+  // Domain similarity HIGH confidence (sender domain) → HIGH minimum
   if (intel.domainSimilarity?.isLookalike && intel.domainSimilarity.confidence === 'HIGH') {
     finalScore = Math.max(finalScore, 70)
+  }
+
+  // URL domain similarity HIGH confidence → HIGH minimum
+  if (intel.urlDomainSimilarity?.some(r => r.isLookalike && r.confidence === 'HIGH')) {
+    finalScore = Math.max(finalScore, 75)
   }
 
   // data:/javascript: URIs → CRITICAL minimum
   if (intel.headerAnalysis?.hasDataUri || intel.headerAnalysis?.hasJavascriptUri) {
     finalScore = Math.max(finalScore, 85)
+  }
+
+  // URL path impersonation detected → HIGH minimum
+  if (intel.headerAnalysis?.urlPathImpersonations?.length) {
+    finalScore = Math.max(finalScore, 65)
   }
 
   // SPF fail + newly registered domain → HIGH minimum
@@ -140,9 +220,29 @@ export function applyHybridScore(
     finalScore = Math.max(finalScore, 65)
   }
 
+  // Return-Path mismatch (from non-ESP) → MEDIUM minimum
+  if (intel.headerAnalysis?.returnPathMismatch) {
+    finalScore = Math.max(finalScore, 50)
+  }
+
   // Risky attachment (HIGH type) from non-trusted sender → MEDIUM minimum
   if (intel.headerAnalysis?.attachmentRiskLevel === 'HIGH' && !intel.trustHint) {
     finalScore = Math.max(finalScore, 55)
+  }
+
+  // emailrep blacklisted sender → HIGH minimum
+  if (intel.emailRep?.blacklisted) {
+    finalScore = Math.max(finalScore, 65)
+  }
+
+  // Gmail's own warning → MEDIUM minimum
+  if (intel.gmailWarning) {
+    finalScore = Math.max(finalScore, 55)
+  }
+
+  // Free TLD (.tk/.ml/.ga etc.) → MEDIUM minimum
+  if (intel.tldRisk?.isFreeRegistration) {
+    finalScore = Math.max(finalScore, 45)
   }
 
   // ── Trust cap — allowlisted domain ceiling ─────────────────────────────
@@ -152,7 +252,9 @@ export function applyHybridScore(
     // Only apply cap if no header-level impersonation either
     const hasHeaderFlags = intel.headerAnalysis?.displayNameMismatch ||
       intel.headerAnalysis?.replyToMismatch ||
-      intel.domainSimilarity?.isLookalike
+      intel.headerAnalysis?.returnPathMismatch ||
+      intel.domainSimilarity?.isLookalike ||
+      intel.urlDomainSimilarity?.some(r => r.isLookalike)
     if (!hasHeaderFlags) {
       finalScore = Math.min(finalScore, 40)
     }

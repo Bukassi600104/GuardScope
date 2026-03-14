@@ -108,7 +108,7 @@ export function isTrustedDomain(domain: string): boolean {
 /**
  * Returns the category of the trusted domain for Mercury's context.
  */
-export function getTrustCategory(domain: string): 'global_tech' | 'nigerian_bank' | 'nigerian_gov_telco' | null {
+export function getTrustCategory(domain: string): 'global_tech' | 'financial_institution' | 'government_telecom' | null {
   if (!domain) return null
   const d = domain.toLowerCase().trim()
 
@@ -122,7 +122,7 @@ export function getTrustCategory(domain: string): 'global_tech' | 'nigerian_bank
   }
 
   if (checkSet(GLOBAL_TRUSTED)) return 'global_tech'
-  if (checkSet(NIGERIA_BANKS)) return 'nigerian_bank'
-  if (checkSet(NIGERIA_GOV_TELCO) || d.endsWith('.gov.ng')) return 'nigerian_gov_telco'
+  if (checkSet(NIGERIA_BANKS)) return 'financial_institution'
+  if (checkSet(NIGERIA_GOV_TELCO) || d.endsWith('.gov.ng')) return 'government_telecom'
   return null
 }

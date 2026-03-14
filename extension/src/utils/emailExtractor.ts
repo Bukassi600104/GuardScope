@@ -21,8 +21,11 @@ export interface ExtractedEmail {
   anchorLinks: AnchorLink[]  // pairs of visible text + href for mismatch detection
   attachments: Attachment[]
   replyTo: string | null
+  returnPath: string | null   // Return-Path header (actual delivery address)
+  xMailer: string | null      // X-Mailer / sending software
   messageId: string | null
   gmailAuth: GmailAuthResult
+  gmailWarning: boolean       // Gmail's own phishing/spam warning banner was showing
 }
 
 export interface Attachment {
@@ -46,8 +49,11 @@ export function extractEmailData(): ExtractedEmail {
     anchorLinks: extractAnchorLinks(),
     attachments: extractAttachments(),
     replyTo: extractReplyTo(),
+    returnPath: extractHeaderField('return-path'),
+    xMailer: extractHeaderField('x-mailer') ?? extractHeaderField('user-agent'),
     messageId: extractMessageId(),
     gmailAuth: extractGmailAuthResults(),
+    gmailWarning: detectGmailWarning(),
   }
 }
 
@@ -240,20 +246,81 @@ function extractBodyText(): string | null {
   try {
     // Primary: .a3s.aiL (Gmail's message body container)
     const body = document.querySelector('.a3s.aiL')
-    if (body) return stripHtml(body.innerHTML)
+    if (body) return stripHtmlAndQuotes(body.innerHTML)
 
     // Fallback 1: .a3s (any message body)
     const a3s = document.querySelector('.a3s')
-    if (a3s) return stripHtml(a3s.innerHTML)
+    if (a3s) return stripHtmlAndQuotes(a3s.innerHTML)
 
     // Fallback 2: [dir="ltr"] in main (common Gmail pattern)
     const ltr = document.querySelector('[role="main"] [dir="ltr"]')
-    if (ltr) return stripHtml(ltr.innerHTML)
+    if (ltr) return stripHtmlAndQuotes(ltr.innerHTML)
 
     // Fallback 3: .ii.gt div
     const iiGt = document.querySelector('.ii.gt div')
-    if (iiGt) return stripHtml(iiGt.innerHTML)
+    if (iiGt) return stripHtmlAndQuotes(iiGt.innerHTML)
 
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Detect if Gmail is showing its own phishing/spam warning banner.
+ * Gmail warns users about suspected phishing with a yellow/red banner.
+ * If Gmail already suspects this email, GuardScope should reflect that.
+ */
+function detectGmailWarning(): boolean {
+  try {
+    // Gmail phishing warning banner selectors (may change with UI updates)
+    // Look for text patterns that indicate Gmail's own warnings
+    const warningSelectors = [
+      '.aZo.a3J',           // phishing warning container
+      '[data-phishing-warning]',
+      '.J-J5-Ji.aQv',       // "Be careful" banner
+    ]
+    for (const sel of warningSelectors) {
+      if (document.querySelector(sel)) return true
+    }
+
+    // Text-based detection: look for Gmail's warning text
+    const mainArea = document.querySelector('[role="main"]')
+    if (mainArea) {
+      const text = mainArea.textContent?.toLowerCase() ?? ''
+      if (
+        text.includes('be careful with this message') ||
+        text.includes('this message may be a phishing') ||
+        text.includes('avoid clicking links') ||
+        text.includes('gmail could not verify') ||
+        text.includes('this message contains content that')
+      ) {
+        return true
+      }
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Extract a specific header field value from the expanded Gmail header view.
+ * Used to get Return-Path, X-Mailer, etc. when header details are expanded.
+ */
+function extractHeaderField(fieldName: string): string | null {
+  try {
+    const lower = fieldName.toLowerCase()
+    // Walk text nodes looking for "fieldname: value" patterns
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
+    let node: Text | null
+    while ((node = walker.nextNode() as Text | null)) {
+      const text = node.textContent?.trim() ?? ''
+      if (text.toLowerCase().startsWith(lower + ':')) {
+        const value = text.slice(lower.length + 1).trim()
+        if (value) return value.slice(0, 200)
+      }
+    }
     return null
   } catch {
     return null
@@ -297,7 +364,7 @@ function extractAnchorLinks(): AnchorLink[] {
       if (links.length > 0) break
     }
 
-    return links.slice(0, 50)  // cap at 50 to prevent payload bloat
+    return links.slice(0, 100)  // cap at 100 to prevent payload bloat
   } catch {
     return []
   }
@@ -406,6 +473,25 @@ function stripHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html')
   doc.querySelectorAll('script, style, iframe, object, embed').forEach((el) => el.remove())
   return (doc.body.textContent ?? '').replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * Strip HTML tags AND quoted reply content.
+ * Gmail quoted replies are in .gmail_quote elements — they contain historical
+ * email content, NOT the current email's content. Stripping them ensures the
+ * actual malicious/social-engineered content fills the analysis window
+ * instead of being pushed out by quoted history.
+ */
+function stripHtmlAndQuotes(html: string): string {
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  doc.querySelectorAll('script, style, iframe, object, embed').forEach((el) => el.remove())
+  // Remove Gmail quoted reply containers
+  doc.querySelectorAll('.gmail_quote, .gmail_extra, blockquote[type="cite"]').forEach((el) => el.remove())
+  // Remove common forwarded message headers
+  const text = (doc.body.textContent ?? '').replace(/\s+/g, ' ').trim()
+  // Also strip "--- Forwarded message ---" and "---- Original Message ----" sections
+  const forwardIdx = text.search(/[-—]{3,}\s*(forwarded|original)\s*message\s*[-—]{3,}/i)
+  return forwardIdx > 100 ? text.slice(0, forwardIdx).trim() : text
 }
 
 function isValidUrl(url: string): boolean {

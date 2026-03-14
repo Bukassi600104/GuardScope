@@ -15,8 +15,11 @@ import { isTopDomain } from '../../../lib/tranco'
 import { applyHybridScore, calcRuleScore, scoreToLevel } from '../../../lib/scorer'
 import { phishTankScan } from '../../../lib/phishtank'
 import { urlHausScan } from '../../../lib/urlhaus'
+import { spamhausCheck } from '../../../lib/spamhaus'
+import { emailRepCheck } from '../../../lib/emailrep'
 import { analyzeHeaders } from '../../../lib/headerAnalysis'
 import { analyzeDomainSimilarity } from '../../../lib/domainSimilarity'
+import { assessTldRisk } from '../../../lib/tldRisk'
 import { normalizeUrls } from '../../../lib/urlCache'
 import { decodeJwt, checkAndIncrementQuota, getUserTier } from '../../../lib/quota'
 import { checkRateLimit } from '../../../lib/ratelimit'
@@ -209,8 +212,11 @@ export async function POST(req: NextRequest) {
     anchorLinks: Array.isArray(body.anchorLinks) ? body.anchorLinks : undefined,
     attachments: Array.isArray(body.attachments) ? body.attachments : [],
     replyTo: body.replyTo ?? null,
+    returnPath: (body as EmailInput).returnPath ?? null,
+    xMailer: (body as EmailInput).xMailer ?? null,
     messageId: body.messageId ?? null,
     gmailAuth: body.gmailAuth ?? undefined,
+    gmailWarning: (body as EmailInput).gmailWarning ?? undefined,
   }
 
   // ── Rate Limit + JWT Auth + Quota ────────────────────────────────────────
@@ -289,15 +295,29 @@ export async function POST(req: NextRequest) {
   // Deterministic analysis (no network calls needed)
   const headerAnalysis = analyzeHeaders(email)
   const domainSimilarity = senderDomain ? analyzeDomainSimilarity(senderDomain) : undefined
+  const tldRisk = senderDomain ? assessTldRisk(senderDomain) : undefined
+
+  // URL domain similarity: check all non-trusted URL domains for lookalike patterns
+  const urlDomains = [...new Set(email.urls.map(u => {
+    try { return new URL(u).hostname.toLowerCase().replace(/^www\./, '') } catch { return null }
+  }).filter((d): d is string => !!d && d !== senderDomain))]
+
+  const urlDomainSimilarityResults = urlDomains
+    .filter(d => !isTopDomain(d) && !isTrustedDomain(d))
+    .slice(0, 10)  // cap at 10 URL domains to avoid excessive computation
+    .map(d => analyzeDomainSimilarity(d))
+    .filter(r => r.isLookalike)
 
   // Gather all external intel in parallel — no AI call during this phase
-  const [dnsRes, vtRes, sbRes, rdapRes, ptRes, uhRes] = await Promise.allSettled([
+  const [dnsRes, vtRes, sbRes, rdapRes, ptRes, uhRes, spamhausRes, emailRepRes] = await Promise.allSettled([
     senderDomain ? dnsLookup(senderDomain) : Promise.resolve(NO_DOMAIN_DNS),
     virusTotalScan(email.urls),
     safeBrowsingCheck(email.urls),
     senderDomain ? rdapLookup(senderDomain) : Promise.resolve(NO_DOMAIN_RDAP),
     phishTankScan(email.urls),
     urlHausScan(email.urls, senderDomain || undefined),
+    senderDomain ? spamhausCheck(senderDomain) : Promise.resolve({ checked: false, dblPhishing: false, dblMalware: false, dblSpam: false, sblListed: false }),
+    email.fromEmail ? emailRepCheck(email.fromEmail) : Promise.resolve({ suspicious: false, blacklisted: false, disposable: false, maliciousActivity: false, spoofing: false }),
   ])
 
   const intel: AnalysisIntel = {
@@ -307,12 +327,17 @@ export async function POST(req: NextRequest) {
     rdap: rdapRes.status === 'fulfilled' ? rdapRes.value : { registrationDate: null, ageInDays: null, riskLevel: 'UNKNOWN', registrar: null, error: 'RDAP failed' },
     phishtank: ptRes.status === 'fulfilled' ? ptRes.value : { flagged: false, phishingUrls: [], error: 'PhishTank failed' },
     urlhaus: uhRes.status === 'fulfilled' ? uhRes.value : { flagged: false, malwareUrls: [], error: 'URLhaus failed' },
+    spamhaus: spamhausRes.status === 'fulfilled' ? spamhausRes.value : { checked: false, dblPhishing: false, dblMalware: false, dblSpam: false, sblListed: false, error: 'Spamhaus failed' },
+    emailRep: emailRepRes.status === 'fulfilled' ? emailRepRes.value : { suspicious: false, blacklisted: false, disposable: false, maliciousActivity: false, spoofing: false, error: 'emailrep failed' },
     headerAnalysis,
     ...(domainSimilarity ? { domainSimilarity } : {}),
+    ...(urlDomainSimilarityResults.length > 0 ? { urlDomainSimilarity: urlDomainSimilarityResults } : {}),
+    ...(tldRisk ? { tldRisk } : {}),
     ...(trusted && trustCategory ? {
       trustHint: `Sender domain "${senderDomain}" is a known-legitimate ${trustCategory} domain in GuardScope's allowlist.`
     } : {}),
     ...(isFreeProvider ? { freeProvider: true } : {}),
+    ...(email.gmailWarning ? { gmailWarning: true } : {}),
   }
 
   // Mercury-2 deep analysis — comprehensive AI report for every request.
@@ -333,12 +358,12 @@ export async function POST(req: NextRequest) {
       verdict: report.verdict.replace('Fallback report — AI analysis unavailable', 'Confirmed threat detected by security intelligence'),
       analysis_path: 'rule_based',
     }
-    report = applyHybridScore(report, intel)  // still apply scoring overrides
+    report = applyHybridScore(report, intel, email.subject)  // still apply scoring overrides
   } else {
     // Normal path: full Mercury-2 deep analysis
     try {
       const mercuryReport = await mercuryAnalyze(email, intel)
-      report = applyHybridScore(mercuryReport, intel)
+      report = applyHybridScore(mercuryReport, intel, email.subject)
     } catch (err) {
       // Mercury unavailable — return rule-based fallback so users always get a response
       Sentry.captureException(err, { extra: { fromEmail: email.fromEmail, senderDomain } })
