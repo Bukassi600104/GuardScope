@@ -254,8 +254,26 @@ export async function POST(req: NextRequest) {
         { status: 429 }
       )
     }
+  } else {
+    // Anonymous users (unauthenticated or expired JWT): 5 analyses/month per IP hash.
+    // IP is hashed with month+year so the identifier rotates monthly (privacy-safe).
+    // 'unknown' IPs (e.g. proxies that strip x-forwarded-for) are allowed through — best-effort.
+    if (ip !== 'unknown') {
+      const now = new Date()
+      const hash = createHash('sha256')
+        .update(`anon:${ip}:${now.getFullYear()}:${now.getMonth()}`)
+        .digest('hex')
+      // Format as UUID-shaped string to satisfy the usage table's user_id type
+      const anonId = `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-${hash.slice(16,20)}-${hash.slice(20,32)}`
+      const anonQuota = await checkAndIncrementQuota(anonId, 'free')
+      if (!anonQuota.allowed) {
+        return NextResponse.json(
+          { error: 'limit_reached', count: anonQuota.count, limit: anonQuota.limit, message: 'Monthly analysis limit reached. Sign in to continue.' },
+          { status: 429 }
+        )
+      }
+    }
   }
-  // Anonymous users: no quota enforcement yet (Phase 5 adds IP-based limiting)
 
   // ── Result cache — same email always returns same score within 24h ─────────
   // Eliminates AI non-determinism variance between repeated scans of the same email.
