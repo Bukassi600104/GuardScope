@@ -173,7 +173,7 @@ MODULE 8 — BEHAVIORAL SYNTHESIS (behavioral)
 ═══════════════════════════════════════════════════════
 • Combination scoring: multiple medium signals together = HIGH risk (1+1+1 > 3)
 • Classic phishing combo: NEW DOMAIN + SPF FAIL + URGENCY + BRAND IMPERSONATION = CRITICAL
-• BEC (Business Email Compromise) pattern: executive/manager requesting urgent wire transfer from personal/free email, "keep this confidential"
+• BEC (Business Email Compromise) pattern: authority title (CEO/CFO/Attorney/FBI) in display name (headerAnalysis.authorityImpersonation=true) requesting urgent wire/payment from free provider — clean infrastructure passes ALL technical checks, content is the ONLY signal
 • Spear phishing: personalized content (uses recipient's name/company) from suspicious domain
 • No suspicious signals after comprehensive analysis → behavioral clean ✓ green flag
 
@@ -234,11 +234,60 @@ DELIVERY SCAM (minimum score 60 MEDIUM):
 → Delivery claim + payment request + no tracking = minimum 60
 
 BUSINESS EMAIL COMPROMISE / EXECUTIVE FRAUD (minimum score 75):
-• From "CEO/CFO/Manager" but sent from personal/free email address
-• "I need you to process a payment urgently and keep it confidential"
-• "Don't mention this to [colleague] — it's a surprise/sensitive matter"
-• Wire transfer request with unusual urgency and request for secrecy
-→ Executive + secrecy + urgent payment from free provider = minimum 75
+Highly sophisticated BEC uses CLEAN infrastructure (valid SPF/DKIM, aged domain, no malicious URLs).
+Their ONLY detection signal is social engineering content — technical checks will all pass.
+
+FIVE BEC VARIANTS — each with unique signals:
+
+1. CEO/EXECUTIVE FRAUD:
+• Display name claims: CEO, CFO, COO, CTO, Managing Director, VP, President, Chairman
+• headerAnalysis.authorityImpersonation=true is a CRITICAL deterministic signal
+• "I need you to process a wire transfer urgently and keep it confidential"
+• "I'm in a meeting / travelling — can only be reached by email"
+• "Do not discuss this with anyone else in the company"
+• Free provider sender (gmail/yahoo) claiming executive role = almost always BEC
+→ Executive title + secrecy request + urgency from free provider = minimum 80
+
+2. LAWYER / LEGAL IMPERSONATION:
+• Display name claims: Attorney, Esquire, Barrister, Solicitor, Counsel, Advocate
+• headerAnalysis.authorityRole contains legal title = strong BEC signal
+• "I represent [company/estate] in a legal matter requiring urgent action"
+• "Wire funds to the following escrow/client account immediately"
+• "This matter is subject to legal privilege — do not share"
+• Bank account details for 'settlement' or 'escrow' with urgency
+→ Legal title + bank account request + confidentiality = minimum 75
+
+3. GOVERNMENT / LAW ENFORCEMENT IMPERSONATION:
+• Display name claims: Special Agent, FBI, EFCC, Interpol, Anti-Fraud Officer, DEA
+• headerAnalysis.authorityCategory='government' from deterministic check
+• "Your account has been flagged for money laundering / fraud investigation"
+• "You must pay a compliance fee / release fee / fine to avoid prosecution"
+• "This matter is classified — do not contact local authorities"
+• Threat of arrest, account freeze, legal action unless immediate payment
+→ Government title from free provider = minimum 80; any government title = minimum 70
+
+4. VENDOR PAYMENT FRAUD (hardest BEC variant — no URL required):
+• Poses as known vendor/supplier requesting 'updated banking details'
+• "Our bank account has changed — please update your records"
+• "All future payments should be directed to the new account below"
+• No suspicious URLs (payment details in email body text, not a link)
+• Often spoofs a real vendor domain (check domainSimilarity)
+• Subject line mentions invoice, payment, remittance, supplier, vendor
+→ 'Updated banking details' + urgency = minimum 70
+
+5. HR / W-2 / PAYROLL FRAUD:
+• Poses as HR Director, Payroll Manager, HR Representative
+• "Please update my direct deposit banking information"
+• "I need a copy of all W-2 / P60 / employee tax forms for [year]"
+• Request for employee PII (name, SSN, NIN, salary, bank details)
+→ HR title + employee data request + free provider = minimum 75
+
+ZERO-URL SIGNAL: Legitimate BEC emails often contain NO clickable links.
+An email with authority title + financial request + NO URLs = high BEC suspicion
+(phishers avoid links to evade URL scanners in BEC campaigns).
+
+→ Executive + secrecy + urgent payment from free provider = minimum 80
+→ Any BEC pattern from free provider = minimum 75
 
 GLOBAL BANK / FINTECH IMPERSONATION (minimum score 70):
 • ANY financial institution claiming: your account is suspended/frozen, unusual activity, verify your identity — via email link
@@ -265,6 +314,9 @@ HARD MINIMUMS (non-negotiable — technical):
 • intelligence.gmailWarning = true → minimum 55
 • URL path impersonation detected (urlPathImpersonations.length > 0) → minimum 65
 • Spamhaus DBL spam listing → minimum 55
+• headerAnalysis.authorityImpersonation=true → minimum 55
+• headerAnalysis.authorityImpersonation=true + freeProvider=true → minimum 65
+• headerAnalysis.authorityCategory='government' → minimum 70
 
 CONTENT-BASED MINIMUMS (non-negotiable — must detect even without technical red flags):
 • Advance-fee fraud markers (inheritance/beneficiary/transfer fee + money promise) → minimum 75 HIGH
@@ -273,7 +325,11 @@ CONTENT-BASED MINIMUMS (non-negotiable — must detect even without technical re
 • Investment guaranteed-return pitch → minimum 70 HIGH
 • Government impersonation + windfall or legal threat → minimum 75 HIGH
 • Delivery scam (package held + payment required + no real tracking) → minimum 60 MEDIUM
-• BEC pattern (executive + urgent payment + confidentiality from free provider) → minimum 75 HIGH
+• BEC pattern (executive + urgent payment + confidentiality from free provider) → minimum 80 HIGH
+• BEC pattern (lawyer/legal + bank account + confidentiality) → minimum 75 HIGH
+• BEC pattern (government title + payment/compliance fee from free provider) → minimum 80 HIGH
+• BEC vendor fraud (updated banking details + urgency, no real URLs) → minimum 70 HIGH
+• Any authority title (CEO/Attorney/FBI) + financial request with NO URLs → minimum 70 HIGH
 • Romance scam setup (unsolicited personal relationship building) → minimum 65 MEDIUM
 • Direct credential/OTP/PIN request in email body → minimum 70 HIGH
 • "Dear Beneficiary / Dear Lucky Winner" language → minimum 65 HIGH (scam template)

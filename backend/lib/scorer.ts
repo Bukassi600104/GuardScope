@@ -156,6 +156,12 @@ export function calcRuleScore(intel: AnalysisIntel, subject?: string | null): nu
     // Anchor text mismatch: link text domain ≠ href domain
     if (ha.anchorTextMismatches.length > 0)  score += 20
     if (ha.anchorTextMismatches.length >= 3) score += 10  // multiple = coordinated attack
+
+    // BEC authority title in display name (CEO, CFO, Attorney, FBI Agent, etc.)
+    if (ha.authorityImpersonation) {
+      score += 25
+      if (ha.authorityCategory === 'government') score += 10  // government/LE titles = higher urgency
+    }
   }
 
   // ── Domain Similarity ────────────────────────────────────────────────────
@@ -189,6 +195,16 @@ export function calcRuleScore(intel: AnalysisIntel, subject?: string | null): nu
 
   // URL shortener + free provider + suspicious context
   if (ha?.shortenerUrls.length && intel.freeProvider) score += 10
+
+  // Authority title (BEC) compound signals
+  if (ha?.authorityImpersonation) {
+    // Authority title + free provider = classic BEC setup
+    if (intel.freeProvider) score += 20
+    // Authority title + reply-to mismatch = attacker harvesting replies
+    if (ha.replyToMismatch) score += 15
+    // Authority title + business/financial subject = strong BEC indicator
+    if (subject && BUSINESS_CLAIM_SUBJECT_RE.test(subject)) score += 20
+  }
 
   // High risk TLD + new domain + privacy proxy-style registrar
   if (intel.tldRisk?.isHighRisk && rdap.riskLevel !== 'LOW' && rdap.riskLevel !== 'UNKNOWN') score += 10
@@ -280,6 +296,15 @@ export function applyHybridScore(
     finalScore = Math.max(finalScore, 55)
   }
 
+  // Authority title impersonation (BEC signal) → MEDIUM-HIGH minimum
+  if (intel.headerAnalysis?.authorityImpersonation) {
+    finalScore = Math.max(finalScore, 55)
+    // Authority + free provider = elevated BEC risk → HIGH minimum
+    if (intel.freeProvider) finalScore = Math.max(finalScore, 65)
+    // Government/LE title impersonation → HIGH minimum (used in gov scams)
+    if (intel.headerAnalysis.authorityCategory === 'government') finalScore = Math.max(finalScore, 70)
+  }
+
   // emailrep blacklisted sender → HIGH minimum
   if (intel.emailRep?.blacklisted) {
     finalScore = Math.max(finalScore, 65)
@@ -303,6 +328,7 @@ export function applyHybridScore(
     const hasHeaderFlags = intel.headerAnalysis?.displayNameMismatch ||
       intel.headerAnalysis?.replyToMismatch ||
       intel.headerAnalysis?.returnPathMismatch ||
+      intel.headerAnalysis?.authorityImpersonation ||
       intel.domainSimilarity?.isLookalike ||
       intel.urlDomainSimilarity?.some(r => r.isLookalike)
     if (!hasHeaderFlags) {

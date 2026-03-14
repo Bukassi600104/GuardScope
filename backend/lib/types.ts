@@ -92,6 +92,9 @@ export interface HeaderAnalysisResult {
   hasJavascriptUri: boolean             // javascript: URI scheme
   suspiciousMailer: boolean             // X-Mailer is a known bulk/phishing tool
   anchorTextMismatches: Array<{ text: string; href: string; textDomain: string; hrefDomain: string }>
+  authorityImpersonation: boolean       // C-suite/legal/government title in display name (BEC signal)
+  authorityRole: string | null          // extracted title e.g. "CEO", "Attorney", "Special Agent"
+  authorityCategory: 'executive' | 'legal' | 'government' | null  // BEC variant category
 }
 
 /**

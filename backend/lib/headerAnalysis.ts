@@ -267,6 +267,65 @@ function domainsMatch(a: string | null, b: string | null): boolean {
   return false
 }
 
+// ── BEC Authority Title detection ─────────────────────────────────────────────
+// Detects role/title impersonation in display name — distinct from brand impersonation.
+// BEC attacks use authority titles (CEO, Attorney, FBI) to create psychological pressure.
+// These titles have NO official sending domain to check against — the flag is the title itself
+// combined with a free provider or mismatched domain.
+
+const BEC_AUTHORITY_PATTERNS: Array<{
+  pattern: RegExp
+  role: string
+  category: 'executive' | 'legal' | 'government'
+}> = [
+  // C-suite / Executive
+  { pattern: /\bCEO\b/,                                                      role: 'CEO',              category: 'executive' },
+  { pattern: /\bCFO\b/,                                                      role: 'CFO',              category: 'executive' },
+  { pattern: /\bCOO\b/,                                                      role: 'COO',              category: 'executive' },
+  { pattern: /\bCTO\b/,                                                      role: 'CTO',              category: 'executive' },
+  { pattern: /\bCIO\b/,                                                      role: 'CIO',              category: 'executive' },
+  { pattern: /\bCISO\b/,                                                     role: 'CISO',             category: 'executive' },
+  { pattern: /\bCMO\b/,                                                      role: 'CMO',              category: 'executive' },
+  { pattern: /\b(Managing\s+Director|MD)\b/i,                                role: 'Managing Director', category: 'executive' },
+  { pattern: /\b(Vice\s+President|VP|SVP|EVP)\b/i,                           role: 'VP',               category: 'executive' },
+  { pattern: /\bChairman\b/i,                                                role: 'Chairman',         category: 'executive' },
+  { pattern: /\bPresident\b/i,                                               role: 'President',        category: 'executive' },
+  { pattern: /\b(Executive\s+Director|Exec\.\s*Director)\b/i,                role: 'Executive Director', category: 'executive' },
+  { pattern: /\bBoard\s+Member\b/i,                                          role: 'Board Member',     category: 'executive' },
+  // Legal
+  { pattern: /\b(Attorney|Attorney\s+at\s+Law)\b/i,                          role: 'Attorney',         category: 'legal' },
+  { pattern: /\bEsq(uire)?\b/i,                                              role: 'Esquire',          category: 'legal' },
+  { pattern: /\bBarrister\b/i,                                               role: 'Barrister',        category: 'legal' },
+  { pattern: /\bSolicitor\b/i,                                               role: 'Solicitor',        category: 'legal' },
+  { pattern: /\b(General\s+Counsel|Chief\s+Legal\s+Officer)\b/i,             role: 'General Counsel',  category: 'legal' },
+  { pattern: /\bAdvocate\b/i,                                                role: 'Advocate',         category: 'legal' },
+  { pattern: /\bNotary\b/i,                                                  role: 'Notary',           category: 'legal' },
+  // Government / Law Enforcement
+  { pattern: /\bSpecial\s+Agent\b/i,                                         role: 'Special Agent',    category: 'government' },
+  { pattern: /\b(FBI|Federal\s+Bureau)\b/i,                                  role: 'FBI Agent',        category: 'government' },
+  { pattern: /\b(EFCC|Economic\s+and\s+Financial\s+Crimes)\b/i,              role: 'EFCC Officer',     category: 'government' },
+  { pattern: /\bINTERPOL\b/i,                                                role: 'Interpol Officer', category: 'government' },
+  { pattern: /\b(Anti.?Fraud\s+Officer|Anti.?Money\s+Laundering\s+Officer|AML\s+Officer)\b/i, role: 'Anti-Fraud Officer', category: 'government' },
+  { pattern: /\bCompliance\s+Officer\b/i,                                    role: 'Compliance Officer', category: 'government' },
+  { pattern: /\b(DEA|Drug\s+Enforcement)\b/i,                                role: 'DEA Agent',        category: 'government' },
+  { pattern: /\bSecret\s+Service\b/i,                                        role: 'Secret Service',   category: 'government' },
+  { pattern: /\bInvestigator\b/i,                                            role: 'Investigator',     category: 'government' },
+]
+
+function detectAuthorityTitle(fromName: string | null): {
+  impersonation: boolean
+  role: string | null
+  category: 'executive' | 'legal' | 'government' | null
+} {
+  if (!fromName) return { impersonation: false, role: null, category: null }
+  for (const { pattern, role, category } of BEC_AUTHORITY_PATTERNS) {
+    if (pattern.test(fromName)) {
+      return { impersonation: true, role, category }
+    }
+  }
+  return { impersonation: false, role: null, category: null }
+}
+
 // ── Brand impersonation detection ────────────────────────────────────────────
 
 function detectDisplayNameBrand(
@@ -345,6 +404,10 @@ export function analyzeHeaders(email: EmailInput): HeaderAnalysisResult {
   // Display name brand impersonation
   const { brand: displayNameBrand, mismatch: displayNameMismatch } =
     detectDisplayNameBrand(email.fromName, fromDomain)
+
+  // BEC authority title detection
+  const { impersonation: authorityImpersonation, role: authorityRole, category: authorityCategory } =
+    detectAuthorityTitle(email.fromName)
 
   // Suspicious X-Mailer
   const mailerLower = (email.xMailer ?? '').toLowerCase()
@@ -443,5 +506,8 @@ export function analyzeHeaders(email: EmailInput): HeaderAnalysisResult {
     hasJavascriptUri,
     suspiciousMailer,
     anchorTextMismatches,
+    authorityImpersonation,
+    authorityRole,
+    authorityCategory,
   }
 }
