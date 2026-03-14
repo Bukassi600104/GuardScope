@@ -39,7 +39,7 @@ function GuardScopeIcon({ color }: { color?: string }) {
 
 const RISK_BADGE_COLORS: Record<string, string> = {
   SAFE:     'border-green-500/40 text-green-400',
-  LOW:      'border-lime-500/40 text-lime-400',
+  LOW:      'border-amber-400/40 text-amber-400',
   MEDIUM:   'border-orange-500/40 text-orange-400',
   HIGH:     'border-red-500/40 text-red-400',
   CRITICAL: 'border-red-400/60 text-red-300',
@@ -67,14 +67,14 @@ const RISK_THEME: Record<string, {
     btnGlow: 'rgba(34,197,94,0.35)',
   },
   LOW: {
-    topBar: '#84cc16',
-    headerBg: 'rgba(22,38,10,0.98)',
-    headerBorder: 'rgba(132,204,22,0.3)',
-    bodyBg: 'rgba(132,204,22,0.025)',
-    footerBg: 'rgba(22,38,10,0.98)',
-    btnBg: '#65a30d',
-    btnBgHover: '#4d7c0f',
-    btnGlow: 'rgba(132,204,22,0.35)',
+    topBar: '#FFB020',
+    headerBg: 'rgba(40,28,4,0.98)',
+    headerBorder: 'rgba(255,176,32,0.35)',
+    bodyBg: 'rgba(255,176,32,0.03)',
+    footerBg: 'rgba(40,28,4,0.98)',
+    btnBg: '#D97706',
+    btnBgHover: '#B45309',
+    btnGlow: 'rgba(255,176,32,0.4)',
   },
   MEDIUM: {
     topBar: '#f97316',
@@ -111,19 +111,19 @@ const RISK_THEME: Record<string, {
 const DEFAULT_THEME = RISK_THEME.HIGH // fallback before result
 
 const SHIELD_COLORS: Record<string, string> = {
-  SAFE: '#22c55e', LOW: '#84cc16', MEDIUM: '#f97316', HIGH: '#ef4343', CRITICAL: '#ef4343',
+  SAFE: '#22c55e', LOW: '#FFB020', MEDIUM: '#f97316', HIGH: '#ef4343', CRITICAL: '#ef4343',
 }
 
 const VERDICT_BORDER_COLORS: Record<string, string> = {
   SAFE:     'border-green-500/30 bg-green-500/8',
-  LOW:      'border-lime-500/30 bg-lime-500/8',
+  LOW:      'border-amber-400/30 bg-amber-400/8',
   MEDIUM:   'border-orange-500/30 bg-orange-500/8',
   HIGH:     'border-red-500/30 bg-red-500/8',
   CRITICAL: 'border-red-400/40 bg-red-400/10',
 }
 
 const VERDICT_TEXT_COLORS: Record<string, string> = {
-  SAFE: 'text-green-400', LOW: 'text-lime-400', MEDIUM: 'text-orange-400',
+  SAFE: 'text-green-400', LOW: 'text-amber-400', MEDIUM: 'text-orange-400',
   HIGH: 'text-red-400', CRITICAL: 'text-red-300',
 }
 
@@ -140,7 +140,7 @@ interface HistoryEntry {
 }
 
 const RISK_BADGE_DOT: Record<string, string> = {
-  SAFE: 'bg-green-500', LOW: 'bg-lime-500', MEDIUM: 'bg-orange-500', HIGH: 'bg-red-500', CRITICAL: 'bg-red-400',
+  SAFE: 'bg-green-500', LOW: 'bg-amber-400', MEDIUM: 'bg-orange-500', HIGH: 'bg-red-500', CRITICAL: 'bg-red-400',
 }
 
 export default function App() {

@@ -42,14 +42,14 @@ CREATE POLICY "service_role_all" ON promo_codes
 -- ─────────────────────────────────────────────────────────────
 DO $$
 DECLARE
-  chars TEXT := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; -- no 0/O/1/I to avoid confusion
-  code  TEXT;
-  i     INT;
+  chars  TEXT := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; -- no 0/O/1/I to avoid confusion
+  v_code TEXT;
+  i      INT;
 BEGIN
   FOR i IN 1..100 LOOP
     LOOP
       -- Generate 8-char random code
-      code := 'GS-' ||
+      v_code := 'GS-' ||
         substr(chars, floor(random()*32)::int+1, 1) ||
         substr(chars, floor(random()*32)::int+1, 1) ||
         substr(chars, floor(random()*32)::int+1, 1) ||
@@ -59,9 +59,9 @@ BEGIN
         substr(chars, floor(random()*32)::int+1, 1) ||
         substr(chars, floor(random()*32)::int+1, 1);
       -- Retry if duplicate
-      EXIT WHEN NOT EXISTS (SELECT 1 FROM promo_codes WHERE promo_codes.code = code);
+      EXIT WHEN NOT EXISTS (SELECT 1 FROM promo_codes WHERE promo_codes.code = v_code);
     END LOOP;
-    INSERT INTO promo_codes (code) VALUES (code);
+    INSERT INTO promo_codes (code) VALUES (v_code);
   END LOOP;
 END $$;
 

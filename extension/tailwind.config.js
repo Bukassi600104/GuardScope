@@ -14,7 +14,7 @@ export default {
         'gs-text': '#e2e8f0',
         'gs-muted': '#64748b',
         'gs-safe': '#22c55e',
-        'gs-low': '#84cc16',
+        'gs-low': '#FFB020',
         'gs-medium': '#f97316',
         'gs-high': '#ef4444',
         'gs-critical': '#991b1b',

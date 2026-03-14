@@ -98,7 +98,7 @@ export default function ProgressBar({ finalScore }: Props) {
   const needleAngle = -90 + (gaugeVal / 100) * 180
   const needleColor = gaugeVal < 35 ? '#22c55e' : gaugeVal < 65 ? '#f97316' : '#ef4444'
   const ringColor = finalScore !== undefined
-    ? (finalScore <= 25 ? '#22c55e' : finalScore <= 49 ? '#84cc16' : finalScore <= 69 ? '#f97316' : '#ef4444')
+    ? (finalScore <= 25 ? '#22c55e' : finalScore <= 49 ? '#FFB020' : finalScore <= 69 ? '#f97316' : '#ef4444')
     : '#ef4444'
 
   const isSettled = finalScore !== undefined

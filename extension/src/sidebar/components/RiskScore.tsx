@@ -9,7 +9,7 @@ interface RiskScoreProps {
 
 const LEVEL_CONFIG: Record<RiskLevel, { color: string; hex: string; label: string; icon: string }> = {
   SAFE:     { color: 'text-gs-safe',     hex: '#22c55e', label: 'SAFE',        icon: '✅' },
-  LOW:      { color: 'text-gs-low',      hex: '#84cc16', label: 'LOW RISK',    icon: '⚠️' },
+  LOW:      { color: 'text-gs-low',      hex: '#FFB020', label: 'LOW RISK',    icon: '⚠️' },
   MEDIUM:   { color: 'text-gs-medium',   hex: '#f97316', label: 'MEDIUM RISK', icon: '⚠️' },
   HIGH:     { color: 'text-gs-high',     hex: '#ef4343', label: 'HIGH RISK',   icon: '🚨' },
   CRITICAL: { color: 'text-red-300',     hex: '#ef4343', label: 'CRITICAL',    icon: '🚨' },
