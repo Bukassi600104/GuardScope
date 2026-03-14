@@ -392,12 +392,61 @@ function extractUrls(): string[] {
           urls.push(href)
         }
       }
+      // Also scan plain text — phishers often write URLs without hyperlinking them
+      // to bypass URL scanners that only check anchor hrefs
+      const plainText = container.textContent ?? ''
+      const plainUrls = extractPlainTextUrls(plainText)
+      for (const url of plainUrls) {
+        if (!seen.has(url)) {
+          seen.add(url)
+          urls.push(url)
+        }
+      }
+      // Only use first matching container to avoid duplicates
+      if (urls.length > 0) break
     }
 
     return urls
   } catch {
     return []
   }
+}
+
+/**
+ * Extract URLs written as plain text (not in anchor tags).
+ * Phishers write domains as plain text (e.g. "youtu.be-dmca.report/...") to
+ * avoid Gmail's auto-link detection and URL scanners that only check <a href>.
+ * We match both https:// URLs and bare domain-path patterns.
+ */
+function extractPlainTextUrls(text: string): string[] {
+  const urls: string[] = []
+  const seen = new Set<string>()
+
+  // Match explicit protocol URLs
+  const protocolRe = /https?:\/\/[^\s"'<>)\],]+/gi
+  let m: RegExpExecArray | null
+  while ((m = protocolRe.exec(text)) !== null) {
+    const url = m[0].replace(/[.,;:!?]+$/, '')
+    if (url.length > 10 && !seen.has(url)) {
+      seen.add(url)
+      urls.push(url)
+    }
+  }
+
+  // Match bare domain patterns: word.word.tld/path (no protocol)
+  // Require at least one path segment to reduce false positives on normal text
+  // e.g. "youtu.be-dmca.report/?notification-id=..." but NOT "e.g. word.word"
+  const bareDomainRe = /\b((?:[\w-]+\.)+[\w]{2,}\/[\w\-._~:/?#[\]@!$&'()*+,;=%]{3,})/g
+  while ((m = bareDomainRe.exec(text)) !== null) {
+    const raw = m[1].replace(/[.,;:!?]+$/, '')
+    const withProtocol = `https://${raw}`
+    if (!seen.has(withProtocol) && !seen.has(raw)) {
+      seen.add(withProtocol)
+      urls.push(withProtocol)
+    }
+  }
+
+  return urls
 }
 
 function extractAttachments(): Attachment[] {

@@ -164,6 +164,10 @@ export default function App() {
       const tabId = tabs[0]?.id ?? null
       setMyTabId(tabId)
 
+      // Mark onboarding complete — the user has opened the panel (regardless of auth state)
+      // This unblocks the content script which polls for this flag before starting email detection
+      chrome.storage.local.set({ guardscope_onboarding_complete: true })
+
       const emailKey = tabId ? `guardscope_email_${tabId}` : 'guardscope_current_email'
       chrome.storage.local.get(
         [emailKey, 'guardscope_history', 'guardscope_auth', 'guardscope_anon_count'],
@@ -174,6 +178,15 @@ export default function App() {
             setAppState('idle')
           } else {
             setAppState('no_email')
+            // Request an immediate email sync from the content script.
+            // Handles the case where an email is already open when the panel is first launched
+            // and the content script hadn't started detection yet (onboarding was incomplete).
+            if (tabId) {
+              chrome.tabs.sendMessage(tabId, { type: 'REQUEST_EMAIL_SYNC' }).catch(() => {
+                // Content script may not be ready yet — the storage onChanged listener
+                // in content.ts will handle this when guardscope_onboarding_complete fires
+              })
+            }
           }
           setHistory((result.guardscope_history as HistoryEntry[]) ?? [])
 

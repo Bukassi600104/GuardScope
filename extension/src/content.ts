@@ -32,6 +32,7 @@ function isEmailOpen(): boolean {
 // tabs don't overwrite each other's state in the shared storage.
 let myTabId: number | null = null
 let emailSyncTimeout: ReturnType<typeof setTimeout> | null = null
+let observerStarted = false  // guard against double-initialization
 
 function getEmailKey(): string {
   return myTabId ? `guardscope_email_${myTabId}` : 'guardscope_current_email'
@@ -124,16 +125,34 @@ function hideMiniTab(): void {
   document.getElementById(MINI_TAB_ID)?.remove()
 }
 
-// When the side panel opens/closes, App.tsx writes guardscope_panel_visible.
-// Content script reacts: visible=false → show mini-tab, visible=true → hide it.
+// Storage change listener — reacts to panel visibility + onboarding completion
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local' || !isContextValid()) return
-  if (!('guardscope_panel_visible' in changes)) return
-  const visible = changes.guardscope_panel_visible.newValue as boolean
-  if (visible) {
-    hideMiniTab()
-  } else {
-    showMiniTab()
+
+  // Panel open/close: visible=false → show mini-tab, visible=true → hide it
+  if ('guardscope_panel_visible' in changes) {
+    const visible = changes.guardscope_panel_visible.newValue as boolean
+    if (visible) {
+      hideMiniTab()
+    } else {
+      showMiniTab()
+    }
+  }
+
+  // Onboarding just completed — immediately start email detection without waiting
+  // for the 2s polling interval. Handles "use without signing in" and sidebar-first-open.
+  if ('guardscope_onboarding_complete' in changes &&
+      changes.guardscope_onboarding_complete.newValue === true) {
+    waitForGmail()
+  }
+})
+
+// Message listener — handles direct requests from the sidebar (App.tsx)
+chrome.runtime.onMessage.addListener((message) => {
+  if (!isContextValid()) return
+  if (message?.type === 'REQUEST_EMAIL_SYNC') {
+    // Sidebar requested an immediate email sync (e.g., panel opened with email already showing)
+    syncEmail()
   }
 })
 
@@ -153,12 +172,15 @@ window.addEventListener('popstate', () => {
 const observer = new MutationObserver(syncEmail)
 
 function startObserver(): void {
+  if (observerStarted) { syncEmail(); return }  // already observing — just re-sync
+  observerStarted = true
   const target = document.querySelector('[role="main"]') || document.body
   observer.observe(target, { childList: true, subtree: true })
   syncEmail() // initial check on load
 }
 
 function waitForGmail(retries = 20): void {
+  if (observerStarted) { syncEmail(); return }  // already observing — just re-sync
   if (document.querySelector('[role="main"]')) {
     startObserver()
     return

@@ -22,8 +22,8 @@
 
 import type { AnalysisIntel, AnalysisReport } from './types'
 
-// Business/financial claim subjects from free providers — red flag
-const BUSINESS_CLAIM_SUBJECT_RE = /\b(invoice|payment|transaction|order confirmation|receipt|account|wire transfer|bank transfer|funds|remittance|settlement|refund|compensation|beneficiary|inheritance|lottery|prize|winning|job offer|employment|investment|opportunity)\b/i
+// Business/financial/legal claim subjects from free providers — red flag
+const BUSINESS_CLAIM_SUBJECT_RE = /\b(invoice|payment|transaction|order confirmation|receipt|account|wire transfer|bank transfer|funds|remittance|settlement|refund|compensation|beneficiary|inheritance|lottery|prize|winning|job offer|employment|investment|opportunity|copyright|dmca|takedown|strike|violation|infringement|intellectual property|legal notice|legal action|lawsuit|claim|dispute|cease and desist|content removal|channel|monetization|terminated|suspended|verify|verification|confirm|urgent|immediate action|final notice|last warning)\b/i
 
 // ─── Self-Built Registrar Risk Engine ────────────────────────────────────────
 // Source: Spamhaus abuse statistics, CISA advisories, brand protection research.

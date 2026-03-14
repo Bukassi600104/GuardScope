@@ -277,10 +277,33 @@ export async function POST(req: NextRequest) {
   // Free email provider detection — gmail/yahoo/hotmail senders don't get trust cap benefit
   // because attackers commonly send phishing from free providers
   const FREE_PROVIDERS = new Set([
+    // ── US / Global ─────────────────────────────────────────────────────────
     'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.uk', 'yahoo.fr', 'yahoo.ng',
-    'hotmail.com', 'hotmail.co.uk', 'hotmail.fr', 'outlook.com', 'live.com', 'live.co.uk',
+    'yahoo.de', 'yahoo.es', 'yahoo.it', 'yahoo.ca', 'yahoo.com.au', 'yahoo.co.in',
+    'hotmail.com', 'hotmail.co.uk', 'hotmail.fr', 'hotmail.de', 'hotmail.es', 'hotmail.it',
+    'outlook.com', 'live.com', 'live.co.uk', 'live.fr', 'live.de', 'live.it',
     'ymail.com', 'icloud.com', 'me.com', 'mac.com', 'protonmail.com', 'proton.me',
-    'zoho.com', 'aol.com', 'mail.com', 'yandex.com', 'yandex.ru',
+    'zoho.com', 'aol.com', 'mail.com', 'inbox.com', 'fastmail.com', 'fastmail.fm',
+    // ── German / Austrian / Swiss ────────────────────────────────────────────
+    'web.de', 'gmx.de', 'gmx.net', 'gmx.com', 'gmx.at', 'gmx.ch', 'gmx.us',
+    't-online.de', 'freenet.de', 'arcor.de', 'posteo.de', 'mailbox.org',
+    // ── Italian ──────────────────────────────────────────────────────────────
+    'libero.it', 'virgilio.it', 'tiscali.it', 'alice.it', 'tin.it',
+    'email.it', 'iol.it', 'katamail.com', 'inwind.it',
+    // ── French ───────────────────────────────────────────────────────────────
+    'laposte.net', 'sfr.fr', 'orange.fr', 'free.fr', 'bbox.fr', 'numericable.fr',
+    'wanadoo.fr', 'club-internet.fr', 'neuf.fr',
+    // ── Russian / Ukrainian ───────────────────────────────────────────────────
+    'mail.ru', 'inbox.ru', 'list.ru', 'bk.ru', 'rambler.ru', 'yandex.com', 'yandex.ru',
+    'yandex.ua', 'ukr.net', 'i.ua', 'meta.ua',
+    // ── Chinese ───────────────────────────────────────────────────────────────
+    'qq.com', '163.com', '126.com', 'sina.com', 'sohu.com', '139.com', '189.cn',
+    // ── Other Asian ───────────────────────────────────────────────────────────
+    'naver.com', 'hanmail.net', 'daum.net', 'rediffmail.com', 'sify.com',
+    // ── Spanish / Latin America ───────────────────────────────────────────────
+    'terra.com.br', 'uol.com.br', 'bol.com.br', 'ig.com.br', 'globo.com',
+    // ── African / Nigerian ────────────────────────────────────────────────────
+    'yahoo.com.ng', 'rocketmail.com',
   ])
   const isFreeProvider = FREE_PROVIDERS.has(senderDomain)
 

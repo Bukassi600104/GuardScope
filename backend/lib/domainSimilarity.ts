@@ -17,7 +17,8 @@ import type { DomainSimilarityResult } from './types'
 const BRAND_DOMAINS: Array<{ brand: string; registrable: string[] }> = [
   // ── Global Tech & Payments ─────────────────────────────────────────────────
   { brand: 'PayPal',          registrable: ['paypal.com'] },
-  { brand: 'Google',          registrable: ['google.com', 'gmail.com'] },
+  { brand: 'Google',          registrable: ['google.com', 'gmail.com', 'youtube.com', 'youtu.be', 'googlemail.com'] },
+  { brand: 'YouTube',         registrable: ['youtube.com', 'youtu.be'] },
   { brand: 'Apple',           registrable: ['apple.com', 'icloud.com'] },
   { brand: 'Microsoft',       registrable: ['microsoft.com', 'outlook.com', 'live.com', 'hotmail.com'] },
   { brand: 'Amazon',          registrable: ['amazon.com', 'amazon.co.uk', 'amazon.com.au', 'amazon.de'] },

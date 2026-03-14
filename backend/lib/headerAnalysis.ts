@@ -311,7 +311,8 @@ const URL_PATH_BRANDS = [
   'binance', 'coinbase', 'dhl', 'fedex', 'ups', 'usps', 'ebay', 'walmart',
   'irs', 'hmrc', 'ato', 'royalmail', 'stripe', 'shopify', 'dropbox',
   'docusign', 'adobe', 'zoom', 'slack', 'venmo', 'cashapp', 'zelle', 'wise',
-  'revolut', 'klarna', 'binance', 'kraken', 'coinbase', 'metamask',
+  'revolut', 'klarna', 'kraken', 'metamask',
+  'youtube', 'youtu',  // YouTube impersonation — copyright/DMCA scams
   // African brands
   'gtbank', 'zenithbank', 'accessbank', 'firstbank', 'opay', 'kuda',
   'palmpay', 'flutterwave', 'paystack', 'moniepoint', 'mtn', 'safaricom', 'mpesa',
