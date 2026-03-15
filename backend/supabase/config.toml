@@ -1,0 +1,10 @@
+# GuardScope Supabase config
+# Pushed via: npx supabase config push --project-ref zfuxxoyjfedmtoeydcvp
+
+[auth]
+site_url = "https://guardscope.app"
+additional_redirect_urls = [
+  "https://guardscope.app/reset-password",
+  "https://guardscope.app/signup",
+  "https://guardscope.app"
+]
