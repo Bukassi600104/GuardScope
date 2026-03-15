@@ -8,6 +8,9 @@
 
 // Tier-1 global technology + financial platforms
 const GLOBAL_TRUSTED = new Set([
+  // GuardScope own domain — transactional auth emails (password reset, confirmation)
+  'guardscope.app',
+
   'google.com', 'gmail.com', 'googlemail.com', 'accounts.google.com',
   'microsoft.com', 'outlook.com', 'hotmail.com', 'live.com', 'office.com', 'microsoft365.com',
   'apple.com', 'icloud.com',
