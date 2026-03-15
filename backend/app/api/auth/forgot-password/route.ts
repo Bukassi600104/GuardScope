@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+    await fetch(`${SUPABASE_URL}/auth/v1/recover?redirect_to=https://guardscope.app/reset-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
