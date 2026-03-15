@@ -51,6 +51,13 @@ export default function Popup() {
   // Usage state
   const [usageCount, setUsageCount] = useState<number | null>(null)
 
+  // Promo code state
+  const [showPromo, setShowPromo] = useState(false)
+  const [promoCode, setPromoCode] = useState('')
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [promoError, setPromoError] = useState('')
+  const [promoSuccess, setPromoSuccess] = useState(false)
+
   // Check if the current tab is Gmail
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -119,6 +126,35 @@ export default function Popup() {
         }
       })
     })
+  }
+
+  async function handleRedeemPromo(e: React.FormEvent) {
+    e.preventDefault()
+    setPromoLoading(true)
+    setPromoError('')
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/promo/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(auth?.token ? { 'Authorization': `Bearer ${auth.token}` } : {}),
+        },
+        body: JSON.stringify({ code: promoCode.trim().toUpperCase(), email: auth?.email ?? '' }),
+      })
+      const data = await res.json() as { error?: string }
+      if (!res.ok) {
+        setPromoError(data.error ?? 'Invalid or expired promo code')
+        return
+      }
+      setPromoSuccess(true)
+      setAuth(prev => prev ? { ...prev, tier: 'pro' } : prev)
+      setPromoCode('')
+      setTimeout(() => { setShowPromo(false); setPromoSuccess(false) }, 2500)
+    } catch {
+      setPromoError('Network error — please try again')
+    } finally {
+      setPromoLoading(false)
+    }
   }
 
   function handleSignOut() {
@@ -234,18 +270,46 @@ export default function Popup() {
             >
               Open Gmail
             </button>
-            {(auth?.tier === 'free') && (
-              <a
-                href={`${BACKEND_URL}/upgrade`}
-                onClick={(e) => {
-                  e.preventDefault()
-                  chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })
-                }}
+            {(auth?.tier === 'free') && !showPromo && (
+              <button
+                onClick={() => { setShowPromo(true); setPromoError('') }}
                 className="block w-full py-2 px-4 text-center text-xs font-semibold border rounded-lg transition-colors"
-                style={{ color: '#39B6FF', borderColor: 'rgba(57,182,255,0.3)', background: 'rgba(57,182,255,0.06)' }}
+                style={{ color: '#39B6FF', borderColor: 'rgba(57,182,255,0.3)', background: 'rgba(57,182,255,0.06)', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}
               >
-                Get Early Access — Free 30 Days
-              </a>
+                🎁 Have a promo code? Activate Pro
+              </button>
+            )}
+            {(auth?.tier === 'free') && showPromo && (
+              promoSuccess ? (
+                <div className="text-center py-2">
+                  <p className="text-xs font-semibold text-green-400">🎉 Pro activated! 30 days unlimited.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleRedeemPromo} className="space-y-2">
+                  <input
+                    type="text"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                    placeholder="GS-XXXX-XXXX"
+                    required
+                    autoFocus
+                    className="w-full px-3 py-2 text-xs bg-[#0a2338] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#39B6FF] font-mono tracking-widest uppercase"
+                  />
+                  {promoError && <p className="text-[10px] text-[#ef4343]">{promoError}</p>}
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => { setShowPromo(false); setPromoError('') }}
+                      className="flex-1 py-1.5 text-xs border border-[rgba(57,182,255,0.15)] rounded-lg text-[#64748b] hover:text-[#e2e8f0] transition-colors"
+                      style={{ background: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={promoLoading || promoCode.length < 4}
+                      className="flex-1 py-1.5 text-white text-xs font-semibold rounded-lg disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)', border: 'none', cursor: promoLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+                      {promoLoading ? 'Activating...' : 'Activate'}
+                    </button>
+                  </div>
+                </form>
+              )
             )}
             <button
               onClick={handleSignOut}

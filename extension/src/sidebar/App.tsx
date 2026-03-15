@@ -163,6 +163,14 @@ export default function App() {
   const [signInPassword, setSignInPassword] = useState('')
   const [signInLoading, setSignInLoading] = useState(false)
   const [signInError, setSignInError] = useState('')
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
+  // Inline promo code state
+  const [showPromo, setShowPromo] = useState(false)
+  const [promoCode, setPromoCode] = useState('')
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [promoError, setPromoError] = useState('')
+  const [promoSuccess, setPromoSuccess] = useState(false)
 
   // On mount: resolve own tabId, then read tab-specific email + shared state
   useEffect(() => {
@@ -197,10 +205,11 @@ export default function App() {
           }
           setHistory((result.guardscope_history as HistoryEntry[]) ?? [])
 
-          const auth = result.guardscope_auth as { isAuthenticated?: boolean; tier?: string } | undefined
+          const auth = result.guardscope_auth as { isAuthenticated?: boolean; tier?: string; email?: string } | undefined
           if (auth?.isAuthenticated) {
             setIsAuthenticated(true)
             setUserTier(auth.tier ?? 'free')
+            setUserEmail(auth.email ?? null)
           }
           const count = (result.guardscope_anon_count as number) ?? 0
           setAnonCount(count)
@@ -390,6 +399,39 @@ export default function App() {
         setAppState(prev => prev === 'limit_reached' ? (currentEmail?.fromEmail ? 'idle' : 'no_email') : prev)
       })
     })
+  }
+
+  const handleRedeemPromo = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPromoLoading(true)
+    setPromoError('')
+    try {
+      const stored = await new Promise<Record<string, unknown>>(resolve =>
+        chrome.storage.local.get('guardscope_auth', resolve)
+      )
+      const auth = stored.guardscope_auth as { token?: string; email?: string } | undefined
+      const res = await fetch(`${BACKEND_URL}/api/promo/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(auth?.token ? { 'Authorization': `Bearer ${auth.token}` } : {}),
+        },
+        body: JSON.stringify({ code: promoCode.trim().toUpperCase(), email: auth?.email ?? userEmail ?? '' }),
+      })
+      const data = await res.json() as { error?: string; tier?: string }
+      if (!res.ok) {
+        setPromoError(data.error ?? 'Invalid or expired promo code')
+        return
+      }
+      setPromoSuccess(true)
+      setUserTier('pro')
+      setPromoCode('')
+      setTimeout(() => { setShowPromo(false); setPromoSuccess(false) }, 2500)
+    } catch {
+      setPromoError('Network error — please try again')
+    } finally {
+      setPromoLoading(false)
+    }
   }
 
   const [copied, setCopied] = useState(false)
@@ -590,6 +632,59 @@ export default function App() {
                   </button>
                 </p>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* PROMO CODE PANEL */}
+        {showPromo && (
+          <div className="absolute inset-0 bg-[#071c2c] z-10 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[rgba(57,182,255,0.15)]">
+              <span className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider">Activate Promo Code</span>
+              <button onClick={() => { setShowPromo(false); setPromoError(''); setPromoSuccess(false) }} className="text-[#64748b] hover:text-[#e2e8f0] text-xs transition-colors">✕ Close</button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {promoSuccess ? (
+                <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                  <div className="text-4xl">🎉</div>
+                  <p className="text-sm font-semibold text-green-400">Pro activated!</p>
+                  <p className="text-xs text-[#64748b]">You now have 30 days of unlimited Pro access.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleRedeemPromo} className="space-y-3">
+                  <p className="text-xs text-[#64748b] pb-1">Enter your promo code to unlock 30 days of Pro access.</p>
+                  <input
+                    type="text"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                    placeholder="GS-XXXX-XXXX"
+                    required
+                    autoFocus
+                    className="w-full px-3 py-2.5 text-xs bg-[#0a2338] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#39B6FF] transition-colors uppercase tracking-widest font-mono"
+                  />
+                  {promoError && (
+                    <p className="text-[10px] text-[#ef4343]">{promoError}</p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={promoLoading || promoCode.length < 4}
+                    className="w-full py-2.5 px-4 text-white text-sm font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
+                  >
+                    {promoLoading ? 'Activating...' : 'Activate Code'}
+                  </button>
+                  <p className="text-[10px] text-[#64748b] text-center">
+                    Need a code?{' '}
+                    <button
+                      type="button"
+                      onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })}
+                      className="text-[#39B6FF] hover:underline"
+                    >
+                      Get early access →
+                    </button>
+                  </p>
+                </form>
+              )}
             </div>
           </div>
         )}
@@ -795,18 +890,15 @@ export default function App() {
                   background: theme ? `${theme.btnBg}10` : 'rgba(245,158,11,0.05)',
                 }}>
                 <p className="text-[11px]" style={{ color: theme?.topBar ?? '#f59e0b' }}>
-                  5 free analyses/day
+                  5 free analyses/month
                 </p>
-                <a
-                  href={`${BACKEND_URL}/upgrade`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] font-semibold whitespace-nowrap transition-colors"
-                  style={{ color: theme?.topBar ?? '#f59e0b' }}
-                  onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` }) }}
+                <button
+                  onClick={() => { setShowPromo(true); setPromoError('') }}
+                  className="text-[11px] font-semibold whitespace-nowrap transition-colors hover:underline"
+                  style={{ color: theme?.topBar ?? '#f59e0b', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
                 >
-                  Get Promo Code →
-                </a>
+                  Enter Promo Code →
+                </button>
               </div>
             )}
 
@@ -834,6 +926,14 @@ export default function App() {
            appState === 'result' ? t('analyzeAgainBtn') :
            t('analyzeBtn')}
         </button>
+        {isAuthenticated && userTier === 'free' && appState !== 'analyzing' && (
+          <button
+            onClick={() => { setShowPromo(true); setPromoError('') }}
+            className="w-full py-1.5 text-[11px] font-semibold text-[#39B6FF] border border-[rgba(57,182,255,0.25)] rounded-lg hover:bg-[#39B6FF]/10 transition-colors"
+          >
+            🎁 Have a promo code? Activate it here
+          </button>
+        )}
         <p className="text-[11px] text-[#64748b] text-center">
           {t('poweredBy')}
         </p>
