@@ -157,6 +157,13 @@ export default function App() {
   // Each side panel instance tracks its own tabId so email reads are tab-specific
   const [myTabId, setMyTabId] = useState<number | null>(null)
 
+  // Inline sign-in form state
+  const [showSignIn, setShowSignIn] = useState(false)
+  const [signInEmail, setSignInEmail] = useState('')
+  const [signInPassword, setSignInPassword] = useState('')
+  const [signInLoading, setSignInLoading] = useState(false)
+  const [signInError, setSignInError] = useState('')
+
   // On mount: resolve own tabId, then read tab-specific email + shared state
   useEffect(() => {
     // Side panels are associated with a tab — query the active tab in this window
@@ -356,6 +363,35 @@ export default function App() {
     setAppState(currentEmail?.fromEmail ? 'idle' : 'no_email')
   }
 
+  const handleSignIn = (e: React.FormEvent) => {
+    e.preventDefault()
+    setSignInLoading(true)
+    setSignInError('')
+    chrome.runtime.sendMessage({ type: 'SIGN_IN', email: signInEmail, password: signInPassword }, (response: { success: boolean; error?: string }) => {
+      setSignInLoading(false)
+      if (chrome.runtime.lastError || !response) {
+        setSignInError('Extension error — try reloading')
+        return
+      }
+      if (!response.success) {
+        setSignInError(response.error ?? 'Sign in failed. Check your email and password.')
+        return
+      }
+      chrome.storage.local.get('guardscope_auth', (result) => {
+        const auth = result.guardscope_auth as { isAuthenticated?: boolean; tier?: string; email?: string } | undefined
+        if (auth?.isAuthenticated) {
+          setIsAuthenticated(true)
+          setUserTier(auth.tier ?? 'free')
+        }
+        setShowSignIn(false)
+        setSignInEmail('')
+        setSignInPassword('')
+        // If we were at limit_reached, clear it now that user is authenticated
+        setAppState(prev => prev === 'limit_reached' ? (currentEmail?.fromEmail ? 'idle' : 'no_email') : prev)
+      })
+    })
+  }
+
   const [copied, setCopied] = useState(false)
   const handleShare = () => {
     if (!report) return
@@ -431,7 +467,7 @@ export default function App() {
           <span style={{ color: shieldColor }}>Scope</span>
         </span>
 
-        {/* Right-side controls: badge + history */}
+        {/* Right-side controls: badge + sign-in + history */}
         <div className="ml-auto flex items-center gap-1.5">
           {appState === 'result' && report && (
             <span className={`text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider ${RISK_BADGE_COLORS[report.risk_level]}`}>
@@ -443,7 +479,20 @@ export default function App() {
               SCANNING
             </span>
           )}
-          {history.length > 0 && appState !== 'analyzing' && (
+          {!isAuthenticated && appState !== 'analyzing' && (
+            <button
+              onClick={() => { setShowSignIn(!showSignIn); setShowHistory(false); setSignInError('') }}
+              className={`text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider transition-colors ${showSignIn ? 'border-[#39B6FF]/60 text-[#39B6FF]' : 'border-[rgba(57,182,255,0.25)] text-[#39B6FF] hover:border-[#39B6FF]/60'}`}
+            >
+              Sign In
+            </button>
+          )}
+          {isAuthenticated && (
+            <span className="text-[10px] px-2 py-0.5 rounded border border-green-500/30 text-green-400 font-semibold uppercase tracking-wider">
+              {userTier === 'pro' ? 'PRO' : userTier === 'team' ? 'TEAM' : 'FREE'}
+            </span>
+          )}
+          {history.length > 0 && appState !== 'analyzing' && !showSignIn && (
             <button
               onClick={() => setShowHistory(!showHistory)}
               className={`text-[10px] px-2 py-0.5 rounded border font-semibold uppercase tracking-wider transition-colors ${showHistory ? 'border-[#64748b] text-[#94a3b8]' : 'border-[rgba(57,182,255,0.15)] text-[#64748b] hover:text-[#94a3b8]'}`}
@@ -482,6 +531,69 @@ export default function App() {
           </div>
         )}
 
+        {/* SIGN-IN PANEL */}
+        {showSignIn && (
+          <div className="absolute inset-0 bg-[#071c2c] z-10 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-[rgba(57,182,255,0.15)]">
+              <span className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wider">Sign In to GuardScope</span>
+              <button onClick={() => { setShowSignIn(false); setSignInError('') }} className="text-[#64748b] hover:text-[#e2e8f0] text-xs transition-colors">✕ Close</button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <form onSubmit={handleSignIn} className="space-y-3">
+                <p className="text-xs text-[#64748b] pb-1">Sign in to track your scans and unlock your quota.</p>
+                <input
+                  type="email"
+                  value={signInEmail}
+                  onChange={(e) => setSignInEmail(e.target.value)}
+                  placeholder="Email address"
+                  required
+                  autoFocus
+                  className="w-full px-3 py-2.5 text-xs bg-[#0a2338] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#39B6FF] transition-colors"
+                />
+                <input
+                  type="password"
+                  value={signInPassword}
+                  onChange={(e) => setSignInPassword(e.target.value)}
+                  placeholder="Password"
+                  required
+                  className="w-full px-3 py-2.5 text-xs bg-[#0a2338] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#39B6FF] transition-colors"
+                />
+                {signInError && (
+                  <p className="text-[10px] text-[#ef4343]">{signInError}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={signInLoading}
+                  className="w-full py-2.5 px-4 text-white text-sm font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
+                >
+                  {signInLoading ? 'Signing in...' : 'Sign In'}
+                </button>
+                <p className="text-[10px] text-[#64748b] text-center">
+                  No account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/signup` })}
+                    className="text-[#39B6FF] hover:underline"
+                  >
+                    Create one free →
+                  </button>
+                </p>
+                <p className="text-[10px] text-[#64748b] text-center">
+                  Have a promo code?{' '}
+                  <button
+                    type="button"
+                    onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })}
+                    className="text-[#39B6FF] hover:underline"
+                  >
+                    Activate it here →
+                  </button>
+                </p>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* ANALYZING */}
         {appState === 'analyzing' && (
           <ProgressBar finalScore={pendingScore} />
@@ -507,22 +619,18 @@ export default function App() {
             <p className="text-xs text-[#64748b] leading-relaxed">{t('idleBody')}</p>
             {!isAuthenticated && (
               <div className="w-full mt-1 pt-3 border-t border-[rgba(57,182,255,0.15)] flex gap-2">
-                <a
-                  href={`${BACKEND_URL}/signup`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => { setShowSignIn(true); setSignInError('') }}
+                  className="flex-1 py-1.5 text-center text-[11px] border border-[rgba(57,182,255,0.25)] rounded-lg text-[#39B6FF] hover:bg-[#39B6FF]/10 transition-colors font-semibold"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/signup` })}
                   className="flex-1 py-1.5 text-center text-[11px] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#64748b] hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
                 >
-                  Create free account
-                </a>
-                <a
-                  href={`${BACKEND_URL}/upgrade`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-1.5 text-center text-[11px] border border-[#39B6FF]/30 rounded-lg text-[#39B6FF] hover:bg-[#39B6FF]/10 transition-colors"
-                >
-                  Go Pro — $4.99/mo
-                </a>
+                  Create Account
+                </button>
               </div>
             )}
           </div>
@@ -575,14 +683,12 @@ export default function App() {
                 Get Early Access — Free 30 Days
               </a>
               {!isAuthenticated && (
-                <a
-                  href={`${BACKEND_URL}/signup`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full px-4 py-2 border border-[rgba(57,182,255,0.15)] text-[#64748b] text-xs rounded-lg hover:text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+                <button
+                  onClick={() => { setShowSignIn(true); setSignInError('') }}
+                  className="block w-full px-4 py-2 border border-[rgba(57,182,255,0.25)] text-[#39B6FF] text-xs rounded-lg hover:bg-[#39B6FF]/10 transition-colors font-semibold"
                 >
-                  Create free account to track usage
-                </a>
+                  Sign In to continue
+                </button>
               )}
               <button
                 onClick={handleRetry}
@@ -664,24 +770,19 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <a
-                    href={`${BACKEND_URL}/signup`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 py-1.5 text-center text-[11px] font-semibold border border-[rgba(57,182,255,0.15)] rounded-md text-[#e2e8f0] hover:border-[#64748b] transition-colors"
+                  <button
+                    onClick={() => { setShowSignIn(true); setSignInError('') }}
+                    className="flex-1 py-1.5 text-center text-[11px] font-semibold border border-[rgba(57,182,255,0.25)] rounded-md text-[#39B6FF] hover:bg-[#39B6FF]/10 transition-colors"
                   >
-                    Create free account
-                  </a>
-                  <a
-                    href={`${BACKEND_URL}/upgrade`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })}
                     className="flex-1 py-1.5 text-center text-[11px] font-semibold rounded-md text-white transition-colors"
                     style={{ background: theme?.btnBg ?? '#39B6FF' }}
-                    onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` }) }}
                   >
                     Get Early Access
-                  </a>
+                  </button>
                 </div>
               </div>
             )}

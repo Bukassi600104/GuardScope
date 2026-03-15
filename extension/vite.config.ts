@@ -12,7 +12,6 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       input: {
-        popup: 'popup.html',
         sidebar: 'src/sidebar/sidebar.html',
         onboarding: 'src/onboarding/onboarding.html',
       },
