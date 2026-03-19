@@ -171,6 +171,10 @@ export default function App() {
   const [promoLoading, setPromoLoading] = useState(false)
   const [promoError, setPromoError] = useState('')
   const [promoSuccess, setPromoSuccess] = useState(false)
+  // Whether free promo codes are still available (null = not yet fetched)
+  const [promoAvailable, setPromoAvailable] = useState<boolean | null>(null)
+  // Whether this user has previously redeemed a promo (i.e. had pro, now expired)
+  const [hadPro, setHadPro] = useState(false)
 
   // On mount: resolve own tabId, then read tab-specific email + shared state
   useEffect(() => {
@@ -185,7 +189,7 @@ export default function App() {
 
       const emailKey = tabId ? `guardscope_email_${tabId}` : 'guardscope_current_email'
       chrome.storage.local.get(
-        [emailKey, 'guardscope_history', 'guardscope_auth', 'guardscope_anon_count'],
+        [emailKey, 'guardscope_history', 'guardscope_auth', 'guardscope_anon_count', 'guardscope_had_pro'],
         (result) => {
           const email = result[emailKey] as ExtractedEmail | undefined
           if (email?.fromEmail) {
@@ -211,6 +215,7 @@ export default function App() {
             setUserTier(auth.tier ?? 'free')
             setUserEmail(auth.email ?? null)
           }
+          if (result.guardscope_had_pro) setHadPro(true)
           const count = (result.guardscope_anon_count as number) ?? 0
           setAnonCount(count)
           // If already at limit, reflect that immediately
@@ -236,6 +241,15 @@ export default function App() {
       document.removeEventListener('visibilitychange', onShow)
     }
   }, [])
+
+  // Fetch promo availability once when limit_reached is first shown
+  useEffect(() => {
+    if (appState !== 'limit_reached' || promoAvailable !== null) return
+    fetch(`${BACKEND_URL}/api/promo/status`)
+      .then(r => r.json())
+      .then((d: { available?: boolean }) => setPromoAvailable(d.available ?? false))
+      .catch(() => setPromoAvailable(true)) // default to available on network error
+  }, [appState, promoAvailable])
 
   // React to email/quota state changes from content.ts and other tabs.
   useEffect(() => {
@@ -425,6 +439,8 @@ export default function App() {
       }
       setPromoSuccess(true)
       setUserTier('pro')
+      setHadPro(true)
+      chrome.storage.local.set({ guardscope_had_pro: true })
       setPromoCode('')
       setTimeout(() => { setShowPromo(false); setPromoSuccess(false) }, 2500)
     } catch {
@@ -758,42 +774,192 @@ export default function App() {
         )}
 
         {/* LIMIT REACHED */}
-        {appState === 'limit_reached' && (
-          <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3">
-            <div className="text-4xl">🔒</div>
-            <p className="text-sm font-semibold text-[#e2e8f0]">Daily limit reached</p>
-            <p className="text-xs text-[#64748b] leading-relaxed">
-              You've used all 5 free analyses today.<br />
-              Get a promo code for 30 days of unlimited Pro access — free.
-            </p>
-            <div className="w-full space-y-2 mt-1">
-              <a
-                href={`${BACKEND_URL}/upgrade`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full px-4 py-2.5 text-white text-xs font-semibold rounded-lg transition-colors"
-                style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
-                onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` }) }}
-              >
-                Get Early Access — Free 30 Days
-              </a>
+        {appState === 'limit_reached' && (() => {
+          // Scenario A: pro expired (had pro before, now back to free)
+          const proExpired = isAuthenticated && userTier === 'free' && hadPro
+          // Scenario B: signed-in free user, promo still available, never had pro
+          const showPromoOffer = isAuthenticated && userTier === 'free' && !hadPro && promoAvailable === true
+          // Scenario C: signed-in free user, no promos left
+          const showUpgradeOnly = isAuthenticated && userTier === 'free' && (promoAvailable === false || hadPro)
+
+          return (
+            <div className="flex flex-col h-full p-5 gap-4 overflow-y-auto">
+              {/* Header */}
+              <div className="text-center pt-2">
+                <div className="text-4xl mb-2">{proExpired ? '⏰' : '🔒'}</div>
+                <p className="text-sm font-semibold text-[#e2e8f0]">
+                  {proExpired ? 'Pro trial ended' : 'Monthly limit reached'}
+                </p>
+                <p className="text-xs text-[#64748b] leading-relaxed mt-1">
+                  {proExpired
+                    ? 'Your 30-day free trial has expired. Upgrade to keep unlimited scanning.'
+                    : isAuthenticated
+                      ? "You've used all 5 free analyses this month."
+                      : "You've used all 5 free analyses. Sign in or create an account to continue."}
+                </p>
+              </div>
+
+              {/* UNAUTHENTICATED — inline sign-in + register + promo teaser */}
+              {!isAuthenticated && (
+                <div className="space-y-2">
+                  <div className="rounded-lg p-3 bg-[#0a2338] border border-[rgba(57,182,255,0.12)] space-y-2.5">
+                    <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">Sign in to continue</p>
+                    <form onSubmit={handleSignIn} className="space-y-2">
+                      <input
+                        type="email"
+                        value={signInEmail}
+                        onChange={(e) => setSignInEmail(e.target.value)}
+                        placeholder="Email address"
+                        required
+                        className="w-full px-3 py-2 text-xs bg-[#071c2c] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#39B6FF] transition-colors"
+                      />
+                      <input
+                        type="password"
+                        value={signInPassword}
+                        onChange={(e) => setSignInPassword(e.target.value)}
+                        placeholder="Password"
+                        required
+                        className="w-full px-3 py-2 text-xs bg-[#071c2c] border border-[rgba(57,182,255,0.15)] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#39B6FF] transition-colors"
+                      />
+                      {signInError && <p className="text-[10px] text-[#ef4343]">{signInError}</p>}
+                      <button
+                        type="submit"
+                        disabled={signInLoading}
+                        className="w-full py-2 text-white text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors"
+                        style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
+                      >
+                        {signInLoading ? 'Signing in...' : 'Sign In'}
+                      </button>
+                    </form>
+                    <p className="text-[10px] text-[#64748b] text-center">
+                      No account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/signup` })}
+                        className="text-[#39B6FF] hover:underline"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', padding: 0 }}
+                      >
+                        Create one free →
+                      </button>
+                    </p>
+                  </div>
+                  {promoAvailable !== false && (
+                    <div className="rounded-lg p-2.5 bg-[rgba(57,182,255,0.05)] border border-[rgba(57,182,255,0.12)] text-center">
+                      <p className="text-[10px] text-[#64748b]">
+                        🎁 <span className="text-[#39B6FF] font-semibold">Free promo codes available</span> — sign in to activate 30 days Pro free
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PRO EXPIRED — upgrade / renew */}
+              {proExpired && (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })}
+                    className="w-full py-2.5 text-white text-xs font-semibold rounded-lg transition-colors"
+                    style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
+                  >
+                    Upgrade to Pro — $4.99/mo
+                  </button>
+                  <button
+                    onClick={handleRetry}
+                    className="w-full py-2 text-[#475569] text-xs hover:text-[#64748b] transition-colors rounded-lg border border-[rgba(57,182,255,0.1)]"
+                  >
+                    Continue with 5 free/month
+                  </button>
+                </div>
+              )}
+
+              {/* PROMO OFFER — inline code entry for free signed-in users */}
+              {showPromoOffer && (
+                <div className="space-y-2">
+                  <div className="rounded-lg p-3 bg-[rgba(57,182,255,0.06)] border border-[rgba(57,182,255,0.2)] space-y-2.5">
+                    <p className="text-[10px] font-semibold text-[#39B6FF] uppercase tracking-wider">🎁 Free 30-day Pro — activate now</p>
+                    {promoSuccess ? (
+                      <div className="text-center py-1">
+                        <p className="text-xs font-semibold text-green-400">🎉 Pro activated! Unlimited scanning for 30 days.</p>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleRedeemPromo} className="space-y-2">
+                        <input
+                          type="text"
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          placeholder="Enter promo code  e.g. GS-XXXX-XXXX"
+                          required
+                          className="w-full px-3 py-2 text-xs bg-[#071c2c] border border-[rgba(57,182,255,0.2)] rounded-lg text-[#e2e8f0] placeholder:text-[#64748b] focus:outline-none focus:border-[#39B6FF] transition-colors font-mono tracking-wider uppercase"
+                        />
+                        {promoError && <p className="text-[10px] text-[#ef4343]">{promoError}</p>}
+                        <button
+                          type="submit"
+                          disabled={promoLoading || promoCode.length < 4}
+                          className="w-full py-2 text-white text-xs font-semibold rounded-lg disabled:opacity-50 transition-colors"
+                          style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
+                        >
+                          {promoLoading ? 'Activating...' : 'Activate Free Pro'}
+                        </button>
+                      </form>
+                    )}
+                    <p className="text-[10px] text-[#64748b] text-center">
+                      Need a code?{' '}
+                      <button
+                        type="button"
+                        onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', padding: 0 }}
+                        className="text-[#39B6FF] hover:underline"
+                      >
+                        Request early access →
+                      </button>
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })}
+                    className="w-full py-2 text-[#39B6FF] text-xs font-semibold rounded-lg border border-[rgba(57,182,255,0.2)] hover:bg-[#39B6FF]/10 transition-colors"
+                  >
+                    Upgrade to Pro — $4.99/mo
+                  </button>
+                </div>
+              )}
+
+              {/* NO PROMOS LEFT — upgrade only */}
+              {showUpgradeOnly && !proExpired && (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => chrome.tabs.create({ url: `${BACKEND_URL}/upgrade` })}
+                    className="w-full py-2.5 text-white text-xs font-semibold rounded-lg transition-colors"
+                    style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
+                  >
+                    Upgrade to Pro — $4.99/mo
+                  </button>
+                  <button
+                    onClick={handleRetry}
+                    className="w-full py-2 text-[#475569] text-xs hover:text-[#64748b] transition-colors"
+                  >
+                    Maybe later
+                  </button>
+                </div>
+              )}
+
+              {/* Loading state while checking promo availability */}
+              {isAuthenticated && userTier === 'free' && !hadPro && promoAvailable === null && (
+                <div className="text-center py-2">
+                  <p className="text-[10px] text-[#64748b]">Checking availability...</p>
+                </div>
+              )}
+
               {!isAuthenticated && (
                 <button
-                  onClick={() => { setShowSignIn(true); setSignInError('') }}
-                  className="block w-full px-4 py-2 border border-[rgba(57,182,255,0.25)] text-[#39B6FF] text-xs rounded-lg hover:bg-[#39B6FF]/10 transition-colors font-semibold"
+                  onClick={handleRetry}
+                  className="w-full py-1.5 text-[#475569] text-xs hover:text-[#64748b] transition-colors"
                 >
-                  Sign In to continue
+                  Maybe later
                 </button>
               )}
-              <button
-                onClick={handleRetry}
-                className="block w-full px-4 py-2 text-[#475569] text-xs hover:text-[#64748b] transition-colors"
-              >
-                Maybe later
-              </button>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* RESULT */}
         {appState === 'result' && report && (
