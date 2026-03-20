@@ -9,6 +9,9 @@ import { t } from '../utils/i18n'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
 
+// Returns today's date as YYYY-MM-DD (UTC) — used for daily anon quota reset
+const todayDate = () => new Date().toISOString().split('T')[0]
+
 // GuardScope arc logo — uses brand gradient by default, solid color when risk theme is active
 function GuardScopeIcon({ color }: { color?: string }) {
   const cx = 21, cy = 24, r = 13
@@ -189,7 +192,7 @@ export default function App() {
 
       const emailKey = tabId ? `guardscope_email_${tabId}` : 'guardscope_current_email'
       chrome.storage.local.get(
-        [emailKey, 'guardscope_history', 'guardscope_auth', 'guardscope_anon_count', 'guardscope_had_pro'],
+        [emailKey, 'guardscope_history', 'guardscope_auth', 'guardscope_anon_data', 'guardscope_had_pro'],
         (result) => {
           const email = result[emailKey] as ExtractedEmail | undefined
           if (email?.fromEmail) {
@@ -216,9 +219,11 @@ export default function App() {
             setUserEmail(auth.email ?? null)
           }
           if (result.guardscope_had_pro) setHadPro(true)
-          const count = (result.guardscope_anon_count as number) ?? 0
+          // Daily-reset anon quota: if stored date ≠ today, treat count as 0
+          const anonData = result.guardscope_anon_data as { count: number; date: string } | undefined
+          const count = anonData?.date === todayDate() ? (anonData.count ?? 0) : 0
           setAnonCount(count)
-          // If already at limit, reflect that immediately
+          // If already at today's limit, reflect that immediately
           if (!auth?.isAuthenticated && count >= 5) setAppState('limit_reached')
         }
       )
@@ -287,10 +292,11 @@ export default function App() {
         }
       }
 
-      // Shared anon quota — when another tab increments it past the limit,
+      // Shared anon quota — when another tab increments it past the daily limit,
       // immediately reflect limit_reached on this tab too
-      if ('guardscope_anon_count' in changes) {
-        const newCount = changes.guardscope_anon_count.newValue as number
+      if ('guardscope_anon_data' in changes) {
+        const newData = changes.guardscope_anon_data.newValue as { count: number; date: string } | undefined
+        const newCount = newData?.date === todayDate() ? (newData?.count ?? 0) : 0
         setAnonCount(newCount)
         setIsAuthenticated(prev => {
           if (!prev && newCount >= 5) {
@@ -374,12 +380,16 @@ export default function App() {
         const reportData = response.report
         // Increment anon counter immediately on successful response — before any delay
         // so navigation/panel-close can't lose the increment.
-        chrome.storage.local.get(['guardscope_history', 'guardscope_anon_count', 'guardscope_auth'], (r) => {
+        chrome.storage.local.get(['guardscope_history', 'guardscope_anon_data', 'guardscope_auth'], (r) => {
           setHistory((r.guardscope_history as HistoryEntry[]) ?? [])
           const auth = r.guardscope_auth as { isAuthenticated?: boolean } | undefined
           if (!auth?.isAuthenticated) {
-            const newCount = ((r.guardscope_anon_count as number) ?? 0) + 1
-            chrome.storage.local.set({ guardscope_anon_count: newCount })
+            const today = todayDate()
+            const anonData = r.guardscope_anon_data as { count: number; date: string } | undefined
+            // Reset count if it's from a previous day
+            const currentCount = anonData?.date === today ? (anonData.count ?? 0) : 0
+            const newCount = currentCount + 1
+            chrome.storage.local.set({ guardscope_anon_data: { count: newCount, date: today } })
             setAnonCount(newCount)
           }
         })

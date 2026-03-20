@@ -15,6 +15,7 @@ let authRatelimit: Ratelimit | null = null
 let authHourlyRatelimit: Ratelimit | null = null
 let anonRatelimit: Ratelimit | null = null
 let anonDailyRatelimit: Ratelimit | null = null
+let anonFreeQuota: Ratelimit | null = null
 
 function getInstances() {
   if (authRatelimit) return { authRatelimit, authHourlyRatelimit: authHourlyRatelimit!, anonRatelimit: anonRatelimit!, anonDailyRatelimit: anonDailyRatelimit! }
@@ -46,12 +47,20 @@ function getInstances() {
     analytics: false,
     prefix: 'gs_anon',
   })
-  // Daily cap: 30 analyses per day per IP — prevents API cost abuse
+  // Abuse cap: 30 analyses per day per IP — prevents cost abuse beyond the free quota
   anonDailyRatelimit = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(30, '1 d'),
     analytics: false,
     prefix: 'gs_anon_daily',
+  })
+  // Free plan quota: 5 analyses per day per IP (business rule, not abuse protection)
+  // Fixed window resets cleanly on a 24-hour boundary from first request.
+  anonFreeQuota = new Ratelimit({
+    redis,
+    limiter: Ratelimit.fixedWindow(5, '1 d'),
+    analytics: false,
+    prefix: 'gs_anon_free',
   })
 
   return { authRatelimit, authHourlyRatelimit, anonRatelimit, anonDailyRatelimit }
@@ -61,6 +70,26 @@ export interface RateLimitResult {
   allowed: boolean
   remaining: number
   resetAt: number  // unix ms
+}
+
+/**
+ * Check and increment the free daily quota for anonymous (unauthenticated) users.
+ * 5 analyses per day per IP. Uses fixed window — resets 24 hours after the first request.
+ * Falls back to allow-all if Redis is unavailable (infra fault ≠ user fault).
+ */
+export async function checkAnonFreeQuota(
+  ip: string
+): Promise<{ allowed: boolean; count: number; limit: number }> {
+  try {
+    getInstances() // ensure all limiters are initialised
+    if (!anonFreeQuota) return { allowed: true, count: 0, limit: 5 }
+    const result = await anonFreeQuota.limit(ip)
+    // remaining can go negative if burst exceeded — clamp to 0 before computing used count
+    const count = result.limit - Math.max(0, result.remaining)
+    return { allowed: result.success, count, limit: result.limit }
+  } catch {
+    return { allowed: true, count: 0, limit: 5 } // fail open
+  }
 }
 
 export async function checkRateLimit(

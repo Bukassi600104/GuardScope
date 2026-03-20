@@ -22,22 +22,10 @@ import { analyzeDomainSimilarity } from '../../../lib/domainSimilarity'
 import { assessTldRisk } from '../../../lib/tldRisk'
 import { normalizeUrls } from '../../../lib/urlCache'
 import { decodeJwt, checkAndIncrementQuota, getUserTier } from '../../../lib/quota'
-import { checkRateLimit } from '../../../lib/ratelimit'
+import { checkRateLimit, checkAnonFreeQuota } from '../../../lib/ratelimit'
 import { getCachedResult, setCachedResult } from '../../../lib/cache'
 import { createHash } from 'crypto'
 import { buildCorsHeaders } from '../../../lib/cors'
-import { Redis } from '@upstash/redis'
-
-// Lazy Redis instance for anonymous monthly quota (reuses same Upstash credentials as ratelimit)
-let _redis: Redis | null = null
-function getRedis(): Redis | null {
-  if (_redis) return _redis
-  const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.UPSTASH_REDIS_URL ?? ''
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.UPSTASH_REDIS_TOKEN ?? ''
-  if (!url || !token) return null
-  _redis = new Redis({ url, token })
-  return _redis
-}
 
 const MAX_BODY_BYTES = 500_000
 
@@ -268,31 +256,16 @@ export async function POST(req: NextRequest) {
       )
     }
   } else {
-    // Anonymous users (unauthenticated or expired JWT): 5 analyses/month per IP hash.
-    // IP is hashed with month+year so the identifier rotates monthly (privacy-safe).
-    // 'unknown' IPs (e.g. proxies that strip x-forwarded-for) are allowed through — best-effort.
-    // Uses Redis INCR — the Supabase usage table has a FK to auth.users so anon UUIDs fail silently.
+    // Anonymous users: 5 analyses per day per IP (free plan quota).
+    // Uses the proven @upstash/ratelimit library — same infrastructure as rate limiting.
+    // 'unknown' IPs are allowed through — best-effort only.
     if (ip !== 'unknown') {
-      const now = new Date()
-      const hash = createHash('sha256')
-        .update(`anon:${ip}:${now.getFullYear()}:${now.getMonth()}`)
-        .digest('hex')
-      const redis = getRedis()
-      if (redis) {
-        try {
-          const key = `gs:anon_monthly:${hash.slice(0, 32)}:${now.getFullYear()}:${now.getMonth() + 1}`
-          const count = await redis.incr(key)
-          // Set TTL on first scan — ~35 days covers end-of-month rollover
-          if (count === 1) await redis.expire(key, 35 * 24 * 60 * 60)
-          if (count > 5) {
-            return NextResponse.json(
-              { error: 'limit_reached', count, limit: 5, message: 'Monthly analysis limit reached. Sign in to continue.' },
-              { status: 429, headers: SECURITY_HEADERS }
-            )
-          }
-        } catch {
-          // Redis error — fail open (don't block users for infra issues)
-        }
+      const quota = await checkAnonFreeQuota(ip)
+      if (!quota.allowed) {
+        return NextResponse.json(
+          { error: 'limit_reached', count: quota.count, limit: quota.limit, message: 'Daily analysis limit reached. Sign in to continue.' },
+          { status: 429, headers: SECURITY_HEADERS }
+        )
       }
     }
   }
