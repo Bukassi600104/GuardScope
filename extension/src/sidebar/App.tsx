@@ -242,6 +242,21 @@ export default function App() {
     }
   }, [])
 
+  // Auto-reset connection error when internet comes back online
+  useEffect(() => {
+    const onOnline = () => {
+      setAppState(prev => {
+        if (prev === 'error') {
+          setError('')
+          return currentEmail?.fromEmail ? 'idle' : 'no_email'
+        }
+        return prev
+      })
+    }
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [currentEmail])
+
   // Fetch promo availability once when limit_reached is first shown
   useEffect(() => {
     if (appState !== 'limit_reached' || promoAvailable !== null) return
