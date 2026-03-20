@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { redeemCode } from '../../../../lib/promo'
 import { sendRedemptionConfirmation } from '../../../../lib/email'
 import { checkRateLimit } from '../../../../lib/ratelimit'
+import { decodeJwt } from '../../../../lib/quota'
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -28,9 +29,28 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // Require authentication — prevents wasting limited promo codes on arbitrary emails
+  const authHeader = req.headers.get('authorization') ?? ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  const jwt = token ? await decodeJwt(token) : null
+  if (!jwt?.sub) {
+    return NextResponse.json(
+      { error: 'Sign in to your GuardScope account before redeeming a promo code.' },
+      { status: 401, headers: SECURITY_HEADERS }
+    )
+  }
+
   // Normalize + length-cap inputs
   const code  = typeof body.code  === 'string' ? body.code.trim().toUpperCase().slice(0, 30)   : ''
   const email = typeof body.email === 'string' ? body.email.trim().slice(0, 254) : ''
+
+  // Verify the JWT email matches the request body — prevents redeeming for other users
+  if (jwt.email && jwt.email.toLowerCase() !== email.toLowerCase()) {
+    return NextResponse.json(
+      { error: 'Email does not match your signed-in account.' },
+      { status: 403, headers: SECURITY_HEADERS }
+    )
+  }
 
   if (!code || code.length < 4) {
     return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildCorsHeaders } from '../../../../lib/cors'
+import { checkRateLimit } from '../../../../lib/ratelimit'
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
 const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY)!
@@ -10,6 +11,16 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const cors = buildCorsHeaders(req)
+
+  const rawIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? ''
+  const ip = /^[0-9a-fA-F.:]{3,45}$/.test(rawIp) ? rawIp : 'unknown'
+  const rateResult = await checkRateLimit(`reset-pw:${ip}`, false)
+  if (!rateResult.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: cors }
+    )
+  }
 
   let body: { access_token?: string; password?: string } = {}
   try {

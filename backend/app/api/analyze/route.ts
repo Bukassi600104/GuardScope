@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400, headers: SECURITY_HEADERS })
   }
 
   if (!body.fromEmail || !body.subject || !body.bodyText) {
@@ -250,6 +250,7 @@ export async function POST(req: NextRequest) {
       {
         status: 429,
         headers: {
+          ...SECURITY_HEADERS,  // CORS must be present or extension sees opaque network error
           'Retry-After': String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
           'X-RateLimit-Remaining': String(rateLimit.remaining),
         },
@@ -298,10 +299,19 @@ export async function POST(req: NextRequest) {
 
   // ── Result cache — same email always returns same score within 24h ─────────
   // Eliminates AI non-determinism variance between repeated scans of the same email.
-  // Hash full body (not just first 1000 chars) to avoid cache collisions where two emails
-  // share the same header+opening but differ in the payload (e.g., phishing link at char 1001).
+  //
+  // Cache key strategy:
+  //   1. messageId — preferred, immutable RFC 2822 header, uniquely identifies the email
+  //   2. Fallback — fromEmail + subject + date + sorted URLs + first 400 chars of body
+  //      URLs are SORTED to neutralise DOM ordering variance between repeated extractions.
+  //      Body is truncated to 400 chars (stable across Gmail re-renders of the same email).
+  //      Full body was previously used but Gmail re-renders cause minor text differences
+  //      each time, producing different hashes and defeating the cache entirely.
+  const stableKeyInput = email.messageId
+    ? `msgid:${email.messageId}`
+    : `${email.fromEmail}:${email.subject}:${email.date ?? ''}:${[...email.urls].sort().join(',')}:${(email.bodyText ?? '').slice(0, 400)}`
   const cacheKey = 'gs:v2:' + createHash('sha256')
-    .update(`${email.fromEmail}:${email.subject}:${email.bodyText ?? ''}:${email.urls.join(',')}`)
+    .update(stableKeyInput)
     .digest('hex')
     .slice(0, 40)
 

@@ -50,9 +50,10 @@ export async function POST(req: NextRequest) {
     })
 
     if (!res.ok) {
-      const data = await res.json().catch(() => ({})) as { error_description?: string }
-      const msg = data.error_description ?? 'Invalid email or password'
-      return NextResponse.json({ error: msg }, { status: 401, headers: cors })
+      // Always return a generic message — Supabase error_description reveals whether
+      // the email exists vs wrong password vs unconfirmed ("Email not confirmed"),
+      // which is a user enumeration vector.
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401, headers: cors })
     }
 
     // Sign-in on website is just for verification — we don't return the token here
