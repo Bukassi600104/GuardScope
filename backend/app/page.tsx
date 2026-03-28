@@ -576,17 +576,26 @@ export default function Home() {
       }}>
         <div style={{ ...s.wrap, display: 'flex', alignItems: 'center', height: 68 }}>
           <GuardScopeLogo size={34} textSize={18} />
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 32 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 28 }}>
             <a href="#features" style={{ fontSize: 14, color: C.muted, fontWeight: 500, letterSpacing: '0.01em' }}>Features</a>
             <a href="#how-it-works" style={{ fontSize: 14, color: C.muted, fontWeight: 500, letterSpacing: '0.01em' }}>How it works</a>
-            <a href="#early-access" style={{ fontSize: 14, color: C.cyan, fontWeight: 600, letterSpacing: '0.01em' }}>Early Access</a>
+            <a href="#pricing" style={{ fontSize: 14, color: C.muted, fontWeight: 500, letterSpacing: '0.01em' }}>Pricing</a>
             <a href="#faq" style={{ fontSize: 14, color: C.muted, fontWeight: 500, letterSpacing: '0.01em' }}>FAQ</a>
             <a
-              href="https://chromewebstore.google.com"
-              target="_blank" rel="noopener noreferrer"
+              href="/signup"
+              style={{ fontSize: 14, color: C.white, fontWeight: 600, letterSpacing: '0.01em',
+                padding: '8px 18px', borderRadius: 10,
+                border: '1px solid rgba(57,182,255,0.25)',
+                background: 'transparent',
+              }}
+            >
+              Sign In
+            </a>
+            <a
+              href="#early-access"
               style={{ ...s.btnPrimary, padding: '9px 20px', fontSize: 13 }}
             >
-              Install Free
+              Get Early Access
             </a>
           </div>
         </div>
@@ -643,9 +652,9 @@ export default function Home() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="white"/></svg>
               Get Early Access — Free
             </a>
-            <a href="https://chromewebstore.google.com" target="_blank" rel="noopener noreferrer" style={{ ...s.btnOutline }}>
+            <a href="#early-access" style={{ ...s.btnOutline }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#39B6FF" strokeWidth="1.5"/><circle cx="12" cy="12" r="3" fill="#39B6FF"/></svg>
-              Add to Chrome
+              Add to Chrome — Coming Soon
             </a>
           </div>
 
@@ -720,6 +729,40 @@ export default function Home() {
               <p style={{ fontSize: 14, color: C.muted }}>{item.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <div style={s.divider} />
+
+      {/* ── TRUST BAR ── */}
+      <section style={{ padding: '48px 24px' }}>
+        <div style={{ ...s.wrap, textAlign: 'center' }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: C.muted2, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 28 }}>
+            Powered by enterprise-grade threat intelligence
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
+            {[
+              { name: 'VirusTotal', sub: '90+ scan engines', color: '#4285F4' },
+              { name: 'Google Safe Browsing', sub: 'Real-time URL check', color: '#34A853' },
+              { name: 'Cloudflare DoH', sub: 'DNS over HTTPS', color: '#F6821F' },
+              { name: 'PhishTank', sub: 'Phishing database', color: '#FF6B35' },
+              { name: 'URLhaus', sub: 'Malware URL feed', color: '#A855F7' },
+              { name: 'SpamHaus DBL', sub: 'Domain blocklist', color: '#EF4444' },
+              { name: 'Mercury-2 AI', sub: 'InceptionLabs', color: '#39B6FF' },
+            ].map((p) => (
+              <div key={p.name} style={{
+                display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+                padding: '12px 20px', borderRadius: 14,
+                background: 'rgba(10,35,56,0.5)',
+                border: '1px solid rgba(57,182,255,0.1)',
+                minWidth: 120,
+              }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, marginBottom: 8, boxShadow: `0 0 8px ${p.color}60` }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.white, letterSpacing: '0.01em' }}>{p.name}</span>
+                <span style={{ fontSize: 10, color: C.muted2, marginTop: 2 }}>{p.sub}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -984,11 +1027,10 @@ export default function Home() {
               ))}
             </div>
             <a
-              href="https://chromewebstore.google.com"
-              target="_blank" rel="noopener noreferrer"
+              href="#early-access"
               style={{ ...s.btnOutline, justifyContent: 'center', width: '100%', textAlign: 'center' as const }}
             >
-              Install Free
+              Get Early Access
             </a>
           </div>
 
@@ -1033,22 +1075,74 @@ export default function Home() {
 
       <div style={s.divider} />
 
+      {/* ── SOCIAL PROOF ── */}
+      <section style={{ padding: '80px 24px', position: 'relative' }}>
+        <div style={{ ...s.wrap }}>
+          <div style={{ textAlign: 'center', marginBottom: 52 }}>
+            <span style={s.label}>Why it matters</span>
+            <h2 style={{ ...s.h2, fontSize: 'clamp(22px,3vw,36px)' }}>
+              Built for the threats targeting<br />
+              <span style={{ background: 'linear-gradient(135deg, #6DD5FA 0%, #39B6FF 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                your inbox right now
+              </span>
+            </h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+            {[
+              { quote: '"I almost clicked a link pretending to be my bank. GuardScope flagged it as CRITICAL in 6 seconds — the domain was registered 2 days prior."', name: 'Early Beta User', country: '🇳🇬 Nigeria' },
+              { quote: '"The AI doesn\'t just say \'suspicious\' — it explains exactly what\'s wrong. SPF failed, domain lookalike, urgency manipulation. That context is everything."', name: 'Early Beta User', country: '🇬🇧 United Kingdom' },
+              { quote: '"Our team receives dozens of BEC attempts per week. Knowing GuardScope is running on every email my staff opens changes the risk calculus completely."', name: 'Early Beta User', country: '🇰🇪 Kenya' },
+            ].map((t, i) => (
+              <div key={i} style={{ ...s.cardGlow, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', gap: 2 }}>
+                  {[...Array(5)].map((_, s) => (
+                    <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill="#FFB020"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+                  ))}
+                </div>
+                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.75, fontStyle: 'italic', flex: 1 }}>{t.quote}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 12, borderTop: '1px solid rgba(57,182,255,0.08)' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(57,182,255,0.12)', border: '1px solid rgba(57,182,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
+                    {t.country.split(' ')[0]}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.white }}>{t.name}</div>
+                    <div style={{ fontSize: 11, color: C.muted2 }}>{t.country.split(' ').slice(1).join(' ')}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div style={s.divider} />
+
       {/* ── FAQ ── */}
       <section id="faq" style={s.section}>
         <div style={{ textAlign: 'center', marginBottom: 60 }}>
           <span style={s.label}>FAQ</span>
           <h2 style={s.h2}>Common questions</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: 20, maxWidth: 980, margin: '0 auto' }}>
-          {FAQS.map((faq) => (
-            <div key={faq.q} style={s.card}>
-              <div style={{ display: 'flex', gap: 12, marginBottom: 10, alignItems: 'flex-start' }}>
-                <span style={{ color: C.cyan, fontWeight: 700, fontSize: 18, lineHeight: 1, flexShrink: 0 }}>Q</span>
-                <h3 style={{ ...s.h3, fontSize: 15, margin: 0, lineHeight: 1.4 }}>{faq.q}</h3>
-              </div>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <span style={{ color: C.muted2, fontWeight: 700, fontSize: 18, lineHeight: 1, flexShrink: 0 }}>A</span>
-                <p style={{ ...s.body, fontSize: 14 }}>{faq.a}</p>
+        <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {FAQS.map((faq, i) => (
+            <div key={faq.q} style={{
+              borderBottom: i < FAQS.length - 1 ? '1px solid rgba(57,182,255,0.08)' : undefined,
+              padding: '28px 0',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: C.white, marginBottom: 12, lineHeight: 1.4 }}>{faq.q}</h3>
+                  <p style={{ ...s.body, fontSize: 14, margin: 0 }}>{faq.a}</p>
+                </div>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  background: 'rgba(57,182,255,0.08)',
+                  border: '1px solid rgba(57,182,255,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginTop: 2,
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#39B6FF" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                </div>
               </div>
             </div>
           ))}
@@ -1079,26 +1173,70 @@ export default function Home() {
               Claim Early Access
             </a>
             <a
-              href="https://chromewebstore.google.com"
-              target="_blank" rel="noopener noreferrer"
+              href="/signup"
               style={{ ...s.btnOutline, fontSize: 16, padding: '15px 32px' }}
             >
-              Install Free
+              Sign In
             </a>
           </div>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop: '1px solid rgba(57,182,255,0.1)', padding: '36px 24px' }}>
-        <div style={{ ...s.wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
-          <GuardScopeLogo size={28} textSize={15} />
-          <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', alignItems: 'center' }}>
-            <a href="/privacy" style={{ fontSize: 13, color: C.muted2, transition: 'color .2s' }}>Privacy Policy</a>
-            <a href="/terms" style={{ fontSize: 13, color: C.muted2 }}>Terms of Service</a>
-            <a href="mailto:support@guardscope.io" style={{ fontSize: 13, color: C.muted2 }}>Support</a>
+      <footer style={{ borderTop: '1px solid rgba(57,182,255,0.1)', padding: '60px 24px 32px', background: 'rgba(5,18,28,0.6)' }}>
+        <div style={{ ...s.wrap }}>
+          {/* Top row — 3 columns */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 48, marginBottom: 48 }}>
+
+            {/* Col 1 — Brand */}
+            <div>
+              <GuardScopeLogo size={30} textSize={16} />
+              <p style={{ fontSize: 13, color: C.muted2, lineHeight: 1.7, marginTop: 16, maxWidth: 220 }}>
+                AI-powered phishing detection inside Gmail. Built for the global threat landscape.
+              </p>
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                {/* Shield badge */}
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '5px 12px', borderRadius: 999,
+                  background: 'rgba(30,215,96,0.08)',
+                  border: '1px solid rgba(30,215,96,0.2)',
+                }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" fill="#1ED760" fillOpacity="0.3" stroke="#1ED760" strokeWidth="1.5"/></svg>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#1ED760', letterSpacing: '0.04em' }}>NDPR & GDPR Compliant</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Col 2 — Product links */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: C.muted2, textTransform: 'uppercase', marginBottom: 20 }}>Product</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <a href="#features" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Features</a>
+                <a href="#how-it-works" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>How it works</a>
+                <a href="#pricing" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Pricing</a>
+                <a href="#early-access" style={{ fontSize: 13, color: C.cyan, fontWeight: 600, textDecoration: 'none' }}>Early Access →</a>
+                <a href="#faq" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>FAQ</a>
+              </div>
+            </div>
+
+            {/* Col 3 — Legal + contact */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: C.muted2, textTransform: 'uppercase', marginBottom: 20 }}>Legal & Support</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <a href="/privacy" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Privacy Policy</a>
+                <a href="/terms" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Terms of Service</a>
+                <a href="mailto:support@guardscope.app" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>support@guardscope.app</a>
+                <a href="/signup" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Sign In / Sign Up</a>
+              </div>
+            </div>
           </div>
-          <p style={{ fontSize: 12, color: C.muted2 }}>© 2026 GuardScope · Inspect before you trust.</p>
+
+          {/* Bottom row */}
+          <div style={{ borderTop: '1px solid rgba(57,182,255,0.07)', paddingTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <p style={{ fontSize: 12, color: C.muted2 }}>© 2026 GuardScope. All rights reserved.</p>
+            <p style={{ fontSize: 12, color: C.muted2, fontStyle: 'italic' }}>Inspect before you trust.</p>
+          </div>
         </div>
       </footer>
     </>

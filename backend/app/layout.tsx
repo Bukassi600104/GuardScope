@@ -72,7 +72,7 @@ const organizationSchema = {
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
   description: 'AI-powered email phishing detection for Gmail.',
-  email: 'support@guardscope.io',
+  email: 'support@guardscope.app',
   foundingDate: '2026',
   sameAs: [],
 }
@@ -114,13 +114,6 @@ const softwareAppSchema = {
       description: 'Unlimited analyses, full AI + threat intel layers.',
     },
   ],
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '5',
-    reviewCount: '1',
-    bestRating: '5',
-    worstRating: '1',
-  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
