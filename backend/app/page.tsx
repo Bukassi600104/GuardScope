@@ -1,531 +1,268 @@
-import { GuardScopeLogo } from './components/GuardScopeLogo'
-import type { CSSProperties } from 'react'
-import type { Metadata } from 'next'
+import type { Metadata, CSSProperties } from 'next'
+import { Navbar } from './components/Navbar'
+import { Footer } from './components/Footer'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://guardscope.app'
 
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
-  openGraph: {
-    url: '/',
-    type: 'website',
-  },
+  openGraph: { url: '/', type: 'website' },
 }
 
-// ─────────────────────────────────────────────────────────────
-// Design tokens
-// ─────────────────────────────────────────────────────────────
+// ── Design tokens ──────────────────────────────────────────────
 const C = {
-  navy:    '#071C2C',
-  navy2:   '#0a2338',
-  navy3:   '#0d2d47',
-  cyan:    '#39B6FF',
-  cyan2:   '#1F8DFF',
-  cyan3:   '#6DD5FA',
-  white:   '#E7EEF4',
-  muted:   '#8ba3b8',
-  muted2:  '#4a6478',
-  border:  'rgba(57,182,255,0.15)',
-  border2: 'rgba(57,182,255,0.08)',
+  bg:      '#f6faff',
+  bgHero:  '#ebf5ff',
+  surface: '#ffffff',
+  primary: '#001e2f',
+  accent:  '#39B6FF',
+  accent2: '#006493',
+  text:    '#001e2f',
+  body:    '#535f74',
+  muted:   '#6e7882',
+  border:  '#bec8d2',
   success: '#1ED760',
   warning: '#FFB020',
   danger:  '#FF4D4F',
-} as const
+}
 
 const s = {
-  section: { padding: '96px 24px', maxWidth: 1160, margin: '0 auto' } as CSSProperties,
-  sectionSm: { padding: '72px 24px', maxWidth: 1160, margin: '0 auto' } as CSSProperties,
-  wrap: { maxWidth: 1160, margin: '0 auto', padding: '0 24px' } as CSSProperties,
-
-  label: { fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase' as const, color: C.cyan, marginBottom: 14, display: 'block' },
-  h1: { fontSize: 'clamp(38px,6vw,72px)', fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.025em', color: C.white, marginBottom: 24 },
-  h2: { fontSize: 'clamp(28px,4vw,46px)', fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', color: C.white, marginBottom: 16 },
-  h3: { fontSize: 17, fontWeight: 600, color: C.white, marginBottom: 8 },
-  lead: { fontSize: 18, color: C.muted, lineHeight: 1.75, maxWidth: 560 },
-  body: { fontSize: 15, color: C.muted, lineHeight: 1.75 },
+  wrap:    { maxWidth: 1200, margin: '0 auto', padding: '0 24px' } as CSSProperties,
+  section: { padding: '96px 24px' } as CSSProperties,
+  label:   { fontSize: 12, fontWeight: 700, letterSpacing: '0.13em', textTransform: 'uppercase' as const, color: C.accent2, marginBottom: 14, display: 'block' },
+  h1:      { fontSize: 'clamp(44px,6vw,76px)', fontWeight: 800, lineHeight: 1.06, letterSpacing: '-0.03em', color: C.text, marginBottom: 24 } as CSSProperties,
+  h2:      { fontSize: 'clamp(30px,4vw,50px)', fontWeight: 700, lineHeight: 1.12, letterSpacing: '-0.02em', color: C.text, marginBottom: 16 } as CSSProperties,
+  h3:      { fontSize: 18, fontWeight: 600, color: C.text, marginBottom: 8 } as CSSProperties,
+  lead:    { fontSize: 18, color: C.body, lineHeight: 1.75, maxWidth: 560 } as CSSProperties,
+  body:    { fontSize: 15, color: C.body, lineHeight: 1.75 } as CSSProperties,
 
   card: {
-    background: 'rgba(10,35,56,0.55)',
-    border: '1px solid rgba(57,182,255,0.12)',
+    background: C.surface,
+    border: `1px solid ${C.border}`,
     borderRadius: 20,
     padding: 28,
-    backdropFilter: 'blur(12px)',
+    boxShadow: '0 2px 20px rgba(0,30,47,0.06)',
   } as CSSProperties,
 
-  cardGlow: {
-    background: 'rgba(10,35,56,0.7)',
-    border: '1px solid rgba(57,182,255,0.25)',
+  cardGlass: {
+    background: 'rgba(255,255,255,0.85)',
+    backdropFilter: 'blur(20px)',
+    border: `1px solid ${C.border}`,
     borderRadius: 20,
-    padding: 32,
-    backdropFilter: 'blur(12px)',
-    boxShadow: '0 0 40px rgba(57,182,255,0.06)',
+    padding: 28,
+    boxShadow: '0 4px 32px rgba(0,30,47,0.08)',
   } as CSSProperties,
-
-  divider: { height: 1, background: 'rgba(57,182,255,0.08)', margin: '0' } as CSSProperties,
 
   btnPrimary: {
     display: 'inline-flex', alignItems: 'center', gap: 8,
-    padding: '14px 28px', fontSize: 15, fontWeight: 700,
-    background: 'linear-gradient(135deg, #39B6FF 0%, #1F8DFF 100%)',
-    color: '#fff', borderRadius: 12,
-    boxShadow: '0 4px 24px rgba(57,182,255,0.3)',
+    padding: '13px 28px', fontSize: 15, fontWeight: 700,
+    background: C.primary, color: '#fff', borderRadius: 12,
+    boxShadow: '0 4px 20px rgba(0,30,47,0.2)',
     transition: 'all .2s',
   } as CSSProperties,
 
   btnOutline: {
     display: 'inline-flex', alignItems: 'center', gap: 8,
-    padding: '14px 28px', fontSize: 15, fontWeight: 600,
-    background: 'transparent', color: C.white, borderRadius: 12,
-    border: '1px solid rgba(57,182,255,0.25)',
+    padding: '13px 28px', fontSize: 15, fontWeight: 600,
+    background: '#fff', color: C.text, borderRadius: 12,
+    border: `1.5px solid ${C.border}`,
     transition: 'all .2s',
   } as CSSProperties,
-} as const
 
-// ─────────────────────────────────────────────────────────────
-// Background bug animation — cyber threats crawling & getting scanned
-// ─────────────────────────────────────────────────────────────
-function BugBackground() {
-  const bugs = [
-    { top: '8%',  left: '4%',   anim: 'bugCrawl1', dur: '18s', delay: '0s',   size: 18, trapped: false },
-    { top: '15%', left: '88%',  anim: 'bugCrawl2', dur: '22s', delay: '-4s',  size: 14, trapped: true  },
-    { top: '35%', left: '93%',  anim: 'bugCrawl3', dur: '16s', delay: '-8s',  size: 16, trapped: false },
-    { top: '55%', left: '2%',   anim: 'bugCrawl4', dur: '24s', delay: '-3s',  size: 12, trapped: true  },
-    { top: '72%', left: '78%',  anim: 'bugCrawl1', dur: '20s', delay: '-11s', size: 15, trapped: false },
-    { top: '82%', left: '18%',  anim: 'bugCrawl2', dur: '17s', delay: '-6s',  size: 13, trapped: false },
-    { top: '25%', left: '48%',  anim: 'bugCrawl3', dur: '26s', delay: '-14s', size: 10, trapped: true  },
-    { top: '65%', left: '55%',  anim: 'bugCrawl4', dur: '19s', delay: '-9s',  size: 17, trapped: false },
-    { top: '45%', left: '22%',  anim: 'bugCrawl1', dur: '23s', delay: '-2s',  size: 11, trapped: true  },
-    { top: '90%', left: '62%',  anim: 'bugCrawl2', dur: '15s', delay: '-7s',  size: 14, trapped: false },
-    { top: '5%',  left: '62%',  anim: 'bugCrawl3', dur: '21s', delay: '-12s', size: 12, trapped: true  },
-    { top: '48%', left: '72%',  anim: 'bugCrawl4', dur: '28s', delay: '-5s',  size: 16, trapped: false },
-  ]
+  divider: { height: 1, background: C.border, opacity: 0.5 } as CSSProperties,
+}
 
+// ── Floating threat icon bubbles ────────────────────────────────
+function FloatingBubble({ style, icon, color, anim }: {
+  style: CSSProperties
+  icon: React.ReactNode
+  color: string
+  anim: string
+}) {
   return (
-    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      <style>{`
-        @keyframes bugCrawl1 {
-          0%   { transform: translate(0px,0px) rotate(0deg); }
-          20%  { transform: translate(28px,-18px) rotate(40deg); }
-          40%  { transform: translate(12px,32px) rotate(-20deg); }
-          60%  { transform: translate(-22px,16px) rotate(60deg); }
-          80%  { transform: translate(8px,-28px) rotate(-40deg); }
-          100% { transform: translate(0px,0px) rotate(0deg); }
-        }
-        @keyframes bugCrawl2 {
-          0%   { transform: translate(0px,0px) rotate(10deg); }
-          25%  { transform: translate(-30px,20px) rotate(-30deg); }
-          50%  { transform: translate(20px,40px) rotate(50deg); }
-          75%  { transform: translate(35px,-15px) rotate(-10deg); }
-          100% { transform: translate(0px,0px) rotate(10deg); }
-        }
-        @keyframes bugCrawl3 {
-          0%   { transform: translate(0px,0px) rotate(-15deg); }
-          30%  { transform: translate(22px,25px) rotate(35deg); }
-          55%  { transform: translate(-18px,38px) rotate(-45deg); }
-          80%  { transform: translate(-28px,-12px) rotate(20deg); }
-          100% { transform: translate(0px,0px) rotate(-15deg); }
-        }
-        @keyframes bugCrawl4 {
-          0%   { transform: translate(0px,0px) rotate(5deg); }
-          33%  { transform: translate(-25px,-22px) rotate(-35deg); }
-          66%  { transform: translate(30px,-35px) rotate(55deg); }
-          100% { transform: translate(0px,0px) rotate(5deg); }
-        }
-        @keyframes scanRing {
-          0%   { transform: scale(0.4); opacity: 0; }
-          15%  { transform: scale(1.1); opacity: 0.8; }
-          50%  { transform: scale(1); opacity: 0.6; }
-          85%  { transform: scale(1); opacity: 0.5; }
-          100% { transform: scale(0.4); opacity: 0; }
-        }
-        @keyframes trappedPulse {
-          0%, 100% { opacity: 0.07; }
-          50%       { opacity: 0.03; }
-        }
-        @keyframes freeBug {
-          0%, 100% { opacity: 0.055; }
-          50%       { opacity: 0.03; }
-        }
-      `}</style>
-
-      {bugs.map((b, i) => (
-        <div key={i} style={{
-          position: 'absolute',
-          top: b.top, left: b.left,
-          animation: `${b.anim} ${b.dur} ${b.delay} ease-in-out infinite`,
-        }}>
-          {/* Bug SVG */}
-          <div style={{
-            animation: b.trapped ? `trappedPulse 3s ease-in-out infinite` : `freeBug 4s ease-in-out infinite`,
-            color: b.trapped ? '#FF4D4F' : '#FFB020',
-          }}>
-            <svg width={b.size} height={b.size} viewBox="0 0 24 24" fill="currentColor">
-              {/* Body */}
-              <ellipse cx="12" cy="13" rx="4.5" ry="5.5" />
-              {/* Head */}
-              <circle cx="12" cy="6.5" r="2.8" />
-              {/* Antennae */}
-              <line x1="10.5" y1="4.2" x2="8" y2="1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              <line x1="13.5" y1="4.2" x2="16" y2="1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              {/* Legs */}
-              <line x1="7.5" y1="10" x2="3" y2="8.5"  stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-              <line x1="7.5" y1="13" x2="3" y2="13"   stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-              <line x1="7.5" y1="16" x2="3" y2="17.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-              <line x1="16.5" y1="10" x2="21" y2="8.5"  stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-              <line x1="16.5" y1="13" x2="21" y2="13"   stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-              <line x1="16.5" y1="16" x2="21" y2="17.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-            </svg>
-          </div>
-
-          {/* Scan ring for trapped bugs */}
-          {b.trapped && (
-            <div style={{
-              position: 'absolute',
-              top: '50%', left: '50%',
-              transform: 'translate(-50%,-50%)',
-              width: b.size * 2.8, height: b.size * 2.8,
-              marginLeft: -(b.size * 2.8) / 2,
-              marginTop: -(b.size * 2.8) / 2,
-              animation: `scanRing 4s ease-in-out infinite`,
-            }}>
-              <svg width="100%" height="100%" viewBox="0 0 40 40" fill="none">
-                <circle cx="20" cy="20" r="17" stroke="#39B6FF" strokeWidth="1.5" strokeDasharray="4 3" />
-                <circle cx="20" cy="20" r="10" stroke="#39B6FF" strokeWidth="0.8" opacity="0.5" />
-              </svg>
-            </div>
-          )}
-        </div>
-      ))}
+    <div style={{
+      position: 'absolute',
+      width: 64, height: 64,
+      borderRadius: 18,
+      background: '#fff',
+      boxShadow: `0 8px 32px rgba(0,30,47,0.12), 0 0 0 1px rgba(0,30,47,0.06)`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      animation: `${anim} 4s ease-in-out infinite`,
+      ...style,
+    }}>
+      <div style={{ color, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {icon}
+      </div>
     </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────
-// Complete country list
-// ─────────────────────────────────────────────────────────────
-const COUNTRIES = [
-  // Africa first (primary market)
-  { code: 'NG', name: '🇳🇬 Nigeria' },
-  { code: 'GH', name: '🇬🇭 Ghana' },
-  { code: 'KE', name: '🇰🇪 Kenya' },
-  { code: 'ZA', name: '🇿🇦 South Africa' },
-  { code: 'ET', name: '🇪🇹 Ethiopia' },
-  { code: 'TZ', name: '🇹🇿 Tanzania' },
-  { code: 'UG', name: '🇺🇬 Uganda' },
-  { code: 'EG', name: '🇪🇬 Egypt' },
-  { code: 'MA', name: '🇲🇦 Morocco' },
-  { code: 'SN', name: '🇸🇳 Senegal' },
-  { code: 'CI', name: "🇨🇮 Côte d'Ivoire" },
-  { code: 'CM', name: '🇨🇲 Cameroon' },
-  { code: 'AO', name: '🇦🇴 Angola' },
-  { code: 'MZ', name: '🇲🇿 Mozambique' },
-  { code: 'MG', name: '🇲🇬 Madagascar' },
-  { code: 'DZ', name: '🇩🇿 Algeria' },
-  { code: 'SD', name: '🇸🇩 Sudan' },
-  { code: 'ZM', name: '🇿🇲 Zambia' },
-  { code: 'ZW', name: '🇿🇼 Zimbabwe' },
-  { code: 'RW', name: '🇷🇼 Rwanda' },
-  { code: 'TN', name: '🇹🇳 Tunisia' },
-  { code: 'BF', name: '🇧🇫 Burkina Faso' },
-  { code: 'ML', name: '🇲🇱 Mali' },
-  { code: 'ER', name: '🇪🇷 Eritrea' },
-  { code: 'GM', name: '🇬🇲 Gambia' },
-  { code: 'GW', name: '🇬🇼 Guinea-Bissau' },
-  { code: 'GN', name: '🇬🇳 Guinea' },
-  { code: 'LR', name: '🇱🇷 Liberia' },
-  { code: 'SL', name: '🇸🇱 Sierra Leone' },
-  { code: 'TG', name: '🇹🇬 Togo' },
-  { code: 'BJ', name: '🇧🇯 Benin' },
-  { code: 'NE', name: '🇳🇪 Niger' },
-  { code: 'TD', name: '🇹🇩 Chad' },
-  { code: 'SS', name: '🇸🇸 South Sudan' },
-  { code: 'SO', name: '🇸🇴 Somalia' },
-  { code: 'DJ', name: '🇩🇯 Djibouti' },
-  { code: 'BI', name: '🇧🇮 Burundi' },
-  { code: 'CF', name: '🇨🇫 Central African Republic' },
-  { code: 'CG', name: '🇨🇬 Republic of Congo' },
-  { code: 'CD', name: '🇨🇩 DR Congo' },
-  { code: 'GA', name: '🇬🇦 Gabon' },
-  { code: 'GQ', name: '🇬🇶 Equatorial Guinea' },
-  { code: 'ST', name: '🇸🇹 São Tomé and Príncipe' },
-  { code: 'CV', name: '🇨🇻 Cape Verde' },
-  { code: 'MW', name: '🇲🇼 Malawi' },
-  { code: 'LS', name: '🇱🇸 Lesotho' },
-  { code: 'SZ', name: '🇸🇿 Eswatini' },
-  { code: 'BW', name: '🇧🇼 Botswana' },
-  { code: 'NA', name: '🇳🇦 Namibia' },
-  { code: 'SC', name: '🇸🇨 Seychelles' },
-  { code: 'MU', name: '🇲🇺 Mauritius' },
-  { code: 'KM', name: '🇰🇲 Comoros' },
-  { code: 'LY', name: '🇱🇾 Libya' },
-  { code: 'MR', name: '🇲🇷 Mauritania' },
-  { code: 'EH', name: '🇪🇭 Western Sahara' },
-  // Rest of world — alphabetical
-  { code: 'AF', name: '🇦🇫 Afghanistan' },
-  { code: 'AL', name: '🇦🇱 Albania' },
-  { code: 'AD', name: '🇦🇩 Andorra' },
-  { code: 'AG', name: '🇦🇬 Antigua and Barbuda' },
-  { code: 'AR', name: '🇦🇷 Argentina' },
-  { code: 'AM', name: '🇦🇲 Armenia' },
-  { code: 'AU', name: '🇦🇺 Australia' },
-  { code: 'AT', name: '🇦🇹 Austria' },
-  { code: 'AZ', name: '🇦🇿 Azerbaijan' },
-  { code: 'BS', name: '🇧🇸 Bahamas' },
-  { code: 'BH', name: '🇧🇭 Bahrain' },
-  { code: 'BD', name: '🇧🇩 Bangladesh' },
-  { code: 'BB', name: '🇧🇧 Barbados' },
-  { code: 'BY', name: '🇧🇾 Belarus' },
-  { code: 'BE', name: '🇧🇪 Belgium' },
-  { code: 'BZ', name: '🇧🇿 Belize' },
-  { code: 'BT', name: '🇧🇹 Bhutan' },
-  { code: 'BO', name: '🇧🇴 Bolivia' },
-  { code: 'BA', name: '🇧🇦 Bosnia and Herzegovina' },
-  { code: 'BR', name: '🇧🇷 Brazil' },
-  { code: 'BN', name: '🇧🇳 Brunei' },
-  { code: 'BG', name: '🇧🇬 Bulgaria' },
-  { code: 'KH', name: '🇰🇭 Cambodia' },
-  { code: 'CA', name: '🇨🇦 Canada' },
-  { code: 'CL', name: '🇨🇱 Chile' },
-  { code: 'CN', name: '🇨🇳 China' },
-  { code: 'CO', name: '🇨🇴 Colombia' },
-  { code: 'CR', name: '🇨🇷 Costa Rica' },
-  { code: 'HR', name: '🇭🇷 Croatia' },
-  { code: 'CU', name: '🇨🇺 Cuba' },
-  { code: 'CY', name: '🇨🇾 Cyprus' },
-  { code: 'CZ', name: '🇨🇿 Czech Republic' },
-  { code: 'DK', name: '🇩🇰 Denmark' },
-  { code: 'DM', name: '🇩🇲 Dominica' },
-  { code: 'DO', name: '🇩🇴 Dominican Republic' },
-  { code: 'EC', name: '🇪🇨 Ecuador' },
-  { code: 'SV', name: '🇸🇻 El Salvador' },
-  { code: 'EE', name: '🇪🇪 Estonia' },
-  { code: 'FJ', name: '🇫🇯 Fiji' },
-  { code: 'FI', name: '🇫🇮 Finland' },
-  { code: 'FR', name: '🇫🇷 France' },
-  { code: 'GE', name: '🇬🇪 Georgia' },
-  { code: 'DE', name: '🇩🇪 Germany' },
-  { code: 'GR', name: '🇬🇷 Greece' },
-  { code: 'GD', name: '🇬🇩 Grenada' },
-  { code: 'GT', name: '🇬🇹 Guatemala' },
-  { code: 'GY', name: '🇬🇾 Guyana' },
-  { code: 'HT', name: '🇭🇹 Haiti' },
-  { code: 'HN', name: '🇭🇳 Honduras' },
-  { code: 'HU', name: '🇭🇺 Hungary' },
-  { code: 'IS', name: '🇮🇸 Iceland' },
-  { code: 'IN', name: '🇮🇳 India' },
-  { code: 'ID', name: '🇮🇩 Indonesia' },
-  { code: 'IR', name: '🇮🇷 Iran' },
-  { code: 'IQ', name: '🇮🇶 Iraq' },
-  { code: 'IE', name: '🇮🇪 Ireland' },
-  { code: 'IL', name: '🇮🇱 Israel' },
-  { code: 'IT', name: '🇮🇹 Italy' },
-  { code: 'JM', name: '🇯🇲 Jamaica' },
-  { code: 'JP', name: '🇯🇵 Japan' },
-  { code: 'JO', name: '🇯🇴 Jordan' },
-  { code: 'KZ', name: '🇰🇿 Kazakhstan' },
-  { code: 'KI', name: '🇰🇮 Kiribati' },
-  { code: 'KW', name: '🇰🇼 Kuwait' },
-  { code: 'KG', name: '🇰🇬 Kyrgyzstan' },
-  { code: 'LA', name: '🇱🇦 Laos' },
-  { code: 'LV', name: '🇱🇻 Latvia' },
-  { code: 'LB', name: '🇱🇧 Lebanon' },
-  { code: 'LI', name: '🇱🇮 Liechtenstein' },
-  { code: 'LT', name: '🇱🇹 Lithuania' },
-  { code: 'LU', name: '🇱🇺 Luxembourg' },
-  { code: 'MK', name: '🇲🇰 North Macedonia' },
-  { code: 'MV', name: '🇲🇻 Maldives' },
-  { code: 'MT', name: '🇲🇹 Malta' },
-  { code: 'MH', name: '🇲🇭 Marshall Islands' },
-  { code: 'MX', name: '🇲🇽 Mexico' },
-  { code: 'FM', name: '🇫🇲 Micronesia' },
-  { code: 'MD', name: '🇲🇩 Moldova' },
-  { code: 'MC', name: '🇲🇨 Monaco' },
-  { code: 'MN', name: '🇲🇳 Mongolia' },
-  { code: 'ME', name: '🇲🇪 Montenegro' },
-  { code: 'MM', name: '🇲🇲 Myanmar' },
-  { code: 'NR', name: '🇳🇷 Nauru' },
-  { code: 'NP', name: '🇳🇵 Nepal' },
-  { code: 'NL', name: '🇳🇱 Netherlands' },
-  { code: 'NZ', name: '🇳🇿 New Zealand' },
-  { code: 'NI', name: '🇳🇮 Nicaragua' },
-  { code: 'NO', name: '🇳🇴 Norway' },
-  { code: 'OM', name: '🇴🇲 Oman' },
-  { code: 'PK', name: '🇵🇰 Pakistan' },
-  { code: 'PW', name: '🇵🇼 Palau' },
-  { code: 'PA', name: '🇵🇦 Panama' },
-  { code: 'PG', name: '🇵🇬 Papua New Guinea' },
-  { code: 'PY', name: '🇵🇾 Paraguay' },
-  { code: 'PE', name: '🇵🇪 Peru' },
-  { code: 'PH', name: '🇵🇭 Philippines' },
-  { code: 'PL', name: '🇵🇱 Poland' },
-  { code: 'PT', name: '🇵🇹 Portugal' },
-  { code: 'QA', name: '🇶🇦 Qatar' },
-  { code: 'RO', name: '🇷🇴 Romania' },
-  { code: 'RU', name: '🇷🇺 Russia' },
-  { code: 'KN', name: '🇰🇳 Saint Kitts and Nevis' },
-  { code: 'LC', name: '🇱🇨 Saint Lucia' },
-  { code: 'VC', name: '🇻🇨 Saint Vincent and the Grenadines' },
-  { code: 'WS', name: '🇼🇸 Samoa' },
-  { code: 'SM', name: '🇸🇲 San Marino' },
-  { code: 'SA', name: '🇸🇦 Saudi Arabia' },
-  { code: 'RS', name: '🇷🇸 Serbia' },
-  { code: 'SG', name: '🇸🇬 Singapore' },
-  { code: 'SK', name: '🇸🇰 Slovakia' },
-  { code: 'SI', name: '🇸🇮 Slovenia' },
-  { code: 'SB', name: '🇸🇧 Solomon Islands' },
-  { code: 'ES', name: '🇪🇸 Spain' },
-  { code: 'LK', name: '🇱🇰 Sri Lanka' },
-  { code: 'SR', name: '🇸🇷 Suriname' },
-  { code: 'SE', name: '🇸🇪 Sweden' },
-  { code: 'CH', name: '🇨🇭 Switzerland' },
-  { code: 'SY', name: '🇸🇾 Syria' },
-  { code: 'TW', name: '🇹🇼 Taiwan' },
-  { code: 'TJ', name: '🇹🇯 Tajikistan' },
-  { code: 'TH', name: '🇹🇭 Thailand' },
-  { code: 'TL', name: '🇹🇱 Timor-Leste' },
-  { code: 'TO', name: '🇹🇴 Tonga' },
-  { code: 'TT', name: '🇹🇹 Trinidad and Tobago' },
-  { code: 'TR', name: '🇹🇷 Turkey' },
-  { code: 'TM', name: '🇹🇲 Turkmenistan' },
-  { code: 'TV', name: '🇹🇻 Tuvalu' },
-  { code: 'UA', name: '🇺🇦 Ukraine' },
-  { code: 'AE', name: '🇦🇪 United Arab Emirates' },
-  { code: 'GB', name: '🇬🇧 United Kingdom' },
-  { code: 'US', name: '🇺🇸 United States' },
-  { code: 'UY', name: '🇺🇾 Uruguay' },
-  { code: 'UZ', name: '🇺🇿 Uzbekistan' },
-  { code: 'VU', name: '🇻🇺 Vanuatu' },
-  { code: 'VE', name: '🇻🇪 Venezuela' },
-  { code: 'VN', name: '🇻🇳 Vietnam' },
-  { code: 'YE', name: '🇾🇪 Yemen' },
-]
-
-// ─────────────────────────────────────────────────────────────
-// Shared micro-components
-// ─────────────────────────────────────────────────────────────
-function CheckIcon({ color = C.success }: { color?: string }) {
+// ── Extension mock ──────────────────────────────────────────────
+function ExtensionMock() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 3 }}>
-      <circle cx="12" cy="12" r="10" fill={color} fillOpacity="0.12" />
+    <div style={{
+      width: '100%', maxWidth: 360,
+      background: '#fff',
+      borderRadius: 20,
+      boxShadow: '0 24px 80px rgba(0,30,47,0.16)',
+      border: `1px solid ${C.border}`,
+      overflow: 'hidden',
+      fontFamily: 'Sora, sans-serif',
+    }}>
+      {/* Header */}
+      <div style={{ background: '#001e2f', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.danger, boxShadow: `0 0 8px ${C.danger}` }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', letterSpacing: '0.06em' }}>CRITICAL THREAT</span>
+        </div>
+        <span style={{ fontSize: 22, fontWeight: 800, color: C.danger }}>88</span>
+      </div>
+
+      <div style={{ padding: 18 }}>
+        {/* Score ring */}
+        <div style={{ textAlign: 'center', padding: '12px 0 16px' }}>
+          <div style={{
+            display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+            width: 90, height: 90, borderRadius: '50%',
+            background: 'rgba(255,77,79,0.08)',
+            border: `3px solid ${C.danger}`,
+            justifyContent: 'center',
+          }}>
+            <span style={{ fontSize: 26, fontWeight: 800, color: C.danger }}>88</span>
+            <span style={{ fontSize: 9, color: C.danger, fontWeight: 600, letterSpacing: '0.08em' }}>RISK</span>
+          </div>
+        </div>
+
+        <p style={{ fontSize: 12, color: C.body, lineHeight: 1.6, marginBottom: 14 }}>
+          This email impersonates <strong style={{ color: C.text }}>GTBank</strong> using a lookalike domain registered <strong style={{ color: C.danger }}>3 days ago</strong>.
+        </p>
+
+        {/* Flags */}
+        {[
+          { label: 'SPF: Failed — sender not authorized', color: C.danger },
+          { label: 'Domain registered 3 days ago', color: C.danger },
+          { label: 'VirusTotal: 7/90 engines flagged', color: C.warning },
+          { label: 'PhishTank: confirmed phishing URL', color: C.danger },
+        ].map((f) => (
+          <div key={f.label} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+              <circle cx="12" cy="12" r="10" fill={f.color} fillOpacity="0.12"/>
+              <path d="M15 9L9 15M9 9L15 15" stroke={f.color} strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 11, color: C.body }}>{f.label}</span>
+          </div>
+        ))}
+
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 10, color: C.muted }}>Mercury-2 AI · 5.8s</span>
+          <span style={{ fontSize: 10, color: C.muted }}>GuardScope v3</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Check / X icons ─────────────────────────────────────────────
+function Check({ color = C.success }: { color?: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+      <circle cx="12" cy="12" r="10" fill={color} fillOpacity="0.12"/>
       <path d="M7 12.5L10.5 16L17 9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   )
 }
 
-function XIcon({ color = C.danger }: { color?: string }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 3 }}>
-      <circle cx="12" cy="12" r="10" fill={color} fillOpacity="0.12" />
-      <path d="M15 9L9 15M9 9L15 15" stroke={color} strokeWidth="2" strokeLinecap="round"/>
-    </svg>
-  )
-}
-
-function ScanLine() {
-  return (
-    <div style={{
-      position: 'absolute', left: 0, right: 0, height: 1,
-      background: 'linear-gradient(90deg, transparent 0%, #39B6FF 50%, transparent 100%)',
-      opacity: 0.6, top: '30%',
-    }} />
-  )
-}
-
-function GridBg() {
-  return (
-    <div style={{
-      position: 'absolute', inset: 0, pointerEvents: 'none',
-      backgroundImage: `
-        linear-gradient(rgba(57,182,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(57,182,255,0.04) 1px, transparent 1px)
-      `,
-      backgroundSize: '60px 60px',
-    }} />
-  )
-}
-
-// ─────────────────────────────────────────────────────────────
-// Content data
-// ─────────────────────────────────────────────────────────────
+// ── Page data ───────────────────────────────────────────────────
 const STATS = [
-  { stat: '91%', desc: 'of cyberattacks begin with a phishing email' },
-  { stat: '$17,700', desc: 'lost every minute to phishing globally' },
-  { stat: '3.4B', desc: 'phishing emails sent every single day' },
-  { stat: '97%', desc: 'of people can\'t spot a sophisticated phish' },
+  { stat: '91%',    desc: 'of cyberattacks begin with a phishing email' },
+  { stat: '$17.7K', desc: 'lost every minute to phishing globally' },
+  { stat: '3.4B',   desc: 'phishing emails sent every single day' },
+  { stat: '8s',     desc: 'for GuardScope to run a full deep scan' },
 ]
 
 const FEATURES = [
   {
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="11" width="18" height="11" rx="2" stroke="#39B6FF" strokeWidth="1.5"/>
-        <path d="M7 11V7a5 5 0 0110 0v4" stroke="#39B6FF" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="3" stroke="#39B6FF" strokeWidth="1.8"/>
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#39B6FF" strokeWidth="1.8" strokeLinecap="round"/>
       </svg>
     ),
-    title: 'Email Authentication',
-    desc: 'SPF, DKIM, and DMARC records verified against Cloudflare DNS — confirms the sender is who they claim.',
+    color: '#39B6FF',
+    title: 'Mercury-2 AI Engine',
+    desc: 'A reasoning AI writes a chain-of-thought before reaching its verdict — detecting urgency manipulation, impersonation, and social engineering.',
   },
   {
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="3" stroke="#39B6FF" strokeWidth="1.5"/>
-        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#39B6FF" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="11" width="18" height="11" rx="2" stroke="#006493" strokeWidth="1.8"/>
+        <path d="M7 11V7a5 5 0 0110 0v4" stroke="#006493" strokeWidth="1.8" strokeLinecap="round"/>
       </svg>
     ),
-    title: 'Mercury-2 AI Deep Scan',
-    desc: 'Reasoning AI reads the email, writes a chain-of-thought, then judges: urgency manipulation, domain deception, impersonation.',
+    color: '#006493',
+    title: 'DNS Authentication',
+    desc: 'SPF, DKIM, and DMARC verified against Cloudflare DNS using a 20-selector DKIM probe — confirms the sender is exactly who they claim.',
   },
   {
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#39B6FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#39B6FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#7C3AED" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
+    color: '#7C3AED',
     title: 'Link Safety Scan',
-    desc: 'Every URL checked against VirusTotal (90+ engines), Google Safe Browsing, PhishTank, and URLhaus — in parallel.',
+    desc: 'Every URL checked against VirusTotal (90+ engines), Google Safe Browsing, PhishTank, and URLhaus — all in parallel, in seconds.',
   },
   {
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="4" width="18" height="18" rx="2" stroke="#39B6FF" strokeWidth="1.5"/>
-        <path d="M3 9h18M8 2v4M16 2v4" stroke="#39B6FF" strokeWidth="1.5" strokeLinecap="round"/>
-        <circle cx="12" cy="15" r="2" fill="#39B6FF" fillOpacity="0.5"/>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="4" width="18" height="18" rx="2" stroke="#F59E0B" strokeWidth="1.8"/>
+        <path d="M3 9h18M8 2v4M16 2v4" stroke="#F59E0B" strokeWidth="1.8" strokeLinecap="round"/>
+        <circle cx="12" cy="15" r="2" fill="#F59E0B" fillOpacity="0.5"/>
       </svg>
     ),
+    color: '#F59E0B',
     title: 'Domain Age Intel',
-    desc: 'Domains registered days before an attack are a classic red flag. RDAP lookup catches them instantly.',
+    desc: 'Domains registered days before an attack are a classic red flag. RDAP lookup catches brand-new threat infrastructure instantly.',
   },
   {
     icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="9" stroke="#39B6FF" strokeWidth="1.5"/>
-        <path d="M12 8v4l3 3" stroke="#39B6FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M7 3.5C8.5 2.5 10 2 12 2" stroke="#39B6FF" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" stroke="#1ED760" strokeWidth="1.8" strokeLinejoin="round"/>
       </svg>
     ),
+    color: '#1ED760',
+    title: 'BEC & Impersonation',
+    desc: '200+ brand list + 45 executive authority patterns detect Business Email Compromise — CFO wire fraud, legal threats, government impersonation.',
+  },
+  {
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="#FF4D4F" strokeWidth="1.8"/>
+        <path d="M12 8v4l3 3" stroke="#FF4D4F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+    color: '#FF4D4F',
     title: 'Nigeria-Aware Engine',
-    desc: 'Trained on EFCC/CBN fraud patterns, BVN phishing, advance-fee scams, and fintech impersonation attacks.',
+    desc: 'Trained on EFCC/CBN fraud patterns, BVN phishing, advance-fee scams, and fintech impersonation attacks. Built for the African threat landscape.',
   },
 ]
 
 const STEPS = [
-  { n: '01', title: 'Open any email in Gmail', desc: 'GuardScope detects the open email and a security panel slides in from the right side of your inbox.' },
-  { n: '02', title: 'Click "Analyze This Email"', desc: 'Six parallel scans run simultaneously — DNS auth, domain age, all links, PhishTank, and Mercury-2 AI — completing in 5–8 seconds.' },
-  { n: '03', title: 'Read your verdict', desc: 'A clear risk score (0–100), plain-English verdict, and specific flags explaining exactly what looks suspicious.' },
+  { n: '01', title: 'Open any email in Gmail', desc: 'GuardScope detects the open email and a security panel slides in from the right side of your inbox automatically.' },
+  { n: '02', title: 'Click "Analyze This Email"', desc: 'Six parallel scans run — DNS auth, domain age, all links, PhishTank, SpamHaus, and Mercury-2 AI — completing in under 8 seconds.' },
+  { n: '03', title: 'Read your verdict', desc: 'A clear 0–100 risk score, plain-English verdict, and specific flags explaining exactly what is suspicious — and why.' },
 ]
 
-const PRIVACY_YES = [
-  'Email body discarded immediately after analysis',
-  'Zero email content stored — ever',
-  'NDPR 2023 & GDPR compliant',
-  'Supabase EU infrastructure',
-]
-const PRIVACY_NO = [
-  'Your contacts or address book',
-  'Your Gmail password or OAuth token',
-  'Browsing history outside Gmail',
-  'Email content in any database',
+const PARTNERS = [
+  { name: 'VirusTotal',         sub: '90+ scan engines',   color: '#4285F4' },
+  { name: 'Google Safe Browsing', sub: 'Real-time URLs',   color: '#34A853' },
+  { name: 'Cloudflare DoH',     sub: 'DNS over HTTPS',     color: '#F6821F' },
+  { name: 'PhishTank',          sub: 'Phishing database',  color: '#E55A2B' },
+  { name: 'URLhaus',            sub: 'Malware URLs',       color: '#A855F7' },
+  { name: 'SpamHaus DBL',       sub: 'Domain blocklist',   color: '#EF4444' },
+  { name: 'Mercury-2 AI',       sub: 'InceptionLabs',      color: '#39B6FF' },
 ]
 
 const FAQS = [
@@ -537,9 +274,6 @@ const FAQS = [
   { q: 'Is my data private?', a: 'Completely. We comply with NDPR 2023 (Nigeria) and GDPR, using Supabase EU-hosted infrastructure. Read our Privacy Policy for full details.' },
 ]
 
-// ─────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────
 const faqSchema = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -550,93 +284,77 @@ const faqSchema = {
   })),
 }
 
-const webSiteSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'GuardScope',
-  url: SITE_URL,
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: `${SITE_URL}/?q={search_term_string}`,
-    'query-input': 'required name=search_term_string',
-  },
-}
-
+// ── Page ────────────────────────────────────────────────────────
 export default function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }} />
-      <BugBackground />
-      {/* ── NAV ── */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(7,28,44,0.85)', backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(57,182,255,0.1)',
-      }}>
-        <div style={{ ...s.wrap, display: 'flex', alignItems: 'center', height: 68 }}>
-          <GuardScopeLogo size={34} textSize={18} />
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 28 }}>
-            <a href="#features" style={{ fontSize: 14, color: C.muted, fontWeight: 500, letterSpacing: '0.01em' }}>Features</a>
-            <a href="#how-it-works" style={{ fontSize: 14, color: C.muted, fontWeight: 500, letterSpacing: '0.01em' }}>How it works</a>
-            <a href="#pricing" style={{ fontSize: 14, color: C.muted, fontWeight: 500, letterSpacing: '0.01em' }}>Pricing</a>
-            <a href="#faq" style={{ fontSize: 14, color: C.muted, fontWeight: 500, letterSpacing: '0.01em' }}>FAQ</a>
-            <a
-              href="/signup"
-              style={{ fontSize: 14, color: C.white, fontWeight: 600, letterSpacing: '0.01em',
-                padding: '8px 18px', borderRadius: 10,
-                border: '1px solid rgba(57,182,255,0.25)',
-                background: 'transparent',
-              }}
-            >
-              Sign In
-            </a>
-            <a
-              href="#early-access"
-              style={{ ...s.btnPrimary, padding: '9px 20px', fontSize: 13 }}
-            >
-              Get Early Access
-            </a>
-          </div>
-        </div>
-      </nav>
+      <Navbar activePage="/" />
 
       {/* ── HERO ── */}
       <section style={{
         position: 'relative', overflow: 'hidden',
-        padding: '130px 24px 110px', textAlign: 'center',
+        background: `linear-gradient(180deg, ${C.bgHero} 0%, ${C.bg} 60%, #fff 100%)`,
+        padding: '100px 24px 80px',
       }}>
-        <GridBg />
-        {/* Radial glow */}
+        {/* Subtle grid */}
         <div style={{
-          position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)',
-          width: 700, height: 500,
-          background: 'radial-gradient(ellipse at center, rgba(57,182,255,0.12) 0%, transparent 65%)',
-          pointerEvents: 'none',
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: `linear-gradient(rgba(57,182,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(57,182,255,0.04) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
         }} />
-        <ScanLine />
 
-        <div style={{ position: 'relative', maxWidth: 820, margin: '0 auto' }}>
-          {/* Eyebrow badge */}
+        {/* Floating threat icons */}
+        <FloatingBubble
+          style={{ top: '18%', left: '8%' }}
+          anim="float1"
+          color={C.danger}
+          icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="13" rx="4.5" ry="5.5"/><circle cx="12" cy="6.5" r="2.8"/><line x1="10.5" y1="4.2" x2="8" y2="1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="13.5" y1="4.2" x2="16" y2="1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>}
+        />
+        <FloatingBubble
+          style={{ top: '10%', right: '10%' }}
+          anim="float2"
+          color={C.success}
+          icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" stroke="currentColor" strokeWidth="1.8" fill="currentColor" fillOpacity="0.15" strokeLinejoin="round"/></svg>}
+        />
+        <FloatingBubble
+          style={{ top: '45%', left: '4%' }}
+          anim="float3"
+          color={C.warning}
+          icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" strokeWidth="1.8" fill="currentColor" fillOpacity="0.12" strokeLinejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg>}
+        />
+        <FloatingBubble
+          style={{ top: '30%', right: '6%' }}
+          anim="float4"
+          color={C.accent}
+          icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>}
+        />
+        <FloatingBubble
+          style={{ bottom: '20%', right: '9%' }}
+          anim="float1"
+          color="#7C3AED"
+          icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="1.8"/><path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>}
+        />
+
+        {/* Center content */}
+        <div style={{ position: 'relative', maxWidth: 760, margin: '0 auto', textAlign: 'center' }}>
+          {/* Badge */}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '6px 16px', borderRadius: 999,
-            background: 'rgba(57,182,255,0.08)',
-            border: '1px solid rgba(57,182,255,0.2)',
+            background: 'rgba(57,182,255,0.1)',
+            border: '1px solid rgba(57,182,255,0.25)',
             marginBottom: 32,
           }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.cyan, display: 'inline-block', boxShadow: '0 0 8px #39B6FF' }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.cyan, letterSpacing: '0.02em' }}>
-              Early Access — 100 Pro spots, 30 days free
-            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" stroke="#39B6FF" strokeWidth="2" fill="#39B6FF" fillOpacity="0.2" strokeLinejoin="round"/></svg>
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.accent2, letterSpacing: '0.02em' }}>AI-Powered · Mercury-2 Engine · Free to Start</span>
           </div>
 
           <h1 style={s.h1}>
-            Inspect Every Email.<br />
+            Scan Every Email.<br />
             <span style={{
-              background: 'linear-gradient(135deg, #6DD5FA 0%, #39B6FF 50%, #1F8DFF 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              background: `linear-gradient(135deg, ${C.accent2} 0%, ${C.accent} 100%)`,
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             }}>
               Trust Nothing Blindly.
             </span>
@@ -644,122 +362,68 @@ export default function Home() {
 
           <p style={{ ...s.lead, margin: '0 auto 44px', fontSize: 19 }}>
             GuardScope sits inside Gmail and scans every email with AI, DNS authentication,
-            and six real-time threat intelligence sources — in under 8 seconds.
+            and 7 real-time threat intelligence sources — in under 8 seconds.
           </p>
 
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
             <a href="#early-access" style={{ ...s.btnPrimary, fontSize: 16, padding: '15px 32px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="white"/></svg>
               Get Early Access — Free
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H7M17 7v10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </a>
-            <a href="#early-access" style={{ ...s.btnOutline }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#39B6FF" strokeWidth="1.5"/><circle cx="12" cy="12" r="3" fill="#39B6FF"/></svg>
-              Add to Chrome — Coming Soon
+            <a href="/how-it-works" style={{ ...s.btnOutline, fontSize: 16, padding: '15px 32px' }}>
+              See How It Works
             </a>
           </div>
+          <p style={{ fontSize: 13, color: C.muted }}>Works with Gmail personal & Google Workspace · Chrome browser only</p>
 
-          <p style={{ fontSize: 13, color: C.muted2, letterSpacing: '0.01em' }}>
-            Works with Gmail personal & Google Workspace · Chrome browser only
-          </p>
+          {/* Extension mock */}
+          <div style={{ marginTop: 64, display: 'flex', justifyContent: 'center' }}>
+            <ExtensionMock />
+          </div>
         </div>
+      </section>
 
-        {/* Mock scan card */}
-        <div style={{
-          marginTop: 72, maxWidth: 520, margin: '72px auto 0',
-          ...s.cardGlow,
-          textAlign: 'left',
-          position: 'relative',
-        }}>
-          <div style={{ position: 'absolute', top: -1, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #FF4D4F, transparent)', borderRadius: '20px 20px 0 0' }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.danger, display: 'inline-block', boxShadow: `0 0 8px ${C.danger}` }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: C.danger, letterSpacing: '0.08em' }}>CRITICAL THREAT DETECTED</span>
-            </div>
-            <span style={{
-              fontSize: 22, fontWeight: 800, color: C.danger,
-              background: 'rgba(255,77,79,0.1)', padding: '2px 10px', borderRadius: 8,
-            }}>88</span>
-          </div>
-          <p style={{ fontSize: 14, color: '#a8bfcf', lineHeight: 1.7, marginBottom: 18 }}>
-            This email impersonates GTBank using a lookalike domain registered <strong style={{ color: C.white }}>3 days ago</strong>. Links lead to a credential-harvesting page flagged by VirusTotal and PhishTank.
+      {/* ── TRUST / PARTNERS ── */}
+      <section style={{ padding: '56px 24px', background: '#fff', borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ ...s.wrap, textAlign: 'center' }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 28 }}>
+            Powered by enterprise-grade threat intelligence
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[
-              'SPF: Failed — sender not authorized',
-              'Domain registered 3 days ago',
-              'VirusTotal: 7/90 engines flagged',
-              'PhishTank: confirmed phishing URL',
-            ].map((flag) => (
-              <div key={flag} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <XIcon />
-                <span style={{ fontSize: 13, color: '#ffaaaa' }}>{flag}</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
+            {PARTNERS.map((p) => (
+              <div key={p.name} style={{
+                display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+                padding: '12px 22px', borderRadius: 14,
+                background: C.bg,
+                border: `1px solid ${C.border}`,
+                minWidth: 120,
+              }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, marginBottom: 8, boxShadow: `0 0 8px ${p.color}80` }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{p.name}</span>
+                <span style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{p.sub}</span>
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid rgba(57,182,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 11, color: C.muted2 }}>Mercury-2 AI deep scan</span>
-            <span style={{ fontSize: 11, color: C.muted2 }}>5.8s</span>
-          </div>
         </div>
       </section>
-
-      <div style={s.divider} />
 
       {/* ── STATS ── */}
-      <section style={{ ...s.sectionSm, paddingTop: 72, paddingBottom: 72 }}>
-        <div style={{ textAlign: 'center', marginBottom: 52 }}>
-          <span style={s.label}>The Threat</span>
-          <h2 style={s.h2}>
-            Email phishing costs Africa{' '}
-            <span style={{ color: C.danger }}>billions</span> every year
-          </h2>
-          <p style={{ ...s.lead, margin: '0 auto' }}>
-            Attacks are sophisticated, fast-moving, and specifically designed to fool people without security training. Your inbox is the front door — GuardScope guards it.
-          </p>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-          {STATS.map((item) => (
-            <div key={item.stat} style={{ ...s.card, textAlign: 'center' }}>
-              <div style={{
-                fontSize: 38, fontWeight: 800, marginBottom: 10,
-                background: 'linear-gradient(135deg, #6DD5FA 0%, #39B6FF 100%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              }}>{item.stat}</div>
-              <p style={{ fontSize: 14, color: C.muted }}>{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div style={s.divider} />
-
-      {/* ── TRUST BAR ── */}
-      <section style={{ padding: '48px 24px' }}>
-        <div style={{ ...s.wrap, textAlign: 'center' }}>
-          <p style={{ fontSize: 12, fontWeight: 600, color: C.muted2, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 28 }}>
-            Powered by enterprise-grade threat intelligence
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
-            {[
-              { name: 'VirusTotal', sub: '90+ scan engines', color: '#4285F4' },
-              { name: 'Google Safe Browsing', sub: 'Real-time URL check', color: '#34A853' },
-              { name: 'Cloudflare DoH', sub: 'DNS over HTTPS', color: '#F6821F' },
-              { name: 'PhishTank', sub: 'Phishing database', color: '#FF6B35' },
-              { name: 'URLhaus', sub: 'Malware URL feed', color: '#A855F7' },
-              { name: 'SpamHaus DBL', sub: 'Domain blocklist', color: '#EF4444' },
-              { name: 'Mercury-2 AI', sub: 'InceptionLabs', color: '#39B6FF' },
-            ].map((p) => (
-              <div key={p.name} style={{
-                display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
-                padding: '12px 20px', borderRadius: 14,
-                background: 'rgba(10,35,56,0.5)',
-                border: '1px solid rgba(57,182,255,0.1)',
-                minWidth: 120,
-              }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, marginBottom: 8, boxShadow: `0 0 8px ${p.color}60` }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: C.white, letterSpacing: '0.01em' }}>{p.name}</span>
-                <span style={{ fontSize: 10, color: C.muted2, marginTop: 2 }}>{p.sub}</span>
+      <section style={{ ...s.section, background: C.bg }}>
+        <div style={{ ...s.wrap }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <span style={s.label}>The Threat</span>
+            <h2 style={s.h2}>Email phishing costs Africa <span style={{ color: C.danger }}>billions</span> every year</h2>
+            <p style={{ ...s.lead, margin: '0 auto' }}>Attacks are sophisticated, fast-moving, and specifically designed to fool people without security training.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
+            {STATS.map((item) => (
+              <div key={item.stat} style={{ ...s.card, textAlign: 'center' }}>
+                <div style={{
+                  fontSize: 40, fontWeight: 800, marginBottom: 10,
+                  background: `linear-gradient(135deg, ${C.accent2} 0%, ${C.accent} 100%)`,
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                }}>{item.stat}</div>
+                <p style={{ fontSize: 14, color: C.body }}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -769,201 +433,73 @@ export default function Home() {
       <div style={s.divider} />
 
       {/* ── FEATURES ── */}
-      <section id="features" style={s.section}>
-        <div style={{ textAlign: 'center', marginBottom: 64 }}>
-          <span style={s.label}>Protection layers</span>
-          <h2 style={s.h2}>5 layers of analysis<br />on every email</h2>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {FEATURES.map((f, i) => (
-            <div key={f.title} style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1px 1fr',
-              alignItems: 'center',
-              gap: 0,
-              padding: '32px 0',
-              borderTop: i === 0 ? '1px solid rgba(57,182,255,0.1)' : undefined,
-              borderBottom: '1px solid rgba(57,182,255,0.1)',
-              background: i % 2 === 0 ? 'transparent' : 'rgba(57,182,255,0.02)',
-            }}>
-              {/* Left — icon + title */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 20, paddingRight: 48 }}>
+      <section id="features" style={{ ...s.section, background: '#fff' }}>
+        <div style={{ ...s.wrap }}>
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <span style={s.label}>Protection layers</span>
+            <h2 style={s.h2}>6 layers of analysis on every email</h2>
+            <p style={{ ...s.lead, margin: '0 auto' }}>Each scan runs in parallel — you get every layer of intelligence in a single 8-second result.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+            {FEATURES.map((f) => (
+              <div key={f.title} style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{
                   width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                  background: 'rgba(57,182,255,0.08)',
-                  border: '1px solid rgba(57,182,255,0.18)',
+                  background: `${f.color}14`,
+                  border: `1px solid ${f.color}30`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   {f.icon}
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: C.cyan, marginBottom: 4, textTransform: 'uppercase' }}>
-                    Layer {i + 1}
-                  </div>
-                  <h3 style={{ ...s.h3, marginBottom: 0, fontSize: 17 }}>{f.title}</h3>
+                  <h3 style={s.h3}>{f.title}</h3>
+                  <p style={{ ...s.body, fontSize: 14 }}>{f.desc}</p>
                 </div>
               </div>
-
-              {/* Divider line */}
-              <div style={{ width: 1, height: 48, background: 'rgba(57,182,255,0.12)', margin: '0 auto' }} />
-
-              {/* Right — description */}
-              <div style={{ paddingLeft: 48 }}>
-                <p style={{ ...s.body, fontSize: 15, lineHeight: 1.7, margin: 0 }}>{f.desc}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 40 }}>
+            <a href="/features" style={{ ...s.btnOutline }}>
+              Explore All Features
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </a>
+          </div>
         </div>
       </section>
 
       <div style={s.divider} />
 
       {/* ── HOW IT WORKS ── */}
-      <section id="how-it-works" style={s.section}>
-        <div style={{ textAlign: 'center', marginBottom: 60 }}>
-          <span style={s.label}>How it works</span>
-          <h2 style={s.h2}>3 steps. 8 seconds.<br />Full verdict.</h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 40 }}>
-          {STEPS.map((step, i) => (
-            <div key={step.n} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <section id="how-it-works" style={{ ...s.section, background: C.bg }}>
+        <div style={{ ...s.wrap }}>
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <span style={s.label}>How it works</span>
+            <h2 style={s.h2}>3 steps. 8 seconds. Full verdict.</h2>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32 }}>
+            {STEPS.map((step, i) => (
+              <div key={step.n} style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
                 <div style={{
-                  width: 52, height: 52, borderRadius: 14,
-                  background: 'rgba(57,182,255,0.08)',
-                  border: '1px solid rgba(57,182,255,0.2)',
+                  width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+                  background: `linear-gradient(135deg, ${C.accent2} 0%, ${C.accent} 100%)`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, fontWeight: 800, color: C.cyan,
-                  flexShrink: 0,
+                  fontSize: 18, fontWeight: 800, color: '#fff',
+                  boxShadow: `0 4px 20px rgba(57,182,255,0.3)`,
                 }}>
                   {step.n}
                 </div>
-                {i < STEPS.length - 1 && (
-                  <div style={{ flex: 1, height: 1, background: 'rgba(57,182,255,0.15)' }} />
-                )}
-              </div>
-              <div>
-                <h3 style={{ ...s.h3, fontSize: 18, marginBottom: 10 }}>{step.title}</h3>
-                <p style={s.body}>{step.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div style={s.divider} />
-
-      {/* ── EARLY ACCESS ── */}
-      <section id="early-access" style={{ padding: '96px 24px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at center, rgba(57,182,255,0.07) 0%, transparent 60%)',
-        }} />
-        <GridBg />
-        <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-          <span style={s.label}>Limited Beta — 100 Spots</span>
-          <h2 style={{ ...s.h2, marginBottom: 16 }}>
-            Get 30 Days of Pro Access,{' '}
-            <span style={{
-              background: 'linear-gradient(135deg, #6DD5FA 0%, #39B6FF 100%)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>Free</span>
-          </h2>
-          <p style={{ ...s.lead, margin: '0 auto 48px', fontSize: 16 }}>
-            We&apos;re giving 100 users full Pro access for 30 days — no credit card, no commitment.
-            Fill out the form below and we&apos;ll email your personal promo code within minutes.
-          </p>
-
-          {/* Early access form */}
-          <div style={{ ...s.cardGlow, textAlign: 'left', maxWidth: 520, margin: '0 auto' }}>
-            <div style={{ position: 'absolute', top: -1, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #39B6FF, transparent)', borderRadius: '20px 20px 0 0' }} />
-
-            <h3 style={{ ...s.h3, fontSize: 16, marginBottom: 4 }}>Request your promo code</h3>
-            <p style={{ fontSize: 13, color: C.muted, marginBottom: 24 }}>We&apos;ll email your code. It&apos;s valid for 30 days.</p>
-
-            <form action="/api/promo/request" method="POST" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 6, letterSpacing: '0.04em' }}>
-                  FULL NAME
-                </label>
-                <input
-                  type="text" name="name" required
-                  placeholder="Tony Adebayo"
-                  style={{
-                    width: '100%', padding: '11px 14px',
-                    background: 'rgba(57,182,255,0.05)',
-                    border: '1px solid rgba(57,182,255,0.2)',
-                    borderRadius: 10, color: C.white,
-                    fontSize: 14, fontFamily: 'Sora, Inter, sans-serif',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 6, letterSpacing: '0.04em' }}>
-                  EMAIL ADDRESS
-                </label>
-                <input
-                  type="email" name="email" required
-                  placeholder="tony@example.com"
-                  style={{
-                    width: '100%', padding: '11px 14px',
-                    background: 'rgba(57,182,255,0.05)',
-                    border: '1px solid rgba(57,182,255,0.2)',
-                    borderRadius: 10, color: C.white,
-                    fontSize: 14, fontFamily: 'Sora, Inter, sans-serif',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: 'block', marginBottom: 6, letterSpacing: '0.04em' }}>
-                  COUNTRY
-                </label>
-                <select
-                  name="country" required
-                  style={{
-                    width: '100%', padding: '11px 14px',
-                    background: 'rgba(7,28,44,0.9)',
-                    border: '1px solid rgba(57,182,255,0.2)',
-                    borderRadius: 10, color: C.white,
-                    fontSize: 14, fontFamily: 'Sora, Inter, sans-serif',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="">Select your country</option>
-                  {COUNTRIES.map(c => (
-                    <option key={c.code} value={c.code}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                style={{ ...s.btnPrimary, justifyContent: 'center', width: '100%', marginTop: 4 }}
-              >
-                Send My Promo Code
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-            </form>
-
-            <p style={{ fontSize: 12, color: C.muted2, textAlign: 'center', marginTop: 16 }}>
-              No spam. No credit card. Your code arrives within 5 minutes.
-            </p>
-          </div>
-
-          {/* Spots counter */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginTop: 36, flexWrap: 'wrap' }}>
-            {[
-              { val: '100', label: 'Total Pro Spots' },
-              { val: '30', label: 'Days Free Access' },
-              { val: '5/day', label: 'Free Tier Always' },
-            ].map((item) => (
-              <div key={item.label} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: C.cyan }}>{item.val}</div>
-                <div style={{ fontSize: 12, color: C.muted2, marginTop: 2 }}>{item.label}</div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ ...s.h3, fontSize: 16 }}>{step.title}</h3>
+                  <p style={{ ...s.body, fontSize: 14 }}>{step.desc}</p>
+                </div>
               </div>
             ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 48 }}>
+            <a href="/how-it-works" style={{ ...s.btnOutline }}>
+              Full Walkthrough
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </a>
           </div>
         </div>
       </section>
@@ -971,103 +507,30 @@ export default function Home() {
       <div style={s.divider} />
 
       {/* ── PRIVACY ── */}
-      <section style={s.sectionSm}>
-        <div style={{ ...s.cardGlow, maxWidth: 760, margin: '0 auto', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: -1, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #1ED760, transparent)', borderRadius: '20px 20px 0 0' }} />
-          <span style={{ ...s.label, color: C.success }}>Privacy First</span>
-          <h2 style={{ ...s.h2, fontSize: 30, marginBottom: 28 }}>Your email content stays private. Always.</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            {PRIVACY_YES.map((text) => (
-              <div key={text} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <CheckIcon />
-                <span style={{ fontSize: 14, color: '#a8e6bc' }}>{text}</span>
-              </div>
-            ))}
-            {PRIVACY_NO.map((text) => (
-              <div key={text} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <XIcon />
-                <span style={{ fontSize: 14, color: '#ffb3b3' }}>{text}</span>
-              </div>
-            ))}
-          </div>
-          <a href="/privacy" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 24, fontSize: 13, color: C.success, fontWeight: 600 }}>
-            Read our full Privacy Policy
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#1ED760" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </a>
-        </div>
-      </section>
-
-      <div style={s.divider} />
-
-      {/* ── PRICING ── */}
-      <section id="pricing" style={s.section}>
-        <div style={{ textAlign: 'center', marginBottom: 60 }}>
-          <span style={s.label}>Pricing</span>
-          <h2 style={s.h2}>Start free, unlock more<br />with a promo code</h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, maxWidth: 760, margin: '0 auto' }}>
-
-          {/* Free */}
-          <div style={s.card}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.muted, marginBottom: 10 }}>Free Forever</div>
-            <div style={{ fontSize: 52, fontWeight: 800, color: C.white, marginBottom: 6, lineHeight: 1 }}>$0</div>
-            <div style={{ fontSize: 13, color: C.muted2, marginBottom: 32 }}>Always free · No card needed</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 32 }}>
-              {[
-                '5 email analyses per day',
-                'Full Mercury-2 AI analysis',
-                'All 5 security modules',
-                'VirusTotal + Safe Browsing + PhishTank',
-                'Local history (last 20)',
-              ].map((f) => (
-                <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <CheckIcon color={C.cyan} />
-                  <span style={{ fontSize: 14, color: C.muted }}>{f}</span>
+      <section style={{ ...s.section, background: '#fff' }}>
+        <div style={{ ...s.wrap }}>
+          <div style={{ ...s.card, maxWidth: 800, margin: '0 auto', borderTop: `3px solid ${C.success}`, position: 'relative' as const }}>
+            <span style={{ ...s.label, color: C.success }}>Privacy First</span>
+            <h2 style={{ ...s.h2, fontSize: 28, marginBottom: 28 }}>Your email content stays private. Always.</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {['Email body discarded immediately after analysis', 'Zero email content stored — ever', 'NDPR 2023 & GDPR compliant', 'Supabase EU infrastructure'].map((text) => (
+                <div key={text} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <Check color={C.success} />
+                  <span style={{ fontSize: 14, color: C.body }}>{text}</span>
+                </div>
+              ))}
+              {['Your contacts or address book', 'Your Gmail password or OAuth token', 'Browsing history outside Gmail', 'Email content in any database'].map((text) => (
+                <div key={text} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+                    <circle cx="12" cy="12" r="10" fill={C.danger} fillOpacity="0.1"/>
+                    <path d="M15 9L9 15M9 9L15 15" stroke={C.danger} strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <span style={{ fontSize: 14, color: C.body }}>{text}</span>
                 </div>
               ))}
             </div>
-            <a
-              href="#early-access"
-              style={{ ...s.btnOutline, justifyContent: 'center', width: '100%', textAlign: 'center' as const }}
-            >
-              Get Early Access
-            </a>
-          </div>
-
-          {/* Pro */}
-          <div style={{ ...s.cardGlow, position: 'relative' as const }}>
-            <div style={{ position: 'absolute', top: -1, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, #39B6FF, transparent)', borderRadius: '20px 20px 0 0' }} />
-            <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #39B6FF, #1F8DFF)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 14px', borderRadius: 999, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
-              EARLY ACCESS — LIMITED SPOTS
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.cyan, marginBottom: 10 }}>Pro · Beta</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-              <span style={{ fontSize: 52, fontWeight: 800, color: C.white, lineHeight: 1 }}>Free</span>
-            </div>
-            <div style={{ fontSize: 13, color: C.muted2, marginBottom: 8 }}>30 days with promo code</div>
-            <div style={{ fontSize: 12, color: C.cyan, marginBottom: 28, background: 'rgba(57,182,255,0.08)', padding: '6px 12px', borderRadius: 8, display: 'inline-block' }}>
-              $4.99/mo after launch · ₦7,500/mo (Paystack)
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 32 }}>
-              {[
-                'Unlimited email analyses',
-                'Full Mercury-2 AI analysis',
-                'All 5 security modules',
-                'VirusTotal + Safe Browsing + PhishTank + URLhaus',
-                'Priority analysis queue',
-                'Extended history (30 entries)',
-              ].map((f) => (
-                <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <CheckIcon color={C.cyan} />
-                  <span style={{ fontSize: 14, color: C.muted }}>{f}</span>
-                </div>
-              ))}
-            </div>
-            <a
-              href="#early-access"
-              style={{ ...s.btnPrimary, justifyContent: 'center', width: '100%', textAlign: 'center' as const }}
-            >
-              Get Your Promo Code
+            <a href="/privacy" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 24, fontSize: 13, color: C.success, fontWeight: 600 }}>
+              Read our full Privacy Policy →
             </a>
           </div>
         </div>
@@ -1075,38 +538,153 @@ export default function Home() {
 
       <div style={s.divider} />
 
-      {/* ── SOCIAL PROOF ── */}
-      <section style={{ padding: '80px 24px', position: 'relative' }}>
+      {/* ── EARLY ACCESS / PROMO ── */}
+      <section id="early-access" style={{
+        padding: '96px 24px',
+        background: `linear-gradient(135deg, ${C.bgHero} 0%, #fff 100%)`,
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: `linear-gradient(rgba(57,182,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(57,182,255,0.04) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+        }} />
+        <div style={{ ...s.wrap, maxWidth: 600, textAlign: 'center', position: 'relative' as const }}>
+          <span style={s.label}>Limited Beta — 100 Spots</span>
+          <h2 style={s.h2}>
+            Get 30 Days of Pro Access,{' '}
+            <span style={{ background: `linear-gradient(135deg, ${C.accent2}, ${C.accent})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Free
+            </span>
+          </h2>
+          <p style={{ ...s.lead, margin: '0 auto 48px', fontSize: 16 }}>
+            We're giving 100 users full Pro access for 30 days — no credit card, no commitment. Fill out the form and we'll email your personal promo code within minutes.
+          </p>
+
+          <div style={{ ...s.cardGlass, textAlign: 'left' as const, maxWidth: 480, margin: '0 auto' }}>
+            <h3 style={{ ...s.h3, fontSize: 16, marginBottom: 4 }}>Request your promo code</h3>
+            <p style={{ fontSize: 13, color: C.muted, marginBottom: 24 }}>We'll email your code. Valid for 30 days.</p>
+            <form action="/api/promo/request" method="POST" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {[
+                { name: 'name', type: 'text', label: 'FULL NAME', placeholder: 'Tony Adebayo' },
+                { name: 'email', type: 'email', label: 'EMAIL ADDRESS', placeholder: 'tony@example.com' },
+              ].map((field) => (
+                <div key={field.name}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: 'block', marginBottom: 6, letterSpacing: '0.06em' }}>
+                    {field.label}
+                  </label>
+                  <input
+                    type={field.type} name={field.name} required placeholder={field.placeholder}
+                    style={{
+                      width: '100%', padding: '11px 14px',
+                      background: C.bg, border: `1px solid ${C.border}`,
+                      borderRadius: 10, color: C.text, fontSize: 14,
+                      fontFamily: 'Sora, sans-serif', outline: 'none',
+                    }}
+                  />
+                </div>
+              ))}
+              <button type="submit" style={{ ...s.btnPrimary, justifyContent: 'center', width: '100%', marginTop: 4 }}>
+                Send My Promo Code
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </form>
+            <p style={{ fontSize: 11, color: C.muted, textAlign: 'center', marginTop: 14 }}>No spam. No credit card. Code arrives within 5 minutes.</p>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 40, marginTop: 36, flexWrap: 'wrap' }}>
+            {[{ val: '100', label: 'Pro Spots' }, { val: '30', label: 'Days Free' }, { val: '5/day', label: 'Free Forever' }].map((item) => (
+              <div key={item.label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 26, fontWeight: 800, color: C.accent2 }}>{item.val}</div>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div style={s.divider} />
+
+      {/* ── PRICING TEASER ── */}
+      <section id="pricing" style={{ ...s.section, background: '#fff' }}>
+        <div style={{ ...s.wrap }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <span style={s.label}>Pricing</span>
+            <h2 style={s.h2}>Start free, always</h2>
+            <p style={{ ...s.lead, margin: '0 auto' }}>5 analyses per day, free forever. Upgrade to Pro for unlimited access.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, maxWidth: 760, margin: '0 auto' }}>
+            {/* Free */}
+            <div style={s.card}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.muted, marginBottom: 10 }}>Free Forever</div>
+              <div style={{ fontSize: 52, fontWeight: 800, color: C.text, marginBottom: 6, lineHeight: 1 }}>$0</div>
+              <div style={{ fontSize: 13, color: C.muted, marginBottom: 28 }}>Always free · No card needed</div>
+              {['5 email analyses per day', 'Full Mercury-2 AI analysis', 'All 6 security modules', 'VirusTotal + Safe Browsing + PhishTank', 'Local history (last 20)'].map((f) => (
+                <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12 }}>
+                  <Check color={C.accent} />
+                  <span style={{ fontSize: 14, color: C.body }}>{f}</span>
+                </div>
+              ))}
+              <a href="#early-access" style={{ ...s.btnOutline, justifyContent: 'center', width: '100%', marginTop: 8, textAlign: 'center' as const }}>
+                Get Started Free
+              </a>
+            </div>
+
+            {/* Pro */}
+            <div style={{ ...s.cardGlass, position: 'relative' as const, borderTop: `3px solid ${C.accent}` }}>
+              <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: `linear-gradient(135deg, ${C.accent2}, ${C.accent})`, color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 14px', borderRadius: 999, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
+                EARLY ACCESS — LIMITED SPOTS
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.accent2, marginBottom: 10 }}>Pro · Beta</div>
+              <div style={{ fontSize: 52, fontWeight: 800, color: C.text, marginBottom: 6, lineHeight: 1 }}>Free</div>
+              <div style={{ fontSize: 13, color: C.muted, marginBottom: 8 }}>30 days with promo code</div>
+              <div style={{ fontSize: 12, color: C.accent2, marginBottom: 24, background: 'rgba(57,182,255,0.08)', padding: '5px 12px', borderRadius: 8, display: 'inline-block' }}>
+                $4.99/mo after launch
+              </div>
+              {['Unlimited email analyses', 'Full Mercury-2 AI analysis', 'All 6 security modules', 'Priority analysis queue', 'Extended history (30 entries)'].map((f) => (
+                <div key={f} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12 }}>
+                  <Check color={C.accent} />
+                  <span style={{ fontSize: 14, color: C.body }}>{f}</span>
+                </div>
+              ))}
+              <a href="#early-access" style={{ ...s.btnPrimary, justifyContent: 'center', width: '100%', marginTop: 8, textAlign: 'center' as const }}>
+                Get Your Promo Code
+              </a>
+            </div>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 32 }}>
+            <a href="/pricing" style={{ fontSize: 14, color: C.accent2, fontWeight: 600 }}>View full pricing & feature comparison →</a>
+          </div>
+        </div>
+      </section>
+
+      <div style={s.divider} />
+
+      {/* ── TESTIMONIALS ── */}
+      <section style={{ ...s.section, background: C.bg }}>
         <div style={{ ...s.wrap }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <span style={s.label}>Why it matters</span>
-            <h2 style={{ ...s.h2, fontSize: 'clamp(22px,3vw,36px)' }}>
-              Built for the threats targeting<br />
-              <span style={{ background: 'linear-gradient(135deg, #6DD5FA 0%, #39B6FF 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                your inbox right now
-              </span>
-            </h2>
+            <h2 style={s.h2}>Built for the threats targeting <span style={{ color: C.accent2 }}>your inbox right now</span></h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
             {[
-              { quote: '"I almost clicked a link pretending to be my bank. GuardScope flagged it as CRITICAL in 6 seconds — the domain was registered 2 days prior."', name: 'Early Beta User', country: '🇳🇬 Nigeria' },
-              { quote: '"The AI doesn\'t just say \'suspicious\' — it explains exactly what\'s wrong. SPF failed, domain lookalike, urgency manipulation. That context is everything."', name: 'Early Beta User', country: '🇬🇧 United Kingdom' },
-              { quote: '"Our team receives dozens of BEC attempts per week. Knowing GuardScope is running on every email my staff opens changes the risk calculus completely."', name: 'Early Beta User', country: '🇰🇪 Kenya' },
+              { quote: '"I almost clicked a link pretending to be my bank. GuardScope flagged it CRITICAL in 6 seconds — the domain was registered 2 days prior."', name: 'Early Beta User', flag: '🇳🇬', country: 'Nigeria' },
+              { quote: '"The AI doesn\'t just say suspicious — it explains exactly what\'s wrong. SPF failed, domain lookalike, urgency manipulation. That context is everything."', name: 'Early Beta User', flag: '🇬🇧', country: 'United Kingdom' },
+              { quote: '"Our team receives dozens of BEC attempts per week. GuardScope running on every email my staff opens completely changes our risk posture."', name: 'Early Beta User', flag: '🇰🇪', country: 'Kenya' },
             ].map((t, i) => (
-              <div key={i} style={{ ...s.cardGlow, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div key={i} style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <div style={{ display: 'flex', gap: 2 }}>
                   {[...Array(5)].map((_, s) => (
-                    <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill="#FFB020"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+                    <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill={C.warning}><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
                   ))}
                 </div>
-                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.75, fontStyle: 'italic', flex: 1 }}>{t.quote}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 12, borderTop: '1px solid rgba(57,182,255,0.08)' }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(57,182,255,0.12)', border: '1px solid rgba(57,182,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
-                    {t.country.split(' ')[0]}
-                  </div>
+                <p style={{ fontSize: 14, color: C.body, lineHeight: 1.75, fontStyle: 'italic', flex: 1 }}>{t.quote}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: C.bg, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>{t.flag}</div>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: C.white }}>{t.name}</div>
-                    <div style={{ fontSize: 11, color: C.muted2 }}>{t.country.split(' ').slice(1).join(' ')}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{t.name}</div>
+                    <div style={{ fontSize: 11, color: C.muted }}>{t.country}</div>
                   </div>
                 </div>
               </div>
@@ -1118,127 +696,70 @@ export default function Home() {
       <div style={s.divider} />
 
       {/* ── FAQ ── */}
-      <section id="faq" style={s.section}>
-        <div style={{ textAlign: 'center', marginBottom: 60 }}>
-          <span style={s.label}>FAQ</span>
-          <h2 style={s.h2}>Common questions</h2>
-        </div>
-        <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {FAQS.map((faq, i) => (
-            <div key={faq.q} style={{
-              borderBottom: i < FAQS.length - 1 ? '1px solid rgba(57,182,255,0.08)' : undefined,
-              padding: '28px 0',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 600, color: C.white, marginBottom: 12, lineHeight: 1.4 }}>{faq.q}</h3>
-                  <p style={{ ...s.body, fontSize: 14, margin: 0 }}>{faq.a}</p>
-                </div>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                  background: 'rgba(57,182,255,0.08)',
-                  border: '1px solid rgba(57,182,255,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginTop: 2,
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#39B6FF" strokeWidth="2.5" strokeLinecap="round"/></svg>
+      <section id="faq" style={{ ...s.section, background: '#fff' }}>
+        <div style={{ ...s.wrap }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <span style={s.label}>FAQ</span>
+            <h2 style={s.h2}>Common questions</h2>
+          </div>
+          <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {FAQS.map((faq, i) => (
+              <div key={faq.q} style={{
+                borderBottom: `1px solid ${C.border}`,
+                padding: '28px 0',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24 }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: C.text, marginBottom: 10, lineHeight: 1.4 }}>{faq.q}</h3>
+                    <p style={{ ...s.body, fontSize: 14, margin: 0 }}>{faq.a}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 36 }}>
+            <a href="/features#faq" style={{ fontSize: 14, color: C.accent2, fontWeight: 600 }}>See more questions →</a>
+          </div>
         </div>
       </section>
 
-      <div style={s.divider} />
-
-      {/* ── CTA ── */}
-      <section style={{ padding: '100px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <GridBg />
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at center, rgba(57,182,255,0.1) 0%, transparent 60%)',
-        }} />
-        <div style={{ position: 'relative', maxWidth: 600, margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-            <GuardScopeLogo size={56} showText={false} />
-          </div>
-          <h2 style={{ ...s.h2, marginBottom: 18 }}>
+      {/* ── FINAL CTA ── */}
+      <section style={{
+        padding: '100px 24px',
+        background: `linear-gradient(135deg, ${C.primary} 0%, ${C.accent2} 100%)`,
+        textAlign: 'center',
+      }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <h2 style={{ ...s.h2, color: '#fff', marginBottom: 18, fontSize: 'clamp(28px,4vw,46px)' as any }}>
             Inspect before you trust.
           </h2>
-          <p style={{ ...s.lead, margin: '0 auto 36px', fontSize: 17 }}>
+          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.75)', lineHeight: 1.75, marginBottom: 40 }}>
             Install GuardScope free today. No account required to get started.
           </p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="#early-access" style={{ ...s.btnPrimary, fontSize: 16, padding: '15px 32px' }}>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a href="#early-access" style={{
+              ...s.btnPrimary,
+              background: '#fff',
+              color: C.primary,
+              fontSize: 16, padding: '15px 32px',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+            }}>
               Claim Early Access
             </a>
-            <a
-              href="/signup"
-              style={{ ...s.btnOutline, fontSize: 16, padding: '15px 32px' }}
-            >
+            <a href="/signup" style={{
+              ...s.btnOutline,
+              background: 'transparent',
+              color: '#fff',
+              border: '1.5px solid rgba(255,255,255,0.4)',
+              fontSize: 16, padding: '15px 32px',
+            }}>
               Sign In
             </a>
           </div>
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer style={{ borderTop: '1px solid rgba(57,182,255,0.1)', padding: '60px 24px 32px', background: 'rgba(5,18,28,0.6)' }}>
-        <div style={{ ...s.wrap }}>
-          {/* Top row — 3 columns */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 48, marginBottom: 48 }}>
-
-            {/* Col 1 — Brand */}
-            <div>
-              <GuardScopeLogo size={30} textSize={16} />
-              <p style={{ fontSize: 13, color: C.muted2, lineHeight: 1.7, marginTop: 16, maxWidth: 220 }}>
-                AI-powered phishing detection inside Gmail. Built for the global threat landscape.
-              </p>
-              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                {/* Shield badge */}
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  padding: '5px 12px', borderRadius: 999,
-                  background: 'rgba(30,215,96,0.08)',
-                  border: '1px solid rgba(30,215,96,0.2)',
-                }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" fill="#1ED760" fillOpacity="0.3" stroke="#1ED760" strokeWidth="1.5"/></svg>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#1ED760', letterSpacing: '0.04em' }}>NDPR & GDPR Compliant</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Col 2 — Product links */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: C.muted2, textTransform: 'uppercase', marginBottom: 20 }}>Product</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <a href="#features" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Features</a>
-                <a href="#how-it-works" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>How it works</a>
-                <a href="#pricing" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Pricing</a>
-                <a href="#early-access" style={{ fontSize: 13, color: C.cyan, fontWeight: 600, textDecoration: 'none' }}>Early Access →</a>
-                <a href="#faq" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>FAQ</a>
-              </div>
-            </div>
-
-            {/* Col 3 — Legal + contact */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: C.muted2, textTransform: 'uppercase', marginBottom: 20 }}>Legal & Support</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <a href="/privacy" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Privacy Policy</a>
-                <a href="/terms" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Terms of Service</a>
-                <a href="mailto:support@guardscope.app" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>support@guardscope.app</a>
-                <a href="/signup" style={{ fontSize: 13, color: C.muted, textDecoration: 'none' }}>Sign In / Sign Up</a>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom row */}
-          <div style={{ borderTop: '1px solid rgba(57,182,255,0.07)', paddingTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-            <p style={{ fontSize: 12, color: C.muted2 }}>© 2026 GuardScope. All rights reserved.</p>
-            <p style={{ fontSize: 12, color: C.muted2, fontStyle: 'italic' }}>Inspect before you trust.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   )
 }
