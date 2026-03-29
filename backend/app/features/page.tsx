@@ -48,7 +48,7 @@ const LAYERS = [
   },
   {
     num: '04', color: '#F59E0B', title: 'Domain Age & Registrar Intel',
-    desc: 'Attackers register lookalike domains days or hours before a campaign. RDAP protocol lookup reveals registration date, registrar, and risk classification — catching brand-new threat infrastructure that reputation databases haven't catalogued yet.',
+    desc: "Attackers register lookalike domains days or hours before a campaign. RDAP protocol lookup reveals registration date, registrar, and risk classification — catching brand-new threat infrastructure that reputation databases haven't catalogued yet.",
     bullets: ['RDAP protocol — no API key needed', 'Domain age in days/hours', 'Registrar risk classification', 'Instant flag for domains < 30 days old'],
     icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#F59E0B" strokeWidth="1.8"/><path d="M3 9h18M8 2v4M16 2v4" stroke="#F59E0B" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="15" r="2" fill="#F59E0B" fillOpacity="0.5"/></svg>,
   },
