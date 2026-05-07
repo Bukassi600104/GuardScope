@@ -169,7 +169,11 @@ window.addEventListener('popstate', () => {
 })
 
 // ── DOM observer (fallback for Gmail actions that don't change the URL) ───────
-const observer = new MutationObserver(syncEmail)
+let observerDebounce: ReturnType<typeof setTimeout> | null = null
+const observer = new MutationObserver(() => {
+  if (observerDebounce) clearTimeout(observerDebounce)
+  observerDebounce = setTimeout(syncEmail, 500)
+})
 
 function startObserver(): void {
   if (observerStarted) { syncEmail(); return }  // already observing — just re-sync
