@@ -16,8 +16,8 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.en
 // Without it, decodeJwt() cannot verify signatures and falls back to decode-only,
 // allowing forged JWTs to bypass quota enforcement.
 if (!process.env.SUPABASE_JWT_SECRET && process.env.NODE_ENV === 'production') {
-  // Non-throwing warning — we still function, but this MUST be fixed in production
-  console.error('[SECURITY] SUPABASE_JWT_SECRET is not set. JWT signatures are NOT verified. Set this env var immediately.')
+  console.error('[SECURITY] SUPABASE_JWT_SECRET is not set. JWT signatures are NOT verified. Halting application.')
+  throw new Error('SUPABASE_JWT_SECRET must be set in production.')
 }
 
 const FREE_LIMIT = 5
@@ -63,6 +63,9 @@ export async function decodeJwt(token: string): Promise<{ sub?: string; email?: 
         .update(signingInput)
         .digest('base64url')
       if (expected !== parts[2]) return null // signature mismatch — reject
+    } else if (process.env.NODE_ENV === 'production') {
+      // In production, we MUST verify the signature. If jwtSecret is missing, reject.
+      return null;
     }
 
     return payload
