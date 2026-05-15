@@ -1,237 +1,175 @@
+import type { Metadata } from 'next'
 import { GuardScopeLogo } from '../components/GuardScopeLogo'
+import { PRIVACY_EMAIL, QUOTAS, SUPPORT_EMAIL } from '../../lib/launch'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'GuardScope Privacy Policy — what we collect, what we never store, and your rights under NDPR and GDPR.',
+  description: 'GuardScope Privacy Policy: user-triggered Gmail analysis, no email storage, subprocessors, retention, and user rights.',
   alternates: { canonical: '/privacy' },
   openGraph: { url: '/privacy', type: 'website' },
 }
 
+const EFFECTIVE_DATE = 'May 15, 2026'
+
 const C = {
-  navy:    '#071C2C',
-  cyan:    '#39B6FF',
-  white:   '#E7EEF4',
-  muted:   '#8ba3b8',
-  muted2:  '#4a6478',
+  navy: '#071C2C',
+  cyan: '#39B6FF',
+  white: '#E7EEF4',
+  muted: '#9bb0c2',
+  muted2: '#6f879b',
   success: '#1ED760',
-  border:  'rgba(57,182,255,0.12)',
+  border: 'rgba(57,182,255,0.14)',
 }
 
 const sections = [
   {
     title: '1. Overview',
-    body: `GuardScope is a Chrome extension that analyzes emails in Gmail for phishing and social engineering threats.
-We are committed to your privacy. This policy explains exactly what data we collect, what we do not collect,
-how we use data, and your rights.`,
+    body: `GuardScope is a Chrome extension and web service that helps Gmail users analyze suspicious emails for phishing and social-engineering signals. This policy explains what we process, what we do not store, why we use third-party services, and how you can contact us about your data.`,
   },
   {
-    title: '2. What We DO Collect',
+    title: '2. User-triggered email analysis',
+    body: `GuardScope analyzes an email only when you choose to run a scan. The extension reads the currently open Gmail message so the service can produce a risk report. We do not continuously monitor your inbox, read unrelated Gmail messages, or collect browsing history outside the extension's stated purpose.`,
+  },
+  {
+    title: '3. What we process to provide a scan',
     bullets: [
-      '<strong>Account data:</strong> Your email address and hashed password when you create an account (stored in Supabase Auth).',
-      '<strong>Usage counts:</strong> The number of analyses you run each month — not the content, just the count.',
-      '<strong>Account tier:</strong> Free, Pro, or Team.',
-      '<strong>Timestamps:</strong> When your account was created and when you last signed in.',
-      '<strong>Payment data:</strong> Handled entirely by Stripe or Paystack. We store only your subscription status — never card numbers.',
-      '<strong>Promo code leads:</strong> Name, email address, and country — collected when you request an early access promo code.',
+      '<strong>Email content for analysis:</strong> message body, subject, visible sender information, headers available to the extension, URLs, and attachment names may be transmitted to our backend for the scan you request.',
+      '<strong>Security signals:</strong> sender authentication, domain age, URL reputation, AI assessment, and threat-intelligence results.',
+      '<strong>Usage metadata:</strong> scan count, account tier, timestamps, and abuse-prevention signals needed for quota enforcement and service reliability.',
+      '<strong>Account data:</strong> email address and authentication data when you create an account, handled by Supabase Auth.',
+      '<strong>Payment and promo data:</strong> subscription status, promo-code status, and early-access form details needed to deliver codes and support billing.',
     ],
   },
   {
-    title: '3. What We Do NOT Collect or Store',
+    title: '4. What GuardScope does not store',
     highlight: true,
     bullets: [
-      '<strong>Email content:</strong> The body, subject, and headers of emails you analyze are NEVER stored. Discarded immediately after analysis.',
-      '<strong>Email addresses of your contacts</strong> (senders or recipients)',
-      '<strong>URLs extracted from emails</strong> — only checked against threat databases, never persisted',
-      '<strong>Browsing history</strong> or any data outside of Gmail',
-      '<strong>Gmail credentials</strong> — we use Gmail\'s own DOM (not your password or API tokens)',
-      '<strong>Attachment content</strong> — only filename and type are noted (never uploaded)',
+      '<strong>Email bodies, subjects, sender details, recipients, and headers</strong> are not stored in GuardScope databases.',
+      '<strong>Extracted URLs from email content</strong> are checked during analysis and are not persisted as email content.',
+      '<strong>Gmail passwords, OAuth tokens, address books, and contact lists</strong> are not collected by GuardScope.',
+      '<strong>Browsing history outside Gmail</strong> is not collected.',
+      '<strong>Full payment card numbers</strong> are never handled by GuardScope; payments are processed by Stripe or Paystack.',
     ],
   },
   {
-    title: '4. Third-Party Services',
-    preamble: 'To provide security analysis, we use the following third-party services. Each receives only the minimum data required:',
+    title: '5. Subprocessors and third-party services',
+    preamble: 'GuardScope uses third-party services only where needed to provide email threat analysis, authentication, hosting, payment, or support:',
     bullets: [
-      '<strong>InceptionLabs Mercury-2 AI:</strong> Receives sanitized email content for analysis. Does not retain data per our API agreement.',
-      '<strong>VirusTotal:</strong> Receives URLs (not email content) to check against malware databases.',
-      '<strong>Google Safe Browsing:</strong> Receives URLs to check against Google\'s threat database.',
-      '<strong>PhishTank / URLhaus (Abuse.ch):</strong> Receives URLs to check against phishing databases.',
-      '<strong>Cloudflare DNS:</strong> Receives sender domain for SPF/DKIM/DMARC lookup.',
-      '<strong>RDAP (rdap.org):</strong> Receives sender domain to check registration age.',
-      '<strong>Supabase:</strong> Hosts our database (account and usage data only). Located in the EU.',
-      '<strong>Stripe / Paystack:</strong> Process payments. We never see your full card number.',
-      '<strong>Vercel:</strong> Hosts our analysis API. Located in the US.',
+      '<strong>InceptionLabs Mercury-2:</strong> receives email text needed for AI-assisted threat analysis.',
+      '<strong>VirusTotal, Google Safe Browsing, PhishTank, URLhaus, and SpamHaus:</strong> receive URLs or domains needed for threat-intelligence checks.',
+      '<strong>Cloudflare DNS and RDAP providers:</strong> receive domains needed for sender authentication and domain-age checks.',
+      '<strong>Supabase:</strong> provides authentication and database services for accounts, quota, promo codes, and subscription state.',
+      '<strong>Stripe and Paystack:</strong> process payments and return billing status to GuardScope.',
+      '<strong>Vercel:</strong> hosts the website and backend API.',
+      '<strong>Resend:</strong> may send transactional email such as promo codes or account messages.',
     ],
   },
   {
-    title: '5. Data Retention',
+    title: '6. Retention',
     bullets: [
-      'Usage counts are retained for 13 months (to support monthly limit tracking).',
-      'Account data is retained until you delete your account.',
-      'Email analysis data is never retained — not even for 1 second after the analysis response is returned.',
-      'Promo code lead data (name, email, country) is retained for 90 days after the promo period ends.',
+      `Anonymous usage counters support the ${QUOTAS.anonymousDaily}-per-day quota and abuse prevention.`,
+      `Signed-in free-account usage counters support the ${QUOTAS.signedInFreeMonthly}-per-month quota and account operation.`,
+      'Account and subscription records are retained while your account is active and as needed for legal, tax, fraud-prevention, or dispute-resolution reasons.',
+      `Promo lead data is retained only as needed to deliver, support, and audit the ${QUOTAS.promoProDays}-day launch-code program.`,
+      'Email content submitted for analysis is not retained in GuardScope databases after the analysis response is produced.',
     ],
   },
   {
-    title: '6. Your Rights',
-    preamble: 'You have the right to:',
+    title: '7. Chrome Web Store Limited Use disclosure',
+    body: 'GuardScope uses information received from Chrome extension functionality and Google-related surfaces only to provide Gmail email threat analysis, quota enforcement, account operation, security, and user-requested support. GuardScope does not sell this data or use it for advertising. The use of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements.',
+  },
+  {
+    title: '8. Your choices and rights',
     bullets: [
-      '<strong>Access:</strong> Request a copy of your account data (email, tier, usage count).',
-      '<strong>Deletion:</strong> Delete your account at any time. All associated data is permanently deleted within 30 days.',
-      '<strong>Correction:</strong> Update your email address or account information.',
-      '<strong>Portability:</strong> Export your account data in JSON format on request.',
+      '<strong>Access:</strong> request a copy of account, quota, promo, or subscription records associated with your account.',
+      '<strong>Deletion:</strong> request account deletion and removal of associated account records, subject to legal and abuse-prevention retention obligations.',
+      '<strong>Correction:</strong> ask us to correct inaccurate account or promo records.',
+      '<strong>Opt out:</strong> uninstall the extension or stop using the service at any time.',
     ],
-    footer: 'To exercise these rights, email us at privacy@guardscope.app',
+    footer: `Email privacy requests to ${PRIVACY_EMAIL}.`,
   },
   {
-    title: '7. NDPR 2023 Compliance (Nigeria)',
-    body: `GuardScope complies with the Nigeria Data Protection Regulation (NDPR) 2023 and the Nigeria Data Protection Act.
-As a data controller, we process your personal data lawfully, fairly, and transparently.
-Nigerian users may lodge complaints with the Nigeria Data Protection Commission (NDPC) at ndpc.gov.ng.`,
+    title: '9. Regional privacy notes',
+    body: 'GuardScope is designed around data minimization and user-triggered processing. Users may have rights under privacy laws such as the Nigeria Data Protection Act and GDPR depending on location and circumstances. Nothing in this policy limits mandatory rights available under applicable law.',
   },
   {
-    title: '8. GDPR Compliance (EU/EEA)',
-    body: `For users in the European Union and EEA, our legal basis for processing is your explicit consent (given during onboarding)
-and the performance of our service contract. You may withdraw consent at any time by deleting your account.
-Our data processor (Supabase) is hosted in the EU and has signed a Data Processing Agreement.`,
+    title: '10. Cookies and analytics',
+    body: 'The Chrome extension does not use advertising cookies. The website may use essential session cookies for authentication and service operation. We do not use third-party advertising pixels on the launch website.',
   },
   {
-    title: '9. Cookies',
-    body: `The GuardScope Chrome extension does not use cookies. Our website may use minimal session cookies for authentication.
-We do not use third-party advertising cookies or tracking pixels.`,
-  },
-  {
-    title: '10. Children',
-    body: 'GuardScope is not directed to children under 13. We do not knowingly collect data from children.',
-  },
-  {
-    title: '11. Changes to This Policy',
-    body: 'We will notify you of material changes via email. Continued use of GuardScope after the effective date constitutes acceptance.',
+    title: '11. Children',
+    body: 'GuardScope is not directed to children under 13, and we do not knowingly collect data from children.',
   },
   {
     title: '12. Contact',
-    body: 'Privacy questions: privacy@guardscope.app\nGeneral support: support@guardscope.app',
+    body: `Privacy questions: ${PRIVACY_EMAIL}\nGeneral support: ${SUPPORT_EMAIL}`,
   },
 ]
 
 export default function PrivacyPage() {
   return (
     <div style={{ minHeight: '100vh', background: C.navy }}>
-
-      {/* Nav */}
       <nav style={{
         borderBottom: '1px solid rgba(57,182,255,0.1)',
         padding: '0 24px',
-        background: 'rgba(7,28,44,0.85)',
+        background: 'rgba(7,28,44,0.88)',
         backdropFilter: 'blur(20px)',
-        position: 'sticky', top: 0, zIndex: 100,
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
       }}>
         <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', height: 64 }}>
-          <a href="/">
-            <GuardScopeLogo size={30} textSize={16} />
-          </a>
-          <a href="/" style={{ marginLeft: 'auto', fontSize: 13, color: C.muted2, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="#4a6478" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            Back to home
-          </a>
+          <a href="/"><GuardScopeLogo size={30} textSize={16} /></a>
+          <a href="/" style={{ marginLeft: 'auto', fontSize: 13, color: C.muted2 }}>Back to home</a>
         </div>
       </nav>
 
-      {/* Header */}
-      <div style={{
-        padding: '64px 24px 48px',
-        borderBottom: '1px solid rgba(57,182,255,0.08)',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{
-          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-          width: 600, height: 300,
-          background: 'radial-gradient(ellipse at center, rgba(57,182,255,0.08) 0%, transparent 65%)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{ maxWidth: 760, margin: '0 auto', position: 'relative' }}>
-          <span style={{
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.14em',
-            textTransform: 'uppercase', color: C.cyan, display: 'block', marginBottom: 14,
-          }}>Legal · Privacy</span>
-          <h1 style={{ fontSize: 'clamp(32px,5vw,52px)', fontWeight: 800, color: C.white, marginBottom: 12, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+      <header style={{ padding: '64px 24px 48px', borderBottom: '1px solid rgba(57,182,255,0.08)' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <p style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.cyan, marginBottom: 12 }}>
+            Legal / Privacy
+          </p>
+          <h1 style={{ fontSize: 'clamp(32px,5vw,54px)', fontWeight: 800, color: C.white, marginBottom: 12, letterSpacing: '-0.02em', lineHeight: 1.08 }}>
             Privacy Policy
           </h1>
-          <p style={{ fontSize: 14, color: C.muted2 }}>
-            Effective date: March 7, 2026 · Last updated: March 7, 2026
-          </p>
+          <p style={{ fontSize: 14, color: C.muted2 }}>Effective: {EFFECTIVE_DATE} / Last updated: {EFFECTIVE_DATE}</p>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <main style={{ maxWidth: 760, margin: '0 auto', padding: '60px 24px 100px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+      <main style={{ maxWidth: 800, margin: '0 auto', padding: '58px 24px 100px' }}>
+        <div style={{ display: 'grid', gap: 18 }}>
           {sections.map((sec) => (
-            <div
+            <section
               key={sec.title}
               style={{
-                background: sec.highlight
-                  ? 'rgba(30,215,96,0.04)'
-                  : 'rgba(10,35,56,0.4)',
-                border: `1px solid ${sec.highlight ? 'rgba(30,215,96,0.15)' : 'rgba(57,182,255,0.1)'}`,
-                borderRadius: 16,
-                padding: '28px 32px',
+                background: sec.highlight ? 'rgba(30,215,96,0.05)' : 'rgba(10,35,56,0.42)',
+                border: `1px solid ${sec.highlight ? 'rgba(30,215,96,0.2)' : C.border}`,
+                borderRadius: 8,
+                padding: '26px 28px',
               }}
             >
-              <h2 style={{
-                fontSize: 17, fontWeight: 700, color: C.white,
-                marginBottom: 14, lineHeight: 1.3,
-              }}>
-                {sec.title}
-              </h2>
-
-              {sec.preamble && (
-                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.75, marginBottom: 14 }}>
-                  {sec.preamble}
-                </p>
-              )}
-
-              {sec.body && (
-                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, whiteSpace: 'pre-line' }}>
-                  {sec.body}
-                </p>
-              )}
-
+              <h2 style={{ fontSize: 17, fontWeight: 760, color: C.white, marginBottom: 12, lineHeight: 1.3 }}>{sec.title}</h2>
+              {sec.preamble && <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.75, marginBottom: 12 }}>{sec.preamble}</p>}
+              {sec.body && <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, whiteSpace: 'pre-line' }}>{sec.body}</p>}
               {sec.bullets && (
-                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {sec.bullets.map((b, i) => (
-                    <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                      <span style={{
-                        flexShrink: 0, marginTop: 5, width: 6, height: 6, borderRadius: '50%',
-                        background: sec.highlight ? '#1ED760' : C.cyan,
-                        display: 'inline-block',
-                      }} />
-                      <span
-                        style={{ fontSize: 14, color: sec.highlight ? '#a8e6bc' : C.muted, lineHeight: 1.7 }}
-                        dangerouslySetInnerHTML={{ __html: b }}
-                      />
+                <ul style={{ listStyle: 'none', display: 'grid', gap: 10 }}>
+                  {sec.bullets.map((bullet) => (
+                    <li key={bullet} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: sec.highlight ? C.success : C.cyan, marginTop: 8 }} />
+                      <span style={{ fontSize: 14, color: sec.highlight ? '#b5ecc7' : C.muted, lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: bullet }} />
                     </li>
                   ))}
                 </ul>
               )}
-
-              {sec.footer && (
-                <p style={{ fontSize: 13, color: C.cyan, marginTop: 16, fontWeight: 500 }}>
-                  {sec.footer}
-                </p>
-              )}
-            </div>
+              {sec.footer && <p style={{ fontSize: 13, color: C.cyan, marginTop: 16, fontWeight: 650 }}>{sec.footer}</p>}
+            </section>
           ))}
         </div>
 
-        {/* Footer */}
-        <div style={{
-          marginTop: 60, paddingTop: 28,
-          borderTop: '1px solid rgba(57,182,255,0.1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16,
-        }}>
+        <footer style={{ marginTop: 54, paddingTop: 26, borderTop: '1px solid rgba(57,182,255,0.1)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <GuardScopeLogo size={24} textSize={13} />
-          <p style={{ fontSize: 12, color: C.muted2 }}>© 2026 GuardScope. All rights reserved.</p>
-        </div>
+          <p style={{ fontSize: 12, color: C.muted2 }}>Copyright 2026 GuardScope. All rights reserved.</p>
+        </footer>
       </main>
     </div>
   )

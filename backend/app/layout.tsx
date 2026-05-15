@@ -1,19 +1,26 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
+import { QUOTAS, SUPPORT_EMAIL } from '../lib/launch'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://guardscope.app'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'GuardScope — AI Email Security for Gmail',
+    default: 'GuardScope - AI Email Security for Gmail',
     template: '%s | GuardScope',
   },
-  description: 'Stop phishing before it stops you. GuardScope analyzes every Gmail in seconds — SPF/DKIM/DMARC, VirusTotal, domain age, and Mercury-2 AI — all in a Chrome sidebar.',
+  description: 'GuardScope helps Gmail users inspect suspicious emails with AI-assisted phishing analysis, URL intelligence, sender checks, and privacy-first processing.',
   keywords: [
-    'phishing detection', 'email security', 'Gmail security', 'Chrome extension',
-    'AI email analysis', 'phishing protection', 'spam detection', 'email phishing',
-    'cybersecurity', 'Nigeria email scam', 'email fraud detection',
+    'phishing detection',
+    'email security',
+    'Gmail security',
+    'Chrome extension',
+    'AI email analysis',
+    'phishing protection',
+    'email fraud detection',
+    'cybersecurity',
   ],
   authors: [{ name: 'GuardScope', url: SITE_URL }],
   creator: 'GuardScope',
@@ -38,16 +45,16 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     siteName: 'GuardScope',
-    title: 'GuardScope — AI Email Security for Gmail',
-    description: 'Inspect before you trust. AI-powered phishing detection inside Gmail.',
+    title: 'GuardScope - AI Email Security for Gmail',
+    description: 'Inspect suspicious Gmail messages before you click.',
     url: '/',
     images: [
       {
-        url: '/logo.png',
+        url: '/og-image.svg',
         width: 1536,
         height: 1024,
-        alt: 'GuardScope — AI Email Security for Gmail',
-        type: 'image/png',
+        alt: 'GuardScope for Gmail - AI-assisted phishing analysis before you click',
+        type: 'image/svg+xml',
       },
     ],
   },
@@ -55,9 +62,9 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@guardscope',
     creator: '@guardscope',
-    title: 'GuardScope — AI Email Security for Gmail',
-    description: 'Inspect before you trust. AI-powered phishing detection inside Gmail.',
-    images: ['/logo.png'],
+    title: 'GuardScope - AI Email Security for Gmail',
+    description: 'Inspect suspicious Gmail messages before you click.',
+    images: ['/og-image.svg'],
   },
   alternates: {
     canonical: '/',
@@ -71,8 +78,8 @@ const organizationSchema = {
   name: 'GuardScope',
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
-  description: 'AI-powered email phishing detection for Gmail.',
-  email: 'support@guardscope.app',
+  description: 'AI-assisted email phishing analysis for Gmail.',
+  email: SUPPORT_EMAIL,
   foundingDate: '2026',
   sameAs: [],
 }
@@ -86,17 +93,16 @@ const softwareAppSchema = {
   operatingSystem: 'Chrome',
   browserRequirements: 'Requires Google Chrome',
   url: SITE_URL,
-  description: 'AI-powered phishing detection Chrome extension for Gmail. Analyzes sender authentication, domain age, URLs, and email content to detect phishing attacks in seconds.',
-  screenshot: `${SITE_URL}/logo.png`,
+  description: 'AI-assisted phishing analysis Chrome extension for Gmail. Analyzes sender authentication, domain age, URLs, and email content to help users inspect suspicious emails before they click.',
+  screenshot: `${SITE_URL}/og-image.svg`,
   featureList: [
-    'SPF, DKIM, DMARC authentication checks',
+    'SPF, DKIM, and DMARC checks',
     'VirusTotal URL scanning',
     'Google Safe Browsing integration',
-    'Mercury-2 AI deep analysis',
+    'Mercury-2 AI analysis',
     'Domain age and RDAP lookup',
     'PhishTank and URLhaus threat intelligence',
-    'Real-time phishing detection',
-    'French and English language support',
+    'Plain-English advisory risk reports',
   ],
   offers: [
     {
@@ -104,19 +110,19 @@ const softwareAppSchema = {
       name: 'Free Plan',
       price: '0',
       priceCurrency: 'USD',
-      description: '5 email analyses per day, forever free.',
+      description: `${QUOTAS.anonymousDaily} anonymous analyses per day per IP and ${QUOTAS.signedInFreeMonthly} signed-in free analyses per month.`,
     },
     {
       '@type': 'Offer',
-      name: 'Pro Plan',
-      price: '4.99',
+      name: 'Launch Promo',
+      price: '0',
       priceCurrency: 'USD',
-      description: 'Unlimited analyses, full AI + threat intel layers.',
+      description: `${QUOTAS.promoProDays} days of Pro access for eligible launch-code users.`,
     },
   ],
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>

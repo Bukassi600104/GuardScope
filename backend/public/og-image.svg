@@ -1,0 +1,26 @@
+<svg width="1536" height="1024" viewBox="0 0 1536 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1536" height="1024" fill="#F7FBFF"/>
+  <circle cx="196" cy="152" r="220" fill="#DDF3FF"/>
+  <circle cx="1326" cy="130" r="180" fill="#E5F8EC"/>
+  <rect x="128" y="126" width="1280" height="772" rx="32" fill="white" stroke="#C8D6E2" stroke-width="2"/>
+  <rect x="172" y="174" width="560" height="676" rx="20" fill="#F8FAFC" stroke="#C8D6E2" stroke-width="2"/>
+  <rect x="776" y="174" width="588" height="676" rx="20" fill="#061B2B"/>
+  <text x="220" y="266" fill="#061B2B" font-family="Arial, Helvetica, sans-serif" font-size="78" font-weight="800">GuardScope</text>
+  <text x="220" y="342" fill="#10273A" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700">AI Email Security for Gmail</text>
+  <text x="220" y="420" fill="#4F6275" font-family="Arial, Helvetica, sans-serif" font-size="30">Inspect suspicious messages before you click.</text>
+  <rect x="220" y="498" width="372" height="78" rx="16" fill="#061B2B"/>
+  <text x="262" y="548" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">Get early access</text>
+  <rect x="220" y="640" width="380" height="42" rx="12" fill="#EAF8EF"/>
+  <circle cx="248" cy="661" r="8" fill="#18A957"/>
+  <text x="272" y="671" fill="#166B39" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">No email bodies stored</text>
+  <rect x="838" y="236" width="210" height="210" rx="105" fill="#271D29" stroke="#D94444" stroke-width="14"/>
+  <text x="900" y="364" fill="#FF8A8A" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="800">82</text>
+  <text x="838" y="526" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="800">High risk</text>
+  <text x="838" y="584" fill="#9BB0C2" font-family="Arial, Helvetica, sans-serif" font-size="24">Advisory report with clear evidence.</text>
+  <rect x="838" y="646" width="430" height="56" rx="12" fill="#132F45" stroke="#26495F"/>
+  <circle cx="872" cy="674" r="8" fill="#D94444"/>
+  <text x="900" y="683" fill="#D8E6F0" font-family="Arial, Helvetica, sans-serif" font-size="22">Newly registered domain</text>
+  <rect x="838" y="720" width="430" height="56" rx="12" fill="#132F45" stroke="#26495F"/>
+  <circle cx="872" cy="748" r="8" fill="#D88B00"/>
+  <text x="900" y="757" fill="#D8E6F0" font-family="Arial, Helvetica, sans-serif" font-size="22">Sender authentication needs review</text>
+</svg>

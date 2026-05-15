@@ -214,7 +214,7 @@ export default function HowItWorksPage() {
       <section style={{ padding: '80px 24px', background: `linear-gradient(135deg, ${C.primary} 0%, ${C.accent2} 100%)`, textAlign: 'center' }}>
         <div style={{ maxWidth: 540, margin: '0 auto' }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, color: '#fff', marginBottom: 16, lineHeight: 1.2 }}>See it in action on your inbox</h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', marginBottom: 32 }}>Free — 5 analyses per day, no credit card needed.</p>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', marginBottom: 32 }}>Free with 5 anonymous analyses per day, no credit card needed.</p>
           <a href="/#early-access" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', fontSize: 16, fontWeight: 700, background: '#fff', color: C.primary, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
             Get Early Access
           </a>

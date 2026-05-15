@@ -61,7 +61,7 @@ const LAYERS = [
   },
   {
     num: '06', color: '#FF4D4F', title: 'Nigeria & Africa Threat Context',
-    desc: 'The engine is specifically calibrated for the African threat landscape — EFCC/CBN fraud patterns, BVN phishing, advance-fee 419 scams, and Nigerian fintech impersonation attacks. Plus NDPR 2023 and GDPR compliance built in.',
+    desc: 'The engine is calibrated for common African threat patterns such as EFCC/CBN impersonation, BVN phishing, advance-fee scams, and fintech lookalikes. Built with privacy-first data minimization principles.',
     bullets: ['EFCC/CBN impersonation patterns', 'BVN phishing detection', 'Advance-fee (419) content classifier', 'Côte d\'Ivoire / Senegal threat patterns', 'FR + EN bilingual analysis'],
     icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#FF4D4F" strokeWidth="1.8"/><path d="M12 8v4l3 3" stroke="#FF4D4F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   },
@@ -186,7 +186,7 @@ export default function FeaturesPage() {
       <section style={{ padding: '80px 24px', background: `linear-gradient(135deg, ${C.primary} 0%, ${C.accent2} 100%)`, textAlign: 'center' }}>
         <div style={{ maxWidth: 540, margin: '0 auto' }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, color: '#fff', marginBottom: 16, lineHeight: 1.2 }}>Ready to guard your inbox?</h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', marginBottom: 32 }}>Start free — 5 analyses per day, no credit card needed.</p>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', marginBottom: 32 }}>Start free with 5 anonymous analyses per day, no credit card needed.</p>
           <a href="/#early-access" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', fontSize: 16, fontWeight: 700, background: '#fff', color: C.primary, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
             Get Early Access
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H7M17 7v10" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>

@@ -1,7 +1,7 @@
 /**
  * Quota enforcement — verifies and increments usage count atomically.
  *
- * Free users: 5 analyses/month
+ * Signed-in free users: 5 analyses per calendar month
  * Pro/Team users: unlimited (no check needed)
  * Anonymous users: 5 analyses/day tracked by IP in ratelimit.ts (best-effort)
  *
