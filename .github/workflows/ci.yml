@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  verify:
+    name: Verify backend and extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            extension/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci --no-audit --fund=false
+        working-directory: backend
+
+      - name: Install extension dependencies
+        run: npm ci --no-audit --fund=false
+        working-directory: extension
+
+      - name: Test backend
+        run: npm test
+        working-directory: backend
+
+      - name: Test extension
+        run: npm test
+        working-directory: extension
+
+      - name: Build backend
+        run: npm run build
+        working-directory: backend
+        env:
+          SUPABASE_JWT_SECRET: ci-build-only-secret
+
+      - name: Build extension
+        run: npm run build
+        working-directory: extension
+

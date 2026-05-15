@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: mailto:support@guardscope.app
+    about: Please report sensitive security issues by email.
+  - name: Product support
+    url: mailto:support@guardscope.app
+    about: Get help with GuardScope setup, promo codes, or launch testing.
+

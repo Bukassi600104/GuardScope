@@ -813,14 +813,14 @@ export default function App() {
               <div className="text-center pt-2">
                 <div className="text-4xl mb-2">{proExpired ? '⏰' : '🔒'}</div>
                 <p className="text-sm font-semibold text-[#e2e8f0]">
-                  {proExpired ? 'Pro trial ended' : 'Monthly limit reached'}
+                  {proExpired ? 'Pro trial ended' : isAuthenticated ? 'Monthly limit reached' : 'Daily limit reached'}
                 </p>
                 <p className="text-xs text-[#64748b] leading-relaxed mt-1">
                   {proExpired
                     ? 'Your 30-day free trial has expired. Upgrade to keep unlimited scanning.'
                     : isAuthenticated
-                      ? "You've used all 5 free analyses this month."
-                      : "You've used all 5 free analyses. Sign in or create an account to continue."}
+                      ? "You've used all 5 free account analyses this month."
+                      : "You've used all 5 free analyses today. Sign in or create an account to continue."}
                 </p>
               </div>
 
@@ -1046,7 +1046,7 @@ export default function App() {
                 }}>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-[#64748b] uppercase tracking-wider font-semibold">
-                    Anonymous · {anonCount}/5 free this month
+                    Anonymous · {anonCount}/5 free today
                   </span>
                   <div className="flex gap-0.5">
                     {[1,2,3,4,5].map(i => (
@@ -1081,7 +1081,7 @@ export default function App() {
                   background: theme ? `${theme.btnBg}10` : 'rgba(245,158,11,0.05)',
                 }}>
                 <p className="text-[11px]" style={{ color: theme?.topBar ?? '#f59e0b' }}>
-                  5 free analyses/month
+                  5 free analyses/month for signed-in free accounts
                 </p>
                 <button
                   onClick={() => { setShowPromo(true); setPromoError('') }}

@@ -1,6 +1,6 @@
 /**
  * InceptionLabs Mercury-2 — primary AI provider for GuardScope.
- * Diffusion-based LLM: 5-10x faster than Claude Haiku, same quality tier.
+ * Diffusion-based LLM used as GuardScope's production analysis model.
  * API is OpenAI-compatible: https://api.inceptionlabs.ai/v1
  *
  * Mercury has no native "thinking" parameter, but we simulate chain-of-thought

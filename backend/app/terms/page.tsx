@@ -41,7 +41,7 @@ const TERMS = [
   },
   {
     title: '6. Privacy and Data',
-    body: 'Email content is transmitted to our backend for analysis and discarded immediately — we do not store email bodies, subjects, or sender contact details. Account data (email address, tier, usage count) is stored securely in Supabase. Full details are in our Privacy Policy at guardscope.io/privacy.',
+    body: 'Email content is transmitted to our backend for analysis and discarded immediately — we do not store email bodies, subjects, or sender contact details. Account data (email address, tier, usage count) is stored securely in Supabase. Full details are in our Privacy Policy at guardscope.app/privacy.',
   },
   {
     title: '7. No Warranty',
@@ -61,7 +61,7 @@ const TERMS = [
   },
   {
     title: '11. Contact',
-    body: 'Questions about these Terms: support@guardscope.io',
+    body: 'Questions about these Terms: support@guardscope.app',
   },
 ]
 

@@ -284,7 +284,7 @@ export default function AuthPage() {
                 {view === 'signin' ? 'Welcome back' : 'Create your account'}
               </h1>
               <p style={{ color: '#64748b', fontSize: 14 }}>
-                {view === 'signin' ? 'Sign in to your GuardScope account' : 'Free — 5 analyses/month · No credit card needed'}
+                {view === 'signin' ? 'Sign in to your GuardScope account' : 'Free — 5 analyses per day anonymously · No credit card needed'}
               </p>
             </div>
 

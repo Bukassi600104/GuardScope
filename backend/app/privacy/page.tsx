@@ -80,7 +80,7 @@ how we use data, and your rights.`,
       '<strong>Correction:</strong> Update your email address or account information.',
       '<strong>Portability:</strong> Export your account data in JSON format on request.',
     ],
-    footer: 'To exercise these rights, email us at privacy@guardscope.io',
+    footer: 'To exercise these rights, email us at privacy@guardscope.app',
   },
   {
     title: '7. NDPR 2023 Compliance (Nigeria)',
@@ -109,7 +109,7 @@ We do not use third-party advertising cookies or tracking pixels.`,
   },
   {
     title: '12. Contact',
-    body: 'Privacy questions: privacy@guardscope.io\nGeneral support: support@guardscope.io',
+    body: 'Privacy questions: privacy@guardscope.app\nGeneral support: support@guardscope.app',
   },
 ]
 

@@ -15,14 +15,6 @@ export interface EmailInput {
   gmailWarning?: boolean       // Gmail's own phishing/spam warning banner was visible
 }
 
-export interface HaikuResult {
-  pre_score: number
-  signals: string[]
-  urls_found: string[]
-  escalate_to_sonnet: boolean
-  error?: string
-}
-
 export interface DnsResult {
   spf: 'pass' | 'fail' | 'neutral' | 'none' | 'error'
   dkim: 'present' | 'absent' | 'unknown' | 'error'

@@ -42,28 +42,32 @@ export async function assignCodeToLead(
   email: string,
   country: string
 ): Promise<PromoCode | null> {
-  // Find next unassigned unused code
-  const findUrl = `${SUPABASE_URL}/rest/v1/promo_codes?status=eq.unused&requester_email=is.null&claim_deadline=gt.${encodeURIComponent(new Date().toISOString())}&order=created_at.asc&limit=1`
-  const findRes = await fetch(findUrl, { headers: headers() })
-  if (!findRes.ok) return null
-  const rows = await findRes.json() as PromoCode[]
-  if (!rows[0]) return null
-  const row = rows[0]
+  for (let attempt = 0; attempt < 3; attempt++) {
+    // Find next unassigned unused code. The follow-up PATCH still guards on
+    // status/requester_email so concurrent requests cannot claim the same row.
+    const findUrl = `${SUPABASE_URL}/rest/v1/promo_codes?status=eq.unused&requester_email=is.null&claim_deadline=gt.${encodeURIComponent(new Date().toISOString())}&order=created_at.asc&limit=1`
+    const findRes = await fetch(findUrl, { headers: headers() })
+    if (!findRes.ok) return null
+    const rows = await findRes.json() as PromoCode[]
+    if (!rows[0]) return null
+    const row = rows[0]
 
-  // Assign to lead
-  const updateUrl = `${SUPABASE_URL}/rest/v1/promo_codes?id=eq.${row.id}&status=eq.unused`
-  const updateRes = await fetch(updateUrl, {
-    method: 'PATCH',
-    headers: headers(),
-    body: JSON.stringify({
-      requester_name:    name.trim(),
-      requester_email:   email.toLowerCase().trim(),
-      requester_country: country,
-    }),
-  })
-  if (!updateRes.ok) return null
-  const updated = await updateRes.json() as PromoCode[]
-  return updated[0] ?? null
+    const updateUrl = `${SUPABASE_URL}/rest/v1/promo_codes?id=eq.${row.id}&status=eq.unused&requester_email=is.null`
+    const updateRes = await fetch(updateUrl, {
+      method: 'PATCH',
+      headers: headers(),
+      body: JSON.stringify({
+        requester_name:    name.trim(),
+        requester_email:   email.toLowerCase().trim(),
+        requester_country: country,
+      }),
+    })
+    if (!updateRes.ok) return null
+    const updated = await updateRes.json() as PromoCode[]
+    if (updated[0]) return updated[0]
+  }
+
+  return null
 }
 
 // ─── Validate a code ─────────────────────────────────────────────────────────
@@ -147,7 +151,7 @@ export async function redeemCode(code: string, userEmail: string): Promise<Redee
     body: JSON.stringify({ tier: 'pro', pro_expires_at: proExpiresAt }),
   })
   if (!upgradeRes.ok) {
-    return { success: false, reason: 'Upgrade failed after code claim. Email support@guardscope.io with your code for manual fix.' }
+    return { success: false, reason: 'Upgrade failed after code claim. Email support@guardscope.app with your code for manual fix.' }
   }
 
   return { success: true, proExpiresAt, requesterName: validation.code.requester_name }

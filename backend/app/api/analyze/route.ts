@@ -252,7 +252,7 @@ export async function POST(req: NextRequest) {
     if (!quota.allowed) {
       return NextResponse.json(
         { error: 'limit_reached', count: quota.count, limit: quota.limit, message: 'Monthly analysis limit reached. Upgrade to Pro for unlimited analyses.' },
-        { status: 429 }
+        { status: 429, headers: SECURITY_HEADERS }
       )
     }
   } else {

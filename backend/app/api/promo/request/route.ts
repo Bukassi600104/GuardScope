@@ -2,10 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { assignCodeToLead, getCodeForEmail, countRemainingCodes } from '../../../../lib/promo'
 import { sendWelcomeEmail } from '../../../../lib/email'
 import { checkRateLimit } from '../../../../lib/ratelimit'
+import { buildCorsHeaders } from '../../../../lib/cors'
 
-const SECURITY_HEADERS = {
+const STATIC_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+}
+
+function getHeaders(req: NextRequest): Record<string, string> {
+  return { ...STATIC_HEADERS, ...buildCorsHeaders(req) }
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: getHeaders(req) })
 }
 
 // Input length limits — prevent oversized payloads
@@ -14,6 +24,7 @@ const MAX_EMAIL_LEN = 254  // RFC 5321 max email length
 const MAX_COUNTRY_LEN = 100
 
 export async function POST(req: NextRequest) {
+  const SECURITY_HEADERS = getHeaders(req)
   // Rate limit by IP — 3 requests per minute, 10 per day per IP
   const rawIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
   const ip = /^[0-9a-fA-F.:]{3,45}$/.test(rawIp) ? rawIp : 'unknown'
@@ -89,7 +100,7 @@ export async function POST(req: NextRequest) {
   const remaining = await countRemainingCodes()
   if (remaining === 0) {
     return NextResponse.json(
-      { error: 'All early access spots have been claimed. Join our waitlist at support@guardscope.io' },
+      { error: 'All early access spots have been claimed. Join our waitlist at support@guardscope.app' },
       { status: 410, headers: SECURITY_HEADERS }
     )
   }

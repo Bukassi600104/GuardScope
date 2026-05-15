@@ -135,7 +135,7 @@ export async function sendWelcomeEmail(opts: {
             <p style="margin:0;font-size:13px;color:#4a6478;line-height:1.7;border-top:1px solid rgba(57,182,255,0.1);padding-top:20px;">
               Your code is personal and single-use. It cannot be transferred.
               Questions? Reply to this email or reach us at
-              <a href="mailto:support@guardscope.io" style="color:#39B6FF;text-decoration:none;">support@guardscope.io</a>
+              <a href="mailto:support@guardscope.app" style="color:#39B6FF;text-decoration:none;">support@guardscope.app</a>
             </p>
 
           </td>
@@ -152,7 +152,7 @@ export async function sendWelcomeEmail(opts: {
               &nbsp;·&nbsp;
               <a href="${SITE}/terms" style="color:#4a6478;text-decoration:underline;">Terms</a>
               &nbsp;·&nbsp;
-              <a href="mailto:support@guardscope.io" style="color:#4a6478;text-decoration:underline;">Support</a>
+              <a href="mailto:support@guardscope.app" style="color:#4a6478;text-decoration:underline;">Support</a>
             </p>
           </td>
         </tr>
@@ -178,7 +178,7 @@ How to activate:
 2. Create your account in the extension popup
 3. Click "Upgrade to Pro" → enter your code → activate
 
-Questions? support@guardscope.io
+Questions? support@guardscope.app
 
 — The GuardScope Team
 `
@@ -232,7 +232,7 @@ export async function sendRedemptionConfirmation(opts: {
             Open Gmail in Chrome and start analyzing — GuardScope is ready.
           </p>
           <p style="margin:24px 0 0 0;font-size:13px;color:#4a6478;border-top:1px solid rgba(57,182,255,0.1);padding-top:20px;">
-            Questions? <a href="mailto:support@guardscope.io" style="color:#39B6FF;text-decoration:none;">support@guardscope.io</a>
+            Questions? <a href="mailto:support@guardscope.app" style="color:#39B6FF;text-decoration:none;">support@guardscope.app</a>
           </p>
         </td>
       </tr>

@@ -3,7 +3,7 @@
  *
  * Free users: 5 analyses/month
  * Pro/Team users: unlimited (no check needed)
- * Anonymous users: 5 analyses/month tracked by IP hash (best-effort)
+ * Anonymous users: 5 analyses/day tracked by IP in ratelimit.ts (best-effort)
  *
  * Uses Supabase service key to bypass RLS for atomic upsert.
  * All quota changes go through a single UPDATE+RETURNING to prevent races.

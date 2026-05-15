@@ -21,8 +21,8 @@ const EN = {
   pageReloadNeeded: 'Page reload needed',
   connectionError: 'Connection error',
   // Limit reached
-  limitTitle: 'Monthly limit reached',
-  limitBody: "You've used all 5 free analyses this month.\nUpgrade to Pro for unlimited scans, priority AI, and team features.",
+  limitTitle: 'Daily limit reached',
+  limitBody: "You've used all 5 free analyses today.\nSign in or upgrade to Pro for more scans.",
   upgradeBtn: 'Upgrade to Pro — $4.99/mo',
   maybeLater: 'Maybe later',
   // Result
@@ -64,8 +64,8 @@ const FR = {
   pageReloadNeeded: 'Rechargement nécessaire',
   connectionError: 'Erreur de connexion',
   // Limit reached
-  limitTitle: 'Limite mensuelle atteinte',
-  limitBody: "Vous avez utilisé les 5 analyses gratuites ce mois-ci.\nPassez à Pro pour des analyses illimitées.",
+  limitTitle: 'Limite quotidienne atteinte',
+  limitBody: "Vous avez utilisé les 5 analyses gratuites aujourd'hui.\nConnectez-vous ou passez à Pro pour plus d'analyses.",
   upgradeBtn: 'Passer à Pro — $4.99/mois',
   maybeLater: 'Plus tard',
   // Result

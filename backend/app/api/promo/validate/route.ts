@@ -3,13 +3,24 @@ import { redeemCode } from '../../../../lib/promo'
 import { sendRedemptionConfirmation } from '../../../../lib/email'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 import { decodeJwt } from '../../../../lib/quota'
+import { buildCorsHeaders } from '../../../../lib/cors'
 
-const SECURITY_HEADERS = {
+const STATIC_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+}
+
+function getHeaders(req: NextRequest): Record<string, string> {
+  return { ...STATIC_HEADERS, ...buildCorsHeaders(req) }
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, { status: 204, headers: getHeaders(req) })
 }
 
 export async function POST(req: NextRequest) {
+  const SECURITY_HEADERS = getHeaders(req)
   // Rate limit by IP — prevent brute-force of promo codes
   const rawIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
   const ip = /^[0-9a-fA-F.:]{3,45}$/.test(rawIp) ? rawIp : 'unknown'

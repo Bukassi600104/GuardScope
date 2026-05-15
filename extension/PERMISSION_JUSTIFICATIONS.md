@@ -1,65 +1,68 @@
-# GuardScope — Chrome Extension Permission Justifications
+﻿# GuardScope Chrome Extension Permission Justifications
 
-This document explains why each permission requested by GuardScope is necessary.
-Submitted as part of the Chrome Web Store review process.
+This document explains every permission and host permission requested by GuardScope for Chrome Web Store review.
 
----
+GuardScope has one purpose: analyze Gmail messages for phishing, impersonation, malicious links, and social engineering signals after the user opens Gmail and chooses to run analysis.
 
-## `activeTab`
+## Permissions
 
-**Why needed:** GuardScope reads the currently open Gmail email from the DOM in order to extract the sender address, subject line, body text, and URLs for security analysis. This permission is required to access the content of the active Gmail tab when the user clicks "Analyze This Email."
+### `storage`
 
-**Scope:** Only the Gmail tab that is currently active. No other tabs are accessed.
+GuardScope uses `chrome.storage.local` to store:
 
----
+- the user's local auth/session state so they stay signed in,
+- the onboarding completion flag,
+- the current Gmail message metadata while analysis runs,
+- local analysis history for the last 20 results,
+- local anonymous daily usage counter display state.
 
-## `storage`
+Email content is cached locally only to support the active analysis flow and is replaced when the user opens another email.
 
-**Why needed:** GuardScope uses `chrome.storage.local` to:
-1. Store the JWT authentication token (so the user stays signed in across browser sessions)
-2. Temporarily cache the currently-open email's metadata while the analysis runs (cleared when the user closes the email)
-3. Store the onboarding completion flag (so the consent screen is shown only once)
-4. Store local analysis history (last 20 results, for user reference)
+### `clipboardWrite`
 
-No email content is permanently stored. The email data in storage is overwritten each time a new email is opened.
+GuardScope uses this permission only for the "Copy report" action in the side panel. The extension writes the generated analysis summary to the clipboard when the user clicks the copy button.
 
----
+### `sidePanel`
 
-## `scripting`
+GuardScope uses Chrome's side panel API to display the phishing analysis report next to Gmail. The panel is enabled only for Gmail tabs.
 
-**Why needed:** GuardScope injects a sidebar iframe into the Gmail page to display the security analysis panel. This requires the `scripting` permission to programmatically add a UI element to the Gmail DOM. Without this, the sidebar cannot be shown alongside the email.
+### `tabs`
 
-**Scope:** The injection targets only `https://mail.google.com/*` as specified in `content_scripts`.
+GuardScope uses tab access to:
 
----
+- detect whether the active tab is Gmail,
+- enable or disable the side panel per tab,
+- open the first-run onboarding page,
+- open or focus Gmail after onboarding,
+- open `guardscope.app` signup and upgrade pages from the extension UI,
+- route analysis to the correct Gmail tab so multiple Gmail tabs do not overwrite each other's state.
 
-## Host Permission: `https://mail.google.com/*`
+The extension does not collect browsing history.
 
-**Why needed:** Required by `content_scripts` to run on Gmail pages where emails are displayed.
+## Host Permissions
 
----
+### `https://mail.google.com/*`
 
-## Host Permission: `https://backend-gules-sigma-37.vercel.app/*`
+Required for the Gmail content script. GuardScope reads the currently opened Gmail message DOM to extract sender, subject, body text, URLs, attachment names, and visible Gmail authentication hints.
 
-**Why needed:** The analysis engine (AI + DNS + URL threat scanning) runs on our secure backend server. The extension sends email metadata to this endpoint for analysis and receives a security report. No other hosts are contacted directly from the extension.
+### `https://guardscope.app/*`
 
----
+Required for backend API calls, signup, upgrade, privacy, terms, and promo-code pages hosted at the production domain.
 
-## Host Permission: `https://zfuxxoyjfedmtoeydcvp.supabase.co/*`
+### Supabase project URL
 
-**Why needed:** User authentication (sign in / sign out) and usage count display are handled via Supabase. The extension queries the user's monthly analysis count to display it in the popup.
-
----
+Required for Supabase Auth calls from the extension. The bundled anon key is public by design; service-role keys are never included in the extension.
 
 ## Data Use Disclosure
 
-GuardScope collects and transmits the following data:
-
 | Data | Purpose | Stored? |
-|------|---------|---------|
-| Email sender address, subject, body text, URLs | Security analysis (sent to backend, analyzed, discarded) | No |
-| User email address + password hash | Authentication | Yes (Supabase Auth) |
-| Monthly analysis count | Usage limiting and display | Yes (Supabase, count only) |
-| JWT token | Session authentication | Yes (chrome.storage.local, local only) |
+| --- | --- | --- |
+| Sender, subject, body text, URLs, attachment names | Security analysis | Not stored in database |
+| Risk score, risk level, sender domain, duration | Optional history and usage analytics | Stored for signed-in users |
+| User email address | Authentication, account support, promo code delivery | Stored in Supabase |
+| Promo lead name, email, country | Early-access code assignment | Stored temporarily |
+| Local auth token | Keep user signed in | Stored locally in Chrome |
 
-**What is NOT collected:** Full email content is never stored. No browsing history. No contacts. No attachment content.
+## Remote Code Statement
+
+GuardScope does not execute remote code. The extension uses bundled JavaScript only, blocks external scripts through CSP, and does not use `eval()` or `new Function()`.
