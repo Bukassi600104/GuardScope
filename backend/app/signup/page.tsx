@@ -1,71 +1,96 @@
 'use client'
-import React, { useState } from 'react'
 
-function GuardScopeIcon() {
-  const cx = 21, cy = 24, r = 13
-  const toR = (d: number) => (d * Math.PI) / 180
-  const ax1 = cx + r * Math.cos(toR(30)),  ay1 = cy + r * Math.sin(toR(30))
-  const ax2 = cx + r * Math.cos(toR(-30)), ay2 = cy + r * Math.sin(toR(-30))
-  const od = r + 4
-  const ox = cx + od * Math.cos(toR(0)), oy = cy + od * Math.sin(toR(0))
+import type { FormEvent, ReactNode } from 'react'
+import { useState } from 'react'
+import { GuardScopeLogo } from '../components/GuardScopeLogo'
+import { CTA_HREF, CTA_LABEL, QUOTAS } from '../../lib/launch'
+
+type View = 'signin' | 'signup' | 'forgot' | 'forgot_sent' | 'signup_success'
+
+const C = {
+  bg: '#f6faff',
+  panel: '#ffffff',
+  text: '#001e2f',
+  body: '#526477',
+  muted: '#6e7882',
+  border: '#c8d4df',
+  cyan: '#0d8ec2',
+  success: '#168a45',
+  warning: '#ad6b00',
+  danger: '#be3030',
+}
+
+const fieldStyle = {
+  width: '100%',
+  height: 48,
+  borderRadius: 8,
+  border: `1px solid ${C.border}`,
+  background: '#fff',
+  padding: '0 14px',
+  fontSize: 14,
+  color: C.text,
+  outline: 'none',
+} as const
+
+const labelStyle = {
+  display: 'grid',
+  gap: 7,
+  fontSize: 13,
+  fontWeight: 700,
+  color: C.text,
+} as const
+
+function ArrowIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-      <defs>
-        <linearGradient id="gs-auth-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#72D8FF"/>
-          <stop offset="100%" stopColor="#1A8FFF"/>
-        </linearGradient>
-      </defs>
-      <path d={`M ${ax1.toFixed(2)} ${ay1.toFixed(2)} A ${r} ${r} 0 1 1 ${ax2.toFixed(2)} ${ay2.toFixed(2)}`}
-        stroke="url(#gs-auth-g)" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
-      <circle cx={cx} cy={cy} r="3.5" fill="url(#gs-auth-g)"/>
-      <circle cx={ox.toFixed(2)} cy={oy.toFixed(2)} r="3.0" fill="url(#gs-auth-g)"/>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7 17L17 7M17 7H8M17 7v9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px 14px',
-  background: '#0a1628',
-  border: '1px solid rgba(57,182,255,0.2)',
-  borderRadius: 10,
-  color: '#e2e8f0',
-  fontSize: 15,
-  outline: 'none',
-  boxSizing: 'border-box',
-  fontFamily: 'inherit',
+function CheckIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
-type View = 'signin' | 'signup' | 'forgot' | 'forgot_sent' | 'signup_success'
+function Alert({ tone, children }: { tone: 'error' | 'success' | 'info'; children: ReactNode }) {
+  const color = tone === 'error' ? C.danger : tone === 'success' ? C.success : C.cyan
+  const bg = tone === 'error' ? 'rgba(255,77,79,0.08)' : tone === 'success' ? 'rgba(30,215,96,0.08)' : 'rgba(57,182,255,0.09)'
+  return (
+    <div style={{ border: `1px solid ${color}33`, background: bg, borderRadius: 8, padding: '12px 14px', fontSize: 13, color, lineHeight: 1.55 }}>
+      {children}
+    </div>
+  )
+}
 
-export default function AuthPage() {
-  const [view, setView] = useState<View>('signup')
+export default function SignupPage() {
+  const [view, setView] = useState<View>('signin')
 
-  // Sign up state
-  const [signupEmail, setSignupEmail] = useState('')
-  const [signupPassword, setSignupPassword] = useState('')
-  const [signupConfirm, setSignupConfirm] = useState('')
-  const [signupLoading, setSignupLoading] = useState(false)
-  const [signupError, setSignupError] = useState('')
-  const [needsConfirmation, setNeedsConfirmation] = useState(false)
-
-  // Sign in state
   const [signinEmail, setSigninEmail] = useState('')
   const [signinPassword, setSigninPassword] = useState('')
   const [signinLoading, setSigninLoading] = useState(false)
   const [signinError, setSigninError] = useState('')
 
-  // Forgot password state
+  const [signupEmail, setSignupEmail] = useState('')
+  const [signupPassword, setSignupPassword] = useState('')
+  const [signupLoading, setSignupLoading] = useState(false)
+  const [signupError, setSignupError] = useState('')
+
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotError, setForgotError] = useState('')
 
-  async function handleSignUp(e: React.FormEvent) {
+  async function handleSignUp(e: FormEvent) {
     e.preventDefault()
     setSignupError('')
-    if (signupPassword !== signupConfirm) { setSignupError('Passwords do not match'); return }
-    if (signupPassword.length < 8) { setSignupError('Password must be at least 8 characters'); return }
+    if (signupPassword.length < 12) {
+      setSignupError('Password must be at least 12 characters.')
+      return
+    }
+
     setSignupLoading(true)
     try {
       const res = await fetch('/api/auth/signup', {
@@ -73,26 +98,26 @@ export default function AuthPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: signupEmail, password: signupPassword }),
       })
-      const data = await res.json() as { error?: string; needsConfirmation?: boolean }
+      const data = await res.json()
+
       if (!res.ok) {
         if (res.status === 409) {
-          setSignupError('An account with this email already exists.')
-          setSigninEmail(signupEmail)
+          setSignupError('An account with this email already exists. Sign in instead.')
         } else {
-          setSignupError(data.error ?? 'Registration failed')
+          setSignupError(data.error || 'Unable to create account. Please try again.')
         }
         return
       }
-      setNeedsConfirmation(!!data.needsConfirmation)
+
       setView('signup_success')
     } catch {
-      setSignupError('Network error — please try again')
+      setSignupError('Network error. Please try again.')
     } finally {
       setSignupLoading(false)
     }
   }
 
-  async function handleSignIn(e: React.FormEvent) {
+  async function handleSignIn(e: FormEvent) {
     e.preventDefault()
     setSigninError('')
     setSigninLoading(true)
@@ -102,21 +127,22 @@ export default function AuthPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: signinEmail, password: signinPassword }),
       })
-      const data = await res.json() as { error?: string }
+      const data = await res.json()
+
       if (!res.ok) {
-        setSigninError(data.error ?? 'Invalid email or password')
+        setSigninError(data.error || 'Unable to sign in. Please check your details.')
         return
       }
-      // Sign-in confirmed — redirect home
+
       window.location.href = '/'
     } catch {
-      setSigninError('Network error — please try again')
+      setSigninError('Network error. Please try again.')
     } finally {
       setSigninLoading(false)
     }
   }
 
-  async function handleForgotPassword(e: React.FormEvent) {
+  async function handleForgotPassword(e: FormEvent) {
     e.preventDefault()
     setForgotError('')
     setForgotLoading(true)
@@ -126,304 +152,143 @@ export default function AuthPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail }),
       })
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as { error?: string }
-        setForgotError(data.error ?? 'Failed to send reset email')
+        setForgotError(data.error || 'Unable to send reset link. Please try again.')
         return
       }
+
       setView('forgot_sent')
     } catch {
-      setForgotError('Network error — please try again')
+      setForgotError('Network error. Please try again.')
     } finally {
       setForgotLoading(false)
     }
   }
 
-  const page: React.CSSProperties = {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    background: '#071C2C',
-    fontFamily: 'Sora, Inter, sans-serif',
-  }
+  const title =
+    view === 'signup' ? 'Create your GuardScope account' :
+    view === 'forgot' ? 'Reset your password' :
+    view === 'forgot_sent' ? 'Check your inbox' :
+    view === 'signup_success' ? 'Account created' :
+    'Sign in to GuardScope'
 
-  const card: React.CSSProperties = {
-    background: '#0d1f35',
-    border: '1px solid rgba(57,182,255,0.15)',
-    borderRadius: 16,
-    padding: 28,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-  }
-
-  const btn = (primary: boolean, disabled?: boolean): React.CSSProperties => ({
-    padding: '13px',
-    background: disabled ? 'rgba(57,182,255,0.3)' : primary ? 'linear-gradient(135deg,#39B6FF,#1F8DFF)' : 'transparent',
-    color: primary ? '#fff' : '#39B6FF',
-    fontWeight: 700,
-    fontSize: 15,
-    borderRadius: 10,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    border: primary ? 'none' : '1px solid rgba(57,182,255,0.3)',
-    fontFamily: 'inherit',
-    transition: 'opacity .2s',
-    width: '100%',
-  })
-
-  const errorBox: React.CSSProperties = {
-    fontSize: 13,
-    color: '#ef4343',
-    background: 'rgba(239,68,68,0.08)',
-    border: '1px solid rgba(239,68,68,0.2)',
-    borderRadius: 8,
-    padding: '10px 14px',
-    margin: 0,
-  }
-
-  // ── Success: account created ──
-  if (view === 'signup_success') {
-    return (
-      <div style={page}>
-        <div style={{ maxWidth: 440, width: '100%', textAlign: 'center' }}>
-          <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(34,197,94,0.12)', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-              <path d="M20 6L9 17L4 12" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginBottom: 12 }}>
-            {needsConfirmation ? 'Check your email!' : 'Account created!'}
-          </h1>
-          <p style={{ color: '#94a3b8', fontSize: 15, lineHeight: 1.7, marginBottom: 28 }}>
-            {needsConfirmation
-              ? `We sent a confirmation link to ${signupEmail}. Click it to activate your account, then sign in with the extension.`
-              : 'Your GuardScope account is ready. Open the extension, click Sign In, and enter your credentials.'}
-          </p>
-          <button onClick={() => setView('signin')} style={{ ...btn(true), width: 'auto', display: 'inline-block', padding: '12px 28px' }}>
-            Sign In Now →
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Forgot password sent ──
-  if (view === 'forgot_sent') {
-    return (
-      <div style={page}>
-        <div style={{ maxWidth: 420, width: '100%', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Reset email sent</h1>
-          <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.7, marginBottom: 28 }}>
-            If an account exists for <strong style={{ color: '#e2e8f0' }}>{forgotEmail}</strong>, you&apos;ll receive a password reset link shortly. Check your spam folder if it doesn&apos;t arrive.
-          </p>
-          <button onClick={() => setView('signin')} style={{ ...btn(false), width: 'auto', display: 'inline-block', padding: '12px 28px' }}>
-            Back to Sign In
-          </button>
-        </div>
-      </div>
-    )
-  }
+  const description =
+    view === 'signup' ? `Start with ${QUOTAS.signedInFreeMonthly} signed-in scans per month, then activate a launch code when you have one.` :
+    view === 'forgot' ? 'Enter your account email and we will send password reset instructions.' :
+    view === 'forgot_sent' ? 'If an account exists for that email, a reset link is on the way.' :
+    view === 'signup_success' ? 'You can now sign in. If email confirmation is enabled, check your inbox before signing in.' :
+    'Access your quota, launch-code status, and GuardScope account settings.'
 
   return (
-    <div style={page}>
-      {/* Nav */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', borderBottom: '1px solid rgba(57,182,255,0.1)', background: 'rgba(7,28,44,0.95)', backdropFilter: 'blur(8px)', zIndex: 10 }}>
-        <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <GuardScopeIcon />
-          <span style={{ fontWeight: 800, fontSize: 16, color: '#E7EEF4', fontFamily: 'Sora, Inter, sans-serif' }}>
-            Guard<span style={{ color: '#39B6FF' }}>Scope</span>
-          </span>
-        </a>
-      </div>
+    <main style={{ minHeight: '100vh', background: C.bg, padding: '28px 24px 54px' }}>
+      <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+        <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 44 }}>
+          <a href="/" aria-label="GuardScope home"><GuardScopeLogo variant="dark" size={32} textSize={17} /></a>
+          <a href={CTA_HREF} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: `1px solid ${C.border}`, background: '#fff', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 760, color: C.text }}>
+            {CTA_LABEL}<ArrowIcon />
+          </a>
+        </nav>
 
-      <div style={{ maxWidth: 420, width: '100%', marginTop: 60 }}>
+        <div className="auth-shell-grid">
+          <section style={{ border: `1px solid ${C.border}`, borderRadius: 8, background: 'linear-gradient(180deg,#ffffff 0%,#edf8ff 100%)', padding: '34px', minHeight: 520 }}>
+            <p style={{ fontSize: 12, fontWeight: 820, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.cyan, marginBottom: 14 }}>GuardScope account</p>
+            <h1 style={{ fontSize: 'clamp(32px,5vw,58px)', lineHeight: 1.04, letterSpacing: '-0.02em', color: C.text, marginBottom: 16 }}>
+              Gmail threat analysis with privacy-first account controls.
+            </h1>
+            <p style={{ fontSize: 16, color: C.body, lineHeight: 1.75, maxWidth: 540 }}>
+              Sign in to manage access, redeem launch codes, and keep your scan quota tied to your account.
+            </p>
 
-        {/* ── Forgot password form ── */}
-        {view === 'forgot' && (
-          <>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Reset your password</h1>
-              <p style={{ color: '#64748b', fontSize: 14 }}>Enter your email and we&apos;ll send a reset link</p>
-            </div>
-            <form onSubmit={handleForgotPassword} style={card}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#94a3b8', marginBottom: 6 }}>Email address</label>
-                <input
-                  type="email"
-                  value={forgotEmail}
-                  onChange={e => setForgotEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  autoFocus
-                  style={inputStyle}
-                />
-              </div>
-              {forgotError && <p style={errorBox}>{forgotError}</p>}
-              <button type="submit" disabled={forgotLoading} style={btn(true, forgotLoading)}>
-                {forgotLoading ? 'Sending...' : 'Send Reset Link'}
-              </button>
-              <button type="button" onClick={() => setView('signin')} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
-                ← Back to Sign In
-              </button>
-            </form>
-          </>
-        )}
-
-        {/* ── Sign In / Sign Up tabs ── */}
-        {(view === 'signin' || view === 'signup') && (
-          <>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
-                <GuardScopeIcon />
-              </div>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', marginBottom: 6 }}>
-                {view === 'signin' ? 'Welcome back' : 'Create your account'}
-              </h1>
-              <p style={{ color: '#64748b', fontSize: 14 }}>
-                {view === 'signin' ? 'Sign in to your GuardScope account' : 'Free with 5 anonymous analyses per day. No credit card needed'}
-              </p>
-            </div>
-
-            {/* Tab switcher */}
-            <div style={{ display: 'flex', background: '#0a1628', borderRadius: 10, padding: 4, marginBottom: 20, border: '1px solid rgba(57,182,255,0.1)' }}>
-              {(['signin', 'signup'] as const).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setView(tab)}
-                  style={{
-                    flex: 1,
-                    padding: '9px',
-                    borderRadius: 8,
-                    border: 'none',
-                    fontFamily: 'inherit',
-                    fontWeight: 600,
-                    fontSize: 14,
-                    cursor: 'pointer',
-                    transition: 'all .2s',
-                    background: view === tab ? 'rgba(57,182,255,0.15)' : 'transparent',
-                    color: view === tab ? '#39B6FF' : '#64748b',
-                  }}
-                >
-                  {tab === 'signin' ? 'Sign In' : 'Sign Up'}
-                </button>
+            <div style={{ display: 'grid', gap: 12, marginTop: 30 }}>
+              {[
+                ['No email storage', 'Email content is analyzed only when you initiate a scan.'],
+                ['Quota protected', `${QUOTAS.anonymousDaily} anonymous scans per day and signed-in limits enforced by the backend.`],
+                ['Launch-code ready', `Promo codes unlock ${QUOTAS.promoProDays} days of Pro access when activated.`],
+              ].map(([heading, copy]) => (
+                <div key={heading} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.success, marginTop: 2 }}><CheckIcon /></span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{heading}</div>
+                    <div style={{ fontSize: 13, color: C.body, lineHeight: 1.65 }}>{copy}</div>
+                  </div>
+                </div>
               ))}
             </div>
 
-            {/* Sign In form */}
-            {view === 'signin' && (
-              <form onSubmit={handleSignIn} style={card}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#94a3b8', marginBottom: 6 }}>Email address</label>
-                  <input
-                    type="email"
-                    value={signinEmail}
-                    onChange={e => setSigninEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    autoFocus
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>Password</label>
-                    <button
-                      type="button"
-                      onClick={() => { setForgotEmail(signinEmail); setView('forgot') }}
-                      style={{ background: 'none', border: 'none', color: '#39B6FF', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                  <input
-                    type="password"
-                    value={signinPassword}
-                    onChange={e => setSigninPassword(e.target.value)}
-                    placeholder="Your password"
-                    required
-                    style={inputStyle}
-                  />
-                </div>
-                {signinError && <p style={errorBox}>{signinError}</p>}
-                <button type="submit" disabled={signinLoading} style={btn(true, signinLoading)}>
-                  {signinLoading ? 'Signing in...' : 'Sign In'}
-                </button>
-              </form>
-            )}
-
-            {/* Sign Up form */}
-            {view === 'signup' && (
-              <form onSubmit={handleSignUp} style={card}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#94a3b8', marginBottom: 6 }}>Email address</label>
-                  <input
-                    type="email"
-                    value={signupEmail}
-                    onChange={e => setSignupEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    autoFocus
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#94a3b8', marginBottom: 6 }}>Password</label>
-                  <input
-                    type="password"
-                    value={signupPassword}
-                    onChange={e => setSignupPassword(e.target.value)}
-                    placeholder="At least 8 characters"
-                    required
-                    minLength={8}
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#94a3b8', marginBottom: 6 }}>Confirm password</label>
-                  <input
-                    type="password"
-                    value={signupConfirm}
-                    onChange={e => setSignupConfirm(e.target.value)}
-                    placeholder="Repeat your password"
-                    required
-                    style={inputStyle}
-                  />
-                </div>
-                {signupError && (
-                  <p style={errorBox}>
-                    {signupError}
-                    {signupError.includes('already exists') && (
-                      <> {' '}
-                        <button
-                          type="button"
-                          onClick={() => { setSigninEmail(signupEmail); setView('signin') }}
-                          style={{ background: 'none', border: 'none', color: '#39B6FF', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', padding: 0, textDecoration: 'underline' }}
-                        >
-                          Sign in instead →
-                        </button>
-                      </>
-                    )}
-                  </p>
-                )}
-                <button type="submit" disabled={signupLoading} style={btn(true, signupLoading)}>
-                  {signupLoading ? 'Creating account...' : 'Create Account'}
-                </button>
-              </form>
-            )}
-
-            <p style={{ fontSize: 12, color: '#334155', textAlign: 'center', marginTop: 20, lineHeight: 1.7 }}>
-              By signing up you agree to our{' '}
-              <a href="/terms" style={{ color: '#475569', textDecoration: 'underline' }}>Terms of Service</a>
-              {' '}and{' '}
-              <a href="/privacy" style={{ color: '#475569', textDecoration: 'underline' }}>Privacy Policy</a>.
+            <p style={{ fontSize: 12, color: C.muted, marginTop: 28 }}>
+              By using GuardScope, you agree to the <a href="/terms" style={{ color: C.cyan, fontWeight: 700 }}>Terms</a> and acknowledge the <a href="/privacy" style={{ color: C.cyan, fontWeight: 700 }}>Privacy Policy</a>.
             </p>
-          </>
-        )}
+          </section>
+
+          <section style={{ border: `1px solid ${C.border}`, borderRadius: 8, background: C.panel, padding: '32px', boxShadow: '0 24px 70px rgba(0,30,47,0.08)' }}>
+            {(view === 'signin' || view === 'signup') && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: 4, border: `1px solid ${C.border}`, borderRadius: 8, background: '#f1f7fd', marginBottom: 26 }}>
+                <button type="button" onClick={() => setView('signin')} style={{ borderRadius: 7, padding: '10px 12px', background: view === 'signin' ? '#fff' : 'transparent', color: C.text, fontWeight: 760, boxShadow: view === 'signin' ? '0 8px 20px rgba(0,30,47,0.08)' : 'none' }}>Sign in</button>
+                <button type="button" onClick={() => setView('signup')} style={{ borderRadius: 7, padding: '10px 12px', background: view === 'signup' ? '#fff' : 'transparent', color: C.text, fontWeight: 760, boxShadow: view === 'signup' ? '0 8px 20px rgba(0,30,47,0.08)' : 'none' }}>Create account</button>
+              </div>
+            )}
+
+            <h2 style={{ fontSize: 28, lineHeight: 1.15, color: C.text, marginBottom: 8 }}>{title}</h2>
+            <p style={{ fontSize: 14, color: C.body, lineHeight: 1.7, marginBottom: 24 }}>{description}</p>
+
+            {view === 'signin' && (
+              <form onSubmit={handleSignIn} className="auth-form-grid">
+                {signinError && <Alert tone="error">{signinError}</Alert>}
+                <label style={labelStyle}>Email<input style={fieldStyle} type="email" value={signinEmail} onChange={(e) => setSigninEmail(e.target.value)} required autoComplete="email" placeholder="you@example.com" /></label>
+                <label style={labelStyle}>Password<input style={fieldStyle} type="password" value={signinPassword} onChange={(e) => setSigninPassword(e.target.value)} required autoComplete="current-password" placeholder="Your password" /></label>
+                <button type="submit" disabled={signinLoading} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14, opacity: signinLoading ? 0.72 : 1 }}>
+                  {signinLoading ? 'Signing in...' : 'Sign in'}
+                </button>
+                <button type="button" onClick={() => setView('forgot')} style={{ justifySelf: 'center', color: C.cyan, fontSize: 13, fontWeight: 740 }}>Forgot password?</button>
+              </form>
+            )}
+
+            {view === 'signup' && (
+              <form onSubmit={handleSignUp} className="auth-form-grid">
+                {signupError && <Alert tone="error">{signupError}</Alert>}
+                <label style={labelStyle}>Email<input style={fieldStyle} type="email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required autoComplete="email" placeholder="you@example.com" /></label>
+                <label style={labelStyle}>Password<input style={fieldStyle} type="password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={12} autoComplete="new-password" placeholder="At least 12 characters" /></label>
+                <Alert tone="info">Use a unique password with at least 12 characters. GuardScope accounts are used for quota, launch-code, and billing status.</Alert>
+                <button type="submit" disabled={signupLoading} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14, opacity: signupLoading ? 0.72 : 1 }}>
+                  {signupLoading ? 'Creating account...' : 'Create account'}
+                </button>
+              </form>
+            )}
+
+            {view === 'forgot' && (
+              <form onSubmit={handleForgotPassword} className="auth-form-grid">
+                {forgotError && <Alert tone="error">{forgotError}</Alert>}
+                <label style={labelStyle}>Email<input style={fieldStyle} type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required autoComplete="email" placeholder="you@example.com" /></label>
+                <button type="submit" disabled={forgotLoading} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14, opacity: forgotLoading ? 0.72 : 1 }}>
+                  {forgotLoading ? 'Sending reset link...' : 'Send reset link'}
+                </button>
+                <button type="button" onClick={() => setView('signin')} style={{ justifySelf: 'center', color: C.cyan, fontSize: 13, fontWeight: 740 }}>Back to sign in</button>
+              </form>
+            )}
+
+            {view === 'forgot_sent' && (
+              <div style={{ display: 'grid', gap: 16 }}>
+                <Alert tone="success">If an account exists for {forgotEmail || 'that email'}, a password reset link has been sent.</Alert>
+                <button type="button" onClick={() => setView('signin')} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14 }}>Back to sign in</button>
+              </div>
+            )}
+
+            {view === 'signup_success' && (
+              <div style={{ display: 'grid', gap: 16 }}>
+                <Alert tone="success">Your account was created. Sign in to continue, then activate a launch code if you have one.</Alert>
+                <button type="button" onClick={() => setView('signin')} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14 }}>Go to sign in</button>
+              </div>
+            )}
+
+            <div style={{ marginTop: 24, paddingTop: 18, borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+              <a href="/upgrade" style={{ color: C.cyan, fontSize: 13, fontWeight: 760 }}>Have a launch code?</a>
+              <a href="/privacy" style={{ color: C.muted, fontSize: 13, fontWeight: 650 }}>Privacy details</a>
+            </div>
+          </section>
+        </div>
       </div>
-    </div>
+    </main>
   )
 }

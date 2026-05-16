@@ -86,6 +86,18 @@ img { max-width: 100%; }
   display: none !important;
 }
 
+.auth-shell-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.82fr) minmax(420px, 1fr);
+  gap: 34px;
+  align-items: stretch;
+}
+
+.auth-form-grid {
+  display: grid;
+  gap: 14px;
+}
+
 .stat-strip-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -94,7 +106,8 @@ img { max-width: 100%; }
 
 @media (max-width: 1040px) {
   .home-hero-grid,
-  .two-col-grid {
+  .two-col-grid,
+  .auth-shell-grid {
     grid-template-columns: 1fr !important;
   }
 
@@ -124,7 +137,8 @@ img { max-width: 100%; }
 
   .home-hero-grid,
   .stat-strip-grid,
-  .two-col-grid {
+  .two-col-grid,
+  .auth-shell-grid {
     width: calc(100vw - 48px) !important;
     max-width: calc(100vw - 48px) !important;
   }
@@ -144,6 +158,8 @@ img { max-width: 100%; }
 
   .product-demo-grid,
   .gmail-demo-grid,
+  .feature-layer-grid,
+  .score-row-grid,
   .layers-grid,
   .pricing-grid,
   .stat-strip-grid {
