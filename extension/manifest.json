@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "GuardScope — Email Security",
+  "name": "GuardScope - Email Security",
   "version": "1.0.0",
   "description": "AI-powered phishing detection for Gmail. Analyzes sender authentication, domain age, URLs, and email content to detect phishing and social engineering attacks.",
   "homepage_url": "https://guardscope.app",
