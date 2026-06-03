@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Footer } from '../components/Footer'
 import { Navbar } from '../components/Navbar'
+import { CTA_HREF, CTA_LABEL } from '../../lib/launch'
 
 export const metadata: Metadata = {
   title: 'Features - GuardScope',
@@ -132,9 +133,9 @@ export default function FeaturesPage() {
 
       <section style={{ padding: '72px 24px', background: C.text, textAlign: 'center' }}>
         <div style={{ maxWidth: 620, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(30px,4vw,44px)', color: '#fff', lineHeight: 1.15, marginBottom: 14 }}>Join the Chrome launch list.</h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.74)', lineHeight: 1.7, marginBottom: 26 }}>Start with early access and help test GuardScope before the Chrome Web Store listing goes live.</p>
-          <a href="/#early-access" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: '#fff', color: C.text, padding: '13px 22px', fontSize: 15, fontWeight: 820 }}>Get early access</a>
+          <h2 style={{ fontSize: 'clamp(30px,4vw,44px)', color: '#fff', lineHeight: 1.15, marginBottom: 14 }}>Add GuardScope to Chrome.</h2>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.74)', lineHeight: 1.7, marginBottom: 26 }}>Install the public Chrome Web Store release and keep launch-code access as an optional Pro upgrade.</p>
+          <a href={CTA_HREF} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: '#fff', color: C.text, padding: '13px 22px', fontSize: 15, fontWeight: 820 }}>{CTA_LABEL}</a>
         </div>
       </section>
 

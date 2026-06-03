@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Footer } from '../components/Footer'
 import { Navbar } from '../components/Navbar'
+import { CTA_HREF, CTA_LABEL } from '../../lib/launch'
 
 export const metadata: Metadata = {
   title: 'How It Works - GuardScope',
@@ -140,9 +141,9 @@ export default function HowItWorksPage() {
 
       <section style={{ padding: '72px 24px', background: C.text, textAlign: 'center' }}>
         <div style={{ maxWidth: 620, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(30px,4vw,44px)', color: '#fff', lineHeight: 1.15, marginBottom: 14 }}>Try the launch build.</h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.74)', lineHeight: 1.7, marginBottom: 26 }}>Join the Chrome launch list and help verify GuardScope before public listing.</p>
-          <a href="/#early-access" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: '#fff', color: C.text, padding: '13px 22px', fontSize: 15, fontWeight: 820 }}>Get early access</a>
+          <h2 style={{ fontSize: 'clamp(30px,4vw,44px)', color: '#fff', lineHeight: 1.15, marginBottom: 14 }}>Install the Chrome release.</h2>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.74)', lineHeight: 1.7, marginBottom: 26 }}>GuardScope is live on the Chrome Web Store for user-triggered Gmail threat analysis.</p>
+          <a href={CTA_HREF} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: '#fff', color: C.text, padding: '13px 22px', fontSize: 15, fontWeight: 820 }}>{CTA_LABEL}</a>
         </div>
       </section>
 

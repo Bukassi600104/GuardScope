@@ -479,7 +479,7 @@ export default function Home() {
             <span style={{ ...s.eyebrow, color: '#78d7ff' }}>Launch access</span>
             <h2 style={{ ...s.h2, color: '#fff', margin: '12px 0 18px' }}>Claim one of the first 100 free codes.</h2>
             <p style={{ fontSize: 17, lineHeight: 1.75, color: 'rgba(255,255,255,0.72)' }}>
-              Early users receive {QUOTAS.promoProDays} days of Pro access while the Chrome Web Store launch is finalized. No credit card is required for the code.
+              Chrome Web Store users can claim {QUOTAS.promoProDays} days of Pro access during the launch window. No credit card is required for the code.
             </p>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: 24 }}>
@@ -525,7 +525,7 @@ export default function Home() {
         <div style={s.wrap}>
           <div style={{ maxWidth: 700, marginBottom: 36 }}>
             <span style={s.eyebrow}>Pricing</span>
-            <h2 style={{ ...s.h2, margin: '12px 0 18px' }}>Free to inspect. Pro for launch users.</h2>
+            <h2 style={{ ...s.h2, margin: '12px 0 18px' }}>Free to inspect. Pro access for launch users.</h2>
           </div>
           <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {[
@@ -565,7 +565,7 @@ export default function Home() {
         <div style={{ ...s.wrap, textAlign: 'center', maxWidth: 760 }}>
           <h2 style={s.h2}>Inspect before you trust.</h2>
           <p style={{ ...s.lead, margin: '18px auto 28px' }}>
-            Join the Chrome launch list and get GuardScope ready for suspicious Gmail messages.
+            Install GuardScope from the Chrome Web Store and keep a launch code available for temporary Pro access.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
             <a href={CTA_HREF} style={s.buttonPrimary}>{CTA_LABEL}</a>

@@ -13,7 +13,7 @@ export function Footer() {
     { label: 'Features', href: '/features' },
     { label: 'How it works', href: '/how-it-works' },
     { label: 'Pricing', href: '/pricing' },
-    { label: 'Early access', href: '/#early-access' },
+    { label: 'Launch code', href: '/#early-access' },
     { label: 'FAQ', href: '/#faq' },
   ]
 

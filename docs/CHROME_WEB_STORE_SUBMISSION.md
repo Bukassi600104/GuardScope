@@ -2,6 +2,12 @@
 
 This document maps GuardScope's website, extension behavior, legal copy, and listing assets to the Chrome Web Store review story.
 
+## Published Listing
+
+GuardScope is published publicly on the Chrome Web Store:
+
+https://chromewebstore.google.com/detail/guardscope-email-security/fbjajijepjmcmkcidfbmjbjmmegokhif
+
 ## Listing
 
 **Name:** GuardScope - Email Security
@@ -62,7 +68,8 @@ GuardScope does not:
 ## Website Alignment
 
 - Homepage hero must say GuardScope is for Gmail email threat analysis.
-- Primary CTA remains early access until the Chrome Web Store listing URL is approved.
+- Primary CTA points to the public Chrome Web Store listing and uses "Add to Chrome."
+- Launch-code CTAs remain secondary for the limited free-code program.
 - Privacy promise must stay visible: no email storage, user-triggered scans only, advisory results.
 - Quota copy must remain consistent:
   - Anonymous users: 5 analyses per day per IP.
@@ -79,12 +86,12 @@ GuardScope does not:
 - Screenshot 6: technical details expanded.
 - Optional demo video: 60-90 seconds showing install, consent, Gmail analysis, result, and copy report.
 
-## Pre-Submission Checklist
+## Release Checklist
 
-- Build extension from `extension/dist`.
+- Build extension from `extension/dist` before every Chrome Web Store update.
 - Confirm ZIP contains no `.env` files, source maps, or server secrets.
 - Confirm `extension/PERMISSION_JUSTIFICATIONS.md` matches `extension/manifest.json`.
 - Confirm production `/api/health` is live.
 - Confirm promo-code request and redemption work in production.
 - Confirm website legal pages are deployed and linked from the footer.
-- Complete manual Gmail QA from `docs/MANUAL_QA.md`.
+- Complete manual Gmail QA from `docs/MANUAL_QA.md` before publishing any new extension version.

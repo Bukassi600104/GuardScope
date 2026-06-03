@@ -2,9 +2,10 @@
 
 AI-powered Gmail phishing investigation in a Chrome side panel.
 
-GuardScope is a pre-launch Chrome MV3 extension and Next.js backend that helps users inspect suspicious Gmail messages before they click, reply, or open attachments. It combines deterministic security checks with Mercury-2 AI analysis to produce a plain-English risk report with evidence, a 0-100 score, and recommended action.
+GuardScope is a published Chrome MV3 extension and Next.js backend that helps users inspect suspicious Gmail messages before they click, reply, or open attachments. It combines deterministic security checks with Mercury-2 AI analysis to produce a plain-English risk report with evidence, a 0-100 score, and recommended action.
 
-**Launch status:** Chrome Web Store preparation.
+**Launch status:** Published on the Chrome Web Store.
+**Chrome Web Store:** https://chromewebstore.google.com/detail/guardscope-email-security/fbjajijepjmcmkcidfbmjbjmmegokhif
 **Production domain:** https://guardscope.app
 **Primary AI engine:** Mercury-2 by InceptionLabs.
 
@@ -48,7 +49,7 @@ GuardScope/
 - **Database/Auth:** Supabase PostgreSQL, Supabase Auth, RLS
 - **Threat intel:** VirusTotal, Google Safe Browsing, PhishTank, URLhaus, Spamhaus
 - **Rate limiting:** Upstash Redis
-- **Payments:** Stripe and Paystack, currently suspended during early-access promo
+- **Payments:** Stripe and Paystack, currently suspended during the launch-code promo period
 - **Email:** Resend
 - **Monitoring:** Sentry
 
@@ -57,7 +58,7 @@ GuardScope/
 - Anonymous users: 5 analyses per day per IP.
 - Signed-in free users: 5 analyses per month per account.
 - Pro and Team users: unlimited analyses, subject to abuse rate limits.
-- Early-access promo codes: 100 seeded `GS-...` codes, each granting 30 days of Pro access after redemption.
+- Launch promo codes: 100 seeded `GS-...` codes, each granting 30 days of Pro access after redemption.
 
 ## Privacy Model
 
@@ -100,10 +101,11 @@ npm run build --prefix backend
 npm run build --prefix extension
 ```
 
-The launch gate is not just compilation. Manual Gmail QA is required before Chrome Web Store submission because extraction depends on Gmail DOM behavior.
+The release gate is not just compilation. Manual Gmail QA is required before Chrome Web Store updates because extraction depends on Gmail DOM behavior.
 
-## Chrome Web Store Launch Checklist
+## Chrome Web Store Release Checklist
 
+- Public listing is live at `https://chromewebstore.google.com/detail/guardscope-email-security/fbjajijepjmcmkcidfbmjbjmmegokhif`.
 - Production backend deployed at `https://guardscope.app`.
 - Privacy Policy live at `https://guardscope.app/privacy`.
 - Terms live at `https://guardscope.app/terms`.
@@ -111,7 +113,6 @@ The launch gate is not just compilation. Manual Gmail QA is required before Chro
 - Extension build is packaged from `extension/dist/`.
 - Package contains no source maps, `.env` files, or server secrets.
 - Screenshots prepared: onboarding, popup, progress, safe result, critical result, technical details.
-- Demo video prepared: 60-90 seconds.
 - Data-use disclosure matches the privacy model above.
 
 ## Security Notes

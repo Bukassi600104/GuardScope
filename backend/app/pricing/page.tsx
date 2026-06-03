@@ -79,7 +79,7 @@ const PLANS = [
 
 const FAQS = [
   { q: 'Why are anonymous and signed-in quotas different?', a: 'Anonymous quota is daily and IP-based so new users can try GuardScope quickly. Signed-in free quota is account-based and currently monthly unless upgraded or using a promo code.' },
-  { q: 'When will the Chrome Web Store link be live?', a: 'The site uses early-access CTAs until the listing is approved. Once approved, the same CTA slot can point directly to the Chrome Web Store URL.' },
+  { q: 'Where do I install GuardScope?', a: 'Use the primary Add to Chrome button on this site to open the public Chrome Web Store listing, then install GuardScope from there.' },
   { q: 'Do launch promo codes require payment?', a: 'No. Launch codes provide temporary Pro access without requiring a credit card.' },
   { q: 'Are scan results definitive?', a: 'No. GuardScope provides advisory threat analysis and should be used alongside normal security judgment.' },
 ]
@@ -93,7 +93,7 @@ export default function PricingPage() {
         <div style={{ ...s.wrap, maxWidth: 760 }}>
           <h1 style={s.h1}>Launch pricing for GuardScope</h1>
           <p style={{ ...s.lead, margin: '20px auto 0' }}>
-            Start with free advisory email scans. Claim a limited launch code for temporary Pro access while the Chrome Web Store launch is finalized.
+            Install GuardScope from the Chrome Web Store, start with free advisory email scans, and claim a limited launch code for temporary Pro access.
           </p>
         </div>
       </section>

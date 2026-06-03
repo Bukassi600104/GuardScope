@@ -111,7 +111,7 @@ export default function UpgradePage() {
               Activate GuardScope Pro for the Chrome launch window.
             </h1>
             <p style={{ fontSize: 16, color: C.body, lineHeight: 1.75, maxWidth: 540 }}>
-              Launch codes give selected early users temporary Pro access while GuardScope prepares for Chrome Web Store listing and feedback.
+              Launch codes give selected Chrome Web Store users temporary Pro access during the public launch period.
             </p>
 
             <div style={{ display: 'grid', gap: 12, marginTop: 30 }}>
