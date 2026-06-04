@@ -37,7 +37,17 @@ const sections = [
     ],
   },
   {
-    title: '4. Backend and API protections',
+    title: '4. New extension trust notices',
+    highlight: true,
+    bullets: [
+      'Some users with Enhanced Safe Browsing may see a Chrome caution prompt while GuardScope is newly published and publisher reputation matures.',
+      'The prompt does not mean GuardScope is unpublished; users can still install from the public Chrome Web Store listing.',
+      'GuardScope should not ask users to disable Enhanced Safe Browsing.',
+      'Chrome Web Store search visibility may take time to index and rank a new listing, so launch materials should use the direct install link.',
+    ],
+  },
+  {
+    title: '5. Backend and API protections',
     bullets: [
       'Rate limits are applied to anonymous analysis, signup, promo-code validation, and other sensitive routes where abuse risk exists.',
       'The backend enforces quota rules independently of website copy or extension UI.',
@@ -47,15 +57,15 @@ const sections = [
     ],
   },
   {
-    title: '5. Third-party provider risk management',
+    title: '6. Third-party provider risk management',
     body: 'GuardScope uses specialist providers for AI-assisted analysis, threat intelligence, hosting, authentication, payments, DNS/RDAP, and email delivery. Provider results can be incomplete or delayed, so GuardScope combines signals and presents advisory findings instead of absolute guarantees.',
   },
   {
-    title: '6. Logging and diagnostics',
+    title: '7. Logging and diagnostics',
     body: 'Operational logs should avoid storing email bodies, subjects, recipients, headers, and extracted email content. Logs may include request identifiers, status codes, timing, account tier, quota events, and error information needed for security monitoring and support.',
   },
   {
-    title: '7. Account and password security',
+    title: '8. Account and password security',
     bullets: [
       'New account passwords must be at least 12 characters.',
       'Reset-password flows require a valid recovery token.',
@@ -64,11 +74,11 @@ const sections = [
     ],
   },
   {
-    title: '8. Responsible disclosure',
+    title: '9. Responsible disclosure',
     body: `If you believe you found a vulnerability in GuardScope, email ${SUPPORT_EMAIL} with a clear description, reproduction steps, affected URLs or extension versions, and potential impact. Please do not access another user's data, run destructive tests, degrade service availability, or publicly disclose the issue before we have had a reasonable opportunity to investigate.`,
   },
   {
-    title: '9. User security guidance',
+    title: '10. User security guidance',
     bullets: [
       'Treat GuardScope as an advisory layer, not a replacement for good judgment or organizational security controls.',
       'Do not click links, open attachments, or send money solely because one tool appears to mark a message as safe.',
@@ -77,7 +87,7 @@ const sections = [
     ],
   },
   {
-    title: '10. Contact',
+    title: '11. Contact',
     body: `Security reports: ${SUPPORT_EMAIL}\nPrivacy requests: ${PRIVACY_EMAIL}`,
   },
 ]

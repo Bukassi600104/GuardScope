@@ -327,6 +327,14 @@ const FAQS = [
     a: 'GuardScope needs access to Gmail pages so it can read the currently open email only when you ask it to analyze that message.',
   },
   {
+    q: 'Why did Chrome show an Enhanced Safe Browsing caution?',
+    a: 'Some Chrome users may see this caution because GuardScope is newly published and the publisher reputation is still maturing. The extension is live on the Chrome Web Store, scans only when you start an analysis, and does not store email content in GuardScope databases.',
+  },
+  {
+    q: 'Why does GuardScope not show in Chrome Web Store search yet?',
+    a: 'New Chrome Web Store listings may take time to be indexed and ranked. GuardScope remains installable from the direct Chrome Web Store link while search visibility matures.',
+  },
+  {
     q: 'Are the results definitive?',
     a: 'No security tool can detect every threat. GuardScope provides advisory analysis so you can make a more informed decision.',
   },

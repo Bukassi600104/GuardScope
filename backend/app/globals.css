@@ -98,6 +98,10 @@ img { max-width: 100%; }
   gap: 14px;
 }
 
+.control-grid {
+  min-width: 0;
+}
+
 .stat-strip-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -107,7 +111,8 @@ img { max-width: 100%; }
 @media (max-width: 1040px) {
   .home-hero-grid,
   .two-col-grid,
-  .auth-shell-grid {
+  .auth-shell-grid,
+  .control-grid {
     grid-template-columns: 1fr !important;
   }
 
