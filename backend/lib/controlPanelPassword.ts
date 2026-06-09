@@ -3,8 +3,8 @@ import { promisify } from 'util'
 
 const scrypt = promisify(scryptCallback)
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? ''
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '').trim()
+const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? '').trim()
 const BOOTSTRAP_HASH = (process.env.CONTROL_PANEL_BOOTSTRAP_PASSWORD_HASH ?? '').trim()
 const SESSION_SECRET = (process.env.CONTROL_PANEL_SESSION_SECRET ?? process.env.SUPABASE_JWT_SECRET ?? '').trim()
 const SESSION_TTL_SECONDS = 60 * 60 * 8
