@@ -132,15 +132,20 @@ export async function verifyOwnerPassword(password: string, storedHash: string) 
 export async function getStoredControlPanelCredential() {
   if (!hasSupabaseConfig()) return null
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/control_panel_credentials?id=eq.owner&select=id,password_hash,password_changed_at&limit=1`, {
-    headers: serviceHeaders(),
-    cache: 'no-store',
-  })
+  let res: Response
+  try {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/control_panel_credentials?id=eq.owner&select=id,password_hash,password_changed_at&limit=1`, {
+      headers: serviceHeaders(),
+      cache: 'no-store',
+    })
+  } catch {
+    throw new Error('Control Panel credential storage is unreachable. Check the Supabase project URL/status and apply the control_panel_credentials migration.')
+  }
 
   if (res.status === 404) return null
 
   if (!res.ok) {
-    throw new Error(`Control Panel credential lookup failed with ${res.status}.`)
+    throw new Error(`Control Panel credential lookup failed with ${res.status}. Apply the control_panel_credentials migration if it has not been applied.`)
   }
 
   const rows = await res.json() as CredentialRow[]
@@ -153,19 +158,24 @@ export async function saveControlPanelPassword(password: string) {
   }
 
   const passwordHash = await hashOwnerPassword(password)
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/control_panel_credentials?on_conflict=id`, {
-    method: 'POST',
-    headers: serviceHeaders({ Prefer: 'resolution=merge-duplicates,return=representation' }),
-    cache: 'no-store',
-    body: JSON.stringify({
-      id: 'owner',
-      password_hash: passwordHash,
-      password_changed_at: new Date().toISOString(),
-    }),
-  })
+  let res: Response
+  try {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/control_panel_credentials?on_conflict=id`, {
+      method: 'POST',
+      headers: serviceHeaders({ Prefer: 'resolution=merge-duplicates,return=representation' }),
+      cache: 'no-store',
+      body: JSON.stringify({
+        id: 'owner',
+        password_hash: passwordHash,
+        password_changed_at: new Date().toISOString(),
+      }),
+    })
+  } catch {
+    throw new Error('Control Panel credential storage is unreachable. Check the Supabase project URL/status before saving the permanent password.')
+  }
 
   if (!res.ok) {
-    throw new Error(`Control Panel password save failed with ${res.status}.`)
+    throw new Error(`Control Panel password save failed with ${res.status}. Apply the control_panel_credentials migration if it has not been applied.`)
   }
 }
 
