@@ -1,0 +1,402 @@
+'use client'
+
+import type { FormEvent, ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { GuardScopeLogo } from '../components/GuardScopeLogo'
+
+type Check = {
+  label: string
+  status: 'ok' | 'watch' | 'missing'
+  detail: string
+}
+
+type PromoActivity = {
+  code: string
+  status: string
+  requesterName: string | null
+  requesterEmail: string | null
+  requesterCountry: string | null
+  claimedAt: string | null
+  proExpiresAt: string | null
+}
+
+type HighRiskScan = {
+  fromDomain: string
+  riskLevel: string
+  riskScore: number
+  analysisPath: string
+  durationMs: number | null
+  analyzedAt: string
+}
+
+type ControlPanelData = {
+  generatedAt: string
+  owner: { email: string }
+  listingUrl: string
+  websiteUrl: string
+  supportEmail: string
+  checks: Check[]
+  marketplace: {
+    installs: number | null
+    uninstalls: number | null
+    status: string
+    source: string
+    note: string
+  }
+  bugReports: {
+    open: number | null
+    status: string
+    source: string
+    note: string
+  }
+  ownerOperations: {
+    promoSummary: {
+      total: number
+      available: number
+      assigned: number
+      claimed: number
+      expired: number
+      warning?: string
+      recent: PromoActivity[]
+    }
+    userSummary: {
+      total: number
+      free: number
+      pro: number
+      team: number
+      currentMonthAnalyses: number
+      warning?: string
+    }
+    analysisSummary: {
+      total: number
+      last24h: number
+      highRisk30d: number
+      averageRecentScore: number | null
+      averageRecentDurationMs: number | null
+      warning?: string
+    }
+    recentHighRisk: HighRiskScan[]
+  }
+}
+
+const TOKEN_KEY = 'guardscope_control_panel_token'
+
+const C = {
+  bg: '#f4f7fb',
+  panel: '#ffffff',
+  text: '#061b2b',
+  body: '#526477',
+  muted: '#7b8998',
+  border: '#d6e1ea',
+  cyan: '#0b95c9',
+  green: '#168a45',
+  amber: '#b86b00',
+  red: '#c73535',
+  ink: '#061b2b',
+}
+
+function fmt(value: number | null | undefined) {
+  if (value === null || value === undefined) return 'Not connected'
+  return new Intl.NumberFormat().format(value)
+}
+
+function dateLabel(value: string | null) {
+  if (!value) return 'Not claimed'
+  return new Date(value).toLocaleString()
+}
+
+function statusColor(status: Check['status'] | string) {
+  if (status === 'ok') return C.green
+  if (status === 'missing') return C.red
+  return C.amber
+}
+
+function Metric({ label, value, detail, tone = C.cyan }: { label: string; value: string | number; detail: string; tone?: string }) {
+  return (
+    <article style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: 18, minHeight: 132 }}>
+      <div style={{ color: C.muted, fontSize: 11, fontWeight: 820, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ color: C.text, fontSize: 32, fontWeight: 900, lineHeight: 1.05, marginTop: 14 }}>{value}</div>
+      <div style={{ color: tone, fontSize: 13, fontWeight: 760, marginTop: 10 }}>{detail}</div>
+    </article>
+  )
+}
+
+function Panel({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
+  return (
+    <section style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+        <h2 style={{ color: C.text, fontSize: 18, lineHeight: 1.2 }}>{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function SourceNotice({ title, note }: { title: string; note: string }) {
+  return (
+    <div style={{ border: `1px solid ${C.border}`, borderLeft: `4px solid ${C.amber}`, borderRadius: 8, padding: 13, background: '#fffaf0' }}>
+      <div style={{ color: C.text, fontSize: 13, fontWeight: 820, marginBottom: 4 }}>{title}</div>
+      <p style={{ color: C.body, fontSize: 13, lineHeight: 1.55 }}>{note}</p>
+    </div>
+  )
+}
+
+export default function ControlPanelPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [token, setToken] = useState('')
+  const [data, setData] = useState<ControlPanelData | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const saved = window.sessionStorage.getItem(TOKEN_KEY)
+    if (saved) setToken(saved)
+  }, [])
+
+  useEffect(() => {
+    if (token) void loadPanel(token)
+  }, [token])
+
+  async function handleSignIn(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/control-panel/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        setError(body.error || 'Unable to open Control Panel.')
+        return
+      }
+      window.sessionStorage.setItem(TOKEN_KEY, body.accessToken)
+      setToken(body.accessToken)
+      setPassword('')
+    } catch {
+      setError('Unable to reach Control Panel auth.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function loadPanel(accessToken = token) {
+    if (!accessToken) return
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/control-panel/status', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: 'no-store',
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        window.sessionStorage.removeItem(TOKEN_KEY)
+        setToken('')
+        setData(null)
+        setError(body.error || 'Owner sign-in required.')
+        return
+      }
+      setData(body)
+    } catch {
+      setError('Unable to load Control Panel metrics.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function signOut() {
+    window.sessionStorage.removeItem(TOKEN_KEY)
+    setToken('')
+    setData(null)
+  }
+
+  const ops = data?.ownerOperations
+  const healthTone = useMemo(() => {
+    if (!data) return C.muted
+    return data.checks.some((check) => check.status === 'missing') ? C.red : data.checks.some((check) => check.status === 'watch') ? C.amber : C.green
+  }, [data])
+
+  return (
+    <main style={{ minHeight: '100vh', background: C.bg, padding: '24px 20px 54px' }}>
+      <div style={{ width: 'min(1240px, 100%)', margin: '0 auto' }}>
+        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 22 }}>
+          <a href="/" aria-label="GuardScope home"><GuardScopeLogo variant="dark" size={32} textSize={17} /></a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'end' }}>
+            {data && <span style={{ color: C.body, fontSize: 13 }}>{data.owner.email}</span>}
+            {data && <button onClick={() => void loadPanel()} style={{ border: `1px solid ${C.border}`, background: '#fff', borderRadius: 8, color: C.text, padding: '9px 12px', fontSize: 13, fontWeight: 780 }}>Refresh</button>}
+            {token && <button onClick={signOut} style={{ border: `1px solid ${C.border}`, background: '#fff', borderRadius: 8, color: C.body, padding: '9px 12px', fontSize: 13, fontWeight: 760 }}>Sign out</button>}
+          </div>
+        </header>
+
+        <section style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginBottom: 18 }}>
+          <div>
+            <p style={{ color: C.cyan, fontSize: 12, fontWeight: 840, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Control Panel</p>
+            <h1 style={{ color: C.text, fontSize: 'clamp(34px,5vw,56px)', lineHeight: 1.02 }}>GuardScope operations</h1>
+            <p style={{ color: C.body, fontSize: 15, lineHeight: 1.65, maxWidth: 680, marginTop: 10 }}>
+              Monitor users, promo codes, scans, health, support signals, and marketplace readiness without changing the live Chrome extension.
+            </p>
+          </div>
+          {data && (
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: 8, background: '#fff', padding: '12px 14px', minWidth: 210 }}>
+              <div style={{ color: C.muted, fontSize: 11, fontWeight: 820, textTransform: 'uppercase' }}>Overall status</div>
+              <div style={{ color: healthTone, fontSize: 22, fontWeight: 900, marginTop: 5 }}>{data.checks.some((c) => c.status !== 'ok') ? 'Watch' : 'Healthy'}</div>
+            </div>
+          )}
+        </section>
+
+        {error && (
+          <div style={{ border: `1px solid rgba(199,53,53,0.28)`, background: '#fff2f2', color: '#8b2020', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13 }}>
+            {error}
+          </div>
+        )}
+
+        {!data || !ops ? (
+          <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(300px,420px)', gap: 18, alignItems: 'stretch' }}>
+            <Panel title="Owner access">
+              <p style={{ color: C.body, fontSize: 14, lineHeight: 1.7, marginBottom: 18 }}>
+                This is not a separate launch password page. Use the approved GuardScope owner account to open the Control Panel.
+              </p>
+              <form onSubmit={handleSignIn} style={{ display: 'grid', gap: 12 }}>
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  Owner email
+                  <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" required placeholder="bukassi@gmail.com" style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
+                </label>
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  Account password
+                  <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
+                </label>
+                <button disabled={loading} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: loading ? 0.72 : 1 }}>
+                  {loading ? 'Opening...' : 'Open Control Panel'}
+                </button>
+              </form>
+            </Panel>
+            <Panel title="What this panel tracks">
+              <div style={{ display: 'grid', gap: 10 }}>
+                {['Users and plan mix', 'Promo code inventory and claims', 'Scan volume and high-risk activity', 'Website and listing health', 'Support and bug-report source status'].map((item) => (
+                  <div key={item} style={{ color: C.body, fontSize: 13, borderBottom: `1px solid ${C.border}`, paddingBottom: 9 }}>{item}</div>
+                ))}
+              </div>
+            </Panel>
+          </section>
+        ) : (
+          <div style={{ display: 'grid', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
+              <Metric label="Store installs" value={fmt(data.marketplace.installs)} detail={data.marketplace.source} tone={C.amber} />
+              <Metric label="Uninstalls" value={fmt(data.marketplace.uninstalls)} detail="Awaiting CWS source" tone={C.amber} />
+              <Metric label="Users" value={fmt(ops.userSummary.total)} detail={`${fmt(ops.userSummary.pro)} pro / ${fmt(ops.userSummary.free)} free`} tone={C.green} />
+              <Metric label="Codes left" value={fmt(ops.promoSummary.available)} detail={`${fmt(ops.promoSummary.claimed)} claimed`} />
+              <Metric label="Scans" value={fmt(ops.analysisSummary.total)} detail={`${fmt(ops.analysisSummary.last24h)} in 24h`} tone={C.green} />
+              <Metric label="Bug reports" value={fmt(data.bugReports.open)} detail={data.bugReports.source} tone={C.amber} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: 16 }}>
+              <Panel title="App health">
+                <div style={{ display: 'grid', gap: 9 }}>
+                  {data.checks.map((check) => (
+                    <div key={check.label} style={{ border: `1px solid ${C.border}`, borderLeft: `4px solid ${statusColor(check.status)}`, borderRadius: 8, padding: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                        <strong style={{ color: C.text, fontSize: 13 }}>{check.label}</strong>
+                        <span style={{ color: statusColor(check.status), fontSize: 11, fontWeight: 860, textTransform: 'uppercase' }}>{check.status}</span>
+                      </div>
+                      <p style={{ color: C.body, fontSize: 12, lineHeight: 1.55, marginTop: 6 }}>{check.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+
+              <Panel title="Marketplace monitoring">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <Metric label="Installs" value={fmt(data.marketplace.installs)} detail="Chrome Web Store" tone={C.amber} />
+                  <Metric label="Uninstalls" value={fmt(data.marketplace.uninstalls)} detail="Chrome Web Store" tone={C.amber} />
+                </div>
+                <SourceNotice title="Install source not connected yet" note={data.marketplace.note} />
+              </Panel>
+
+              <Panel title="Bug reports">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                  <Metric label="Open bugs" value={fmt(data.bugReports.open)} detail="Support queue" tone={C.amber} />
+                  <Metric label="Support" value="Active" detail={data.supportEmail} tone={C.green} />
+                </div>
+                <SourceNotice title="Bug source is support-driven" note={data.bugReports.note} />
+              </Panel>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: 16 }}>
+              <Panel title="Promo codes">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginBottom: 14 }}>
+                  {[
+                    ['Total', ops.promoSummary.total],
+                    ['Left', ops.promoSummary.available],
+                    ['Assigned', ops.promoSummary.assigned],
+                    ['Used', ops.promoSummary.claimed],
+                    ['Expired', ops.promoSummary.expired],
+                  ].map(([label, value]) => (
+                    <div key={label} style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: 9 }}>
+                      <div style={{ color: C.muted, fontSize: 10, fontWeight: 820 }}>{label}</div>
+                      <div style={{ color: C.text, fontSize: 20, fontWeight: 900 }}>{fmt(value as number)}</div>
+                    </div>
+                  ))}
+                </div>
+                {ops.promoSummary.recent.length ? ops.promoSummary.recent.slice(0, 5).map((item) => (
+                  <div key={`${item.code}-${item.requesterEmail}`} style={{ borderTop: `1px solid ${C.border}`, padding: '10px 0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                      <strong style={{ color: C.text, fontSize: 13 }}>{item.code}</strong>
+                      <span style={{ color: item.status === 'claimed' ? C.green : C.amber, fontSize: 11, fontWeight: 820 }}>{item.status}</span>
+                    </div>
+                    <div style={{ color: C.body, fontSize: 12, marginTop: 5 }}>{item.requesterEmail || 'No email'} - {dateLabel(item.claimedAt)}</div>
+                  </div>
+                )) : <p style={{ color: C.body, fontSize: 13 }}>No promo-code activity yet.</p>}
+              </Panel>
+
+              <Panel title="Scan analytics">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                  <Metric label="24h scans" value={fmt(ops.analysisSummary.last24h)} detail="Recent activity" tone={C.green} />
+                  <Metric label="High risk" value={fmt(ops.analysisSummary.highRisk30d)} detail="Last 30 days" tone={C.red} />
+                  <Metric label="Avg score" value={fmt(ops.analysisSummary.averageRecentScore)} detail="Recent sample" tone={C.amber} />
+                  <Metric label="Latency" value={ops.analysisSummary.averageRecentDurationMs ? `${fmt(ops.analysisSummary.averageRecentDurationMs)}ms` : 'n/a'} detail="Recent avg" tone={C.amber} />
+                </div>
+              </Panel>
+            </div>
+
+            <Panel title="Recent high-risk scans">
+              {ops.recentHighRisk.length ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
+                    <thead>
+                      <tr>
+                        {['Time', 'Domain', 'Risk', 'Score', 'Path', 'Duration'].map((heading) => (
+                          <th key={heading} style={{ textAlign: 'left', color: C.muted, fontSize: 11, textTransform: 'uppercase', borderBottom: `1px solid ${C.border}`, padding: '9px 8px' }}>{heading}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ops.recentHighRisk.map((row) => (
+                        <tr key={`${row.analyzedAt}-${row.fromDomain}-${row.riskScore}`}>
+                          <td style={{ color: C.body, fontSize: 12, borderBottom: `1px solid ${C.border}`, padding: '10px 8px' }}>{new Date(row.analyzedAt).toLocaleString()}</td>
+                          <td style={{ color: C.text, fontSize: 12, fontWeight: 760, borderBottom: `1px solid ${C.border}`, padding: '10px 8px' }}>{row.fromDomain}</td>
+                          <td style={{ color: row.riskLevel === 'CRITICAL' ? C.red : C.amber, fontSize: 12, fontWeight: 860, borderBottom: `1px solid ${C.border}`, padding: '10px 8px' }}>{row.riskLevel}</td>
+                          <td style={{ color: C.text, fontSize: 12, borderBottom: `1px solid ${C.border}`, padding: '10px 8px' }}>{row.riskScore}</td>
+                          <td style={{ color: C.body, fontSize: 12, borderBottom: `1px solid ${C.border}`, padding: '10px 8px' }}>{row.analysisPath}</td>
+                          <td style={{ color: C.body, fontSize: 12, borderBottom: `1px solid ${C.border}`, padding: '10px 8px' }}>{row.durationMs ? `${fmt(row.durationMs)}ms` : 'n/a'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : <p style={{ color: C.body, fontSize: 13 }}>No high-risk scan metadata yet.</p>}
+            </Panel>
+
+            <p style={{ color: C.muted, fontSize: 12 }}>
+              Last updated: {new Date(data.generatedAt).toLocaleString()} - Control Panel reads operational metadata only. The published extension was not changed.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  )
+}

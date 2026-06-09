@@ -1,5 +1,5 @@
 export const PUBLISHED_CHROME_WEB_STORE_URL =
-  'https://chromewebstore.google.com/detail/guardscope-email-security/fbjajijepjmcmkcidfbmjbjmmegokhif'
+  'https://chromewebstore.google.com/detail/guardscope-email-security/fbjajjiepjmcmkcidfbmjbjmmegokhif'
 
 export const CHROME_WEB_STORE_URL =
   process.env.NEXT_PUBLIC_CHROME_WEB_STORE_URL?.trim() || PUBLISHED_CHROME_WEB_STORE_URL
