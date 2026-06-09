@@ -1,4 +1,4 @@
-import { decodeJwt } from './quota'
+import { verifyControlPanelSessionToken } from './controlPanelPassword'
 
 const DEFAULT_OWNER_EMAIL = 'bukassi@gmail.com'
 
@@ -18,11 +18,10 @@ export async function verifyControlPanelBearer(authHeader: string | null) {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : ''
   if (!token) return null
 
-  const jwt = await decodeJwt(token)
-  if (!jwt?.sub || !isControlPanelOwnerEmail(jwt.email)) return null
+  const session = verifyControlPanelSessionToken(token)
+  if (!session || !isControlPanelOwnerEmail(session.email)) return null
 
   return {
-    userId: jwt.sub,
-    email: jwt.email ?? '',
+    email: session.email,
   }
 }

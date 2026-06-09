@@ -145,9 +145,13 @@ function SourceNotice({ title, note }: { title: string; note: string }) {
 export default function ControlPanelPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [token, setToken] = useState('')
+  const [setupToken, setSetupToken] = useState('')
   const [data, setData] = useState<ControlPanelData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [changeLoading, setChangeLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -174,6 +178,11 @@ export default function ControlPanelPage() {
         setError(body.error || 'Unable to open Control Panel.')
         return
       }
+      if (body.requiresPasswordChange && body.setupToken) {
+        setSetupToken(body.setupToken)
+        setPassword('')
+        return
+      }
       window.sessionStorage.setItem(TOKEN_KEY, body.accessToken)
       setToken(body.accessToken)
       setPassword('')
@@ -181,6 +190,39 @@ export default function ControlPanelPage() {
       setError('Unable to reach Control Panel auth.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handlePasswordChange(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    if (newPassword !== confirmPassword) {
+      setError('The new passwords do not match.')
+      return
+    }
+
+    setChangeLoading(true)
+    try {
+      const res = await fetch('/api/control-panel/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ setupToken, password: newPassword }),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        setError(body.error || 'Unable to save new owner password.')
+        return
+      }
+
+      window.sessionStorage.setItem(TOKEN_KEY, body.accessToken)
+      setToken(body.accessToken)
+      setSetupToken('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch {
+      setError('Unable to save new owner password.')
+    } finally {
+      setChangeLoading(false)
     }
   }
 
@@ -259,17 +301,17 @@ export default function ControlPanelPage() {
           <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(300px,420px)', gap: 18, alignItems: 'stretch' }}>
             <Panel title="Owner access">
               <p style={{ color: C.body, fontSize: 14, lineHeight: 1.7, marginBottom: 18 }}>
-                This is not a separate launch password page. Use the approved GuardScope owner account to open the Control Panel.
+                Enter the current owner password to open the Control Panel. The first temporary password must be changed immediately.
               </p>
               <form onSubmit={handleSignIn} style={{ display: 'grid', gap: 12 }}>
                 <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
-                  Owner email
-                  <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" required placeholder="bukassi@gmail.com" style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
-                </label>
-                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
-                  Account password
+                  Owner password
                   <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
                 </label>
+                <details>
+                  <summary style={{ color: C.muted, fontSize: 12, fontWeight: 760, cursor: 'pointer' }}>Advanced owner email</summary>
+                  <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" placeholder="bukassi@gmail.com" style={{ height: 42, width: '100%', marginTop: 9, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
+                </details>
                 <button disabled={loading} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: loading ? 0.72 : 1 }}>
                   {loading ? 'Opening...' : 'Open Control Panel'}
                 </button>
@@ -394,6 +436,32 @@ export default function ControlPanelPage() {
             <p style={{ color: C.muted, fontSize: 12 }}>
               Last updated: {new Date(data.generatedAt).toLocaleString()} - Control Panel reads operational metadata only. The published extension was not changed.
             </p>
+          </div>
+        )}
+
+        {setupToken && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(6,27,43,0.62)', display: 'grid', placeItems: 'center', padding: 20 }}>
+            <section role="dialog" aria-modal="true" aria-labelledby="change-owner-password" style={{ width: 'min(480px, 100%)', background: '#fff', borderRadius: 8, border: `1px solid ${C.border}`, boxShadow: '0 24px 80px rgba(0,0,0,0.24)', padding: 24 }}>
+              <p style={{ color: C.cyan, fontSize: 12, fontWeight: 840, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Required now</p>
+              <h2 id="change-owner-password" style={{ color: C.text, fontSize: 24, lineHeight: 1.15, marginBottom: 10 }}>Create your permanent owner password</h2>
+              <p style={{ color: C.body, fontSize: 14, lineHeight: 1.65, marginBottom: 18 }}>
+                The temporary password worked. Set a new password now; after this, only the new backend-stored password will open the Control Panel.
+              </p>
+              <form onSubmit={handlePasswordChange} style={{ display: 'grid', gap: 12 }}>
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  New owner password
+                  <input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
+                </label>
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  Confirm new password
+                  <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
+                </label>
+                <p style={{ color: C.muted, fontSize: 12, lineHeight: 1.55 }}>Use at least 14 characters with uppercase, lowercase, and a number.</p>
+                <button disabled={changeLoading} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: changeLoading ? 0.72 : 1 }}>
+                  {changeLoading ? 'Saving...' : 'Save permanent password'}
+                </button>
+              </form>
+            </section>
           </div>
         )}
       </div>
