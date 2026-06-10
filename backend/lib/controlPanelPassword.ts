@@ -5,26 +5,29 @@ const scrypt = promisify(scryptCallback)
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '').trim()
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? '').trim()
-const BOOTSTRAP_HASH = (process.env.CONTROL_PANEL_BOOTSTRAP_PASSWORD_HASH ?? '').trim()
 const SESSION_SECRET = (process.env.CONTROL_PANEL_SESSION_SECRET ?? process.env.SUPABASE_JWT_SECRET ?? '').trim()
 const SESSION_TTL_SECONDS = 60 * 60 * 8
-const SETUP_TTL_SECONDS = 60 * 10
+const RESET_TTL_SECONDS = 60 * 30
 
-type CredentialRow = {
+export type CredentialRow = {
   id: 'owner'
+  username: string
+  recovery_email: string
   password_hash: string
   password_changed_at: string | null
 }
 
-export type ControlPanelSession = {
+type ControlPanelSession = {
   kind: 'control_panel_session'
-  email: string
+  username: string
   exp: number
 }
 
-export type ControlPanelSetupSession = {
-  kind: 'control_panel_setup'
-  email: string
+type ControlPanelResetSession = {
+  kind: 'control_panel_reset'
+  username: string
+  recoveryEmail: string
+  passwordFingerprint: string
   exp: number
 }
 
@@ -47,11 +50,10 @@ function base64url(input: string | Buffer) {
 
 function signingSecret() {
   if (SESSION_SECRET) return SESSION_SECRET
-  if (BOOTSTRAP_HASH) return createHash('sha256').update(BOOTSTRAP_HASH).digest('hex')
   return ''
 }
 
-function signPayload(payload: ControlPanelSession | ControlPanelSetupSession) {
+function signPayload(payload: ControlPanelSession | ControlPanelResetSession) {
   const secret = signingSecret()
   if (!secret) throw new Error('Control Panel session secret is not configured.')
 
@@ -60,7 +62,7 @@ function signPayload(payload: ControlPanelSession | ControlPanelSetupSession) {
   return `${encoded}.${signature}`
 }
 
-function verifySignedPayload<T extends ControlPanelSession | ControlPanelSetupSession>(token: string, expectedKind: T['kind']) {
+function verifySignedPayload<T extends ControlPanelSession | ControlPanelResetSession>(token: string, expectedKind: T['kind']) {
   const secret = signingSecret()
   if (!secret) return null
 
@@ -82,19 +84,11 @@ function verifySignedPayload<T extends ControlPanelSession | ControlPanelSetupSe
   }
 }
 
-export function createControlPanelSession(email: string) {
+export function createControlPanelSession(username: string) {
   return signPayload({
     kind: 'control_panel_session',
-    email,
+    username,
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
-  })
-}
-
-export function createControlPanelSetupSession(email: string) {
-  return signPayload({
-    kind: 'control_panel_setup',
-    email,
-    exp: Math.floor(Date.now() / 1000) + SETUP_TTL_SECONDS,
   })
 }
 
@@ -102,8 +96,39 @@ export function verifyControlPanelSessionToken(token: string) {
   return verifySignedPayload<ControlPanelSession>(token, 'control_panel_session')
 }
 
-export function verifyControlPanelSetupToken(token: string) {
-  return verifySignedPayload<ControlPanelSetupSession>(token, 'control_panel_setup')
+function credentialFingerprint(credential: Pick<CredentialRow, 'password_hash'>) {
+  return createHash('sha256').update(credential.password_hash).digest('base64url')
+}
+
+export function createControlPanelResetToken(credential: CredentialRow) {
+  return signPayload({
+    kind: 'control_panel_reset',
+    username: credential.username,
+    recoveryEmail: credential.recovery_email,
+    passwordFingerprint: credentialFingerprint(credential),
+    exp: Math.floor(Date.now() / 1000) + RESET_TTL_SECONDS,
+  })
+}
+
+export function verifyControlPanelResetToken(token: string, credential: CredentialRow) {
+  const reset = verifySignedPayload<ControlPanelResetSession>(token, 'control_panel_reset')
+  if (!reset) return null
+  if (reset.username !== credential.username) return null
+  if (reset.recoveryEmail.toLowerCase() !== credential.recovery_email.toLowerCase()) return null
+  if (reset.passwordFingerprint !== credentialFingerprint(credential)) return null
+  return reset
+}
+
+export function validateOwnerUsername(username: string) {
+  if (!/^[a-zA-Z0-9._-]{3,40}$/.test(username)) {
+    return 'Use 3-40 letters, numbers, dots, underscores, or hyphens for the username.'
+  }
+  return null
+}
+
+export function validateRecoveryEmail(email: string) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid recovery email.'
+  return null
 }
 
 export function validateNewOwnerPassword(password: string) {
@@ -134,7 +159,7 @@ export async function getStoredControlPanelCredential() {
 
   let res: Response
   try {
-    res = await fetch(`${SUPABASE_URL}/rest/v1/control_panel_credentials?id=eq.owner&select=id,password_hash,password_changed_at&limit=1`, {
+    res = await fetch(`${SUPABASE_URL}/rest/v1/control_panel_credentials?id=eq.owner&select=id,username,recovery_email,password_hash,password_changed_at&limit=1`, {
       headers: serviceHeaders(),
       cache: 'no-store',
     })
@@ -152,12 +177,12 @@ export async function getStoredControlPanelCredential() {
   return rows[0] ?? null
 }
 
-export async function saveControlPanelPassword(password: string) {
+export async function saveControlPanelCredential(input: { username: string; password: string; recoveryEmail: string }) {
   if (!hasSupabaseConfig()) {
     throw new Error('Supabase service credentials are not configured.')
   }
 
-  const passwordHash = await hashOwnerPassword(password)
+  const passwordHash = await hashOwnerPassword(input.password)
   let res: Response
   try {
     res = await fetch(`${SUPABASE_URL}/rest/v1/control_panel_credentials?on_conflict=id`, {
@@ -166,6 +191,8 @@ export async function saveControlPanelPassword(password: string) {
       cache: 'no-store',
       body: JSON.stringify({
         id: 'owner',
+        username: input.username.trim(),
+        recovery_email: input.recoveryEmail.trim().toLowerCase(),
         password_hash: passwordHash,
         password_changed_at: new Date().toISOString(),
       }),
@@ -179,7 +206,12 @@ export async function saveControlPanelPassword(password: string) {
   }
 }
 
-export async function verifyBootstrapPassword(password: string) {
-  if (!BOOTSTRAP_HASH) return false
-  return verifyOwnerPassword(password, BOOTSTRAP_HASH)
+export async function saveControlPanelPassword(password: string) {
+  const credential = await getStoredControlPanelCredential()
+  if (!credential) throw new Error('Control Panel owner has not been created yet.')
+  await saveControlPanelCredential({
+    username: credential.username,
+    recoveryEmail: credential.recovery_email,
+    password,
+  })
 }

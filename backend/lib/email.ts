@@ -192,6 +192,39 @@ Questions? support@guardscope.app
   })
 }
 
+export async function sendControlPanelRecoveryEmail(opts: {
+  to: string
+  username: string
+  resetUrl: string
+}): Promise<void> {
+  const { to, username, resetUrl } = opts
+  await getResend().emails.send({
+    from: FROM,
+    to,
+    subject: 'Reset your GuardScope Control Panel password',
+    html: `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
+<body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#061b2b;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:38px 16px;background:#f4f7fb;">
+    <tr><td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background:#ffffff;border:1px solid #d6e1ea;border-radius:8px;padding:28px;">
+        <tr><td>
+          <h1 style="margin:0 0 12px;font-size:24px;line-height:1.2;color:#061b2b;">Reset Control Panel password</h1>
+          <p style="margin:0 0 18px;font-size:14px;line-height:1.7;color:#526477;">A password reset was requested for the GuardScope Control Panel owner account <strong>${username}</strong>.</p>
+          <p style="margin:0 0 22px;font-size:14px;line-height:1.7;color:#526477;">This link expires in 30 minutes. After changing the password, sign in again with the new password.</p>
+          <a href="${resetUrl}" style="display:inline-block;background:#061b2b;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;border-radius:8px;padding:13px 18px;">Change password</a>
+          <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#7b8998;">If you did not request this reset, ignore this email.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+    text: `Reset your GuardScope Control Panel password for ${username}: ${resetUrl}\n\nThis link expires in 30 minutes. If you did not request it, ignore this email.`,
+  })
+}
+
 // ─────────────────────────────────────────────────────────────
 // Redemption confirmation — sent after code is successfully redeemed
 // ─────────────────────────────────────────────────────────────

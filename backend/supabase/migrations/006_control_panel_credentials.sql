@@ -3,11 +3,17 @@
 
 create table if not exists public.control_panel_credentials (
   id text primary key default 'owner' check (id = 'owner'),
+  username text not null default 'owner',
+  recovery_email text not null default '',
   password_hash text not null,
   password_changed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.control_panel_credentials
+  add column if not exists username text not null default 'owner',
+  add column if not exists recovery_email text not null default '';
 
 alter table public.control_panel_credentials enable row level security;
 

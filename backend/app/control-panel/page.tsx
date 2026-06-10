@@ -31,7 +31,7 @@ type HighRiskScan = {
 
 type ControlPanelData = {
   generatedAt: string
-  owner: { email: string }
+  owner: { username: string }
   listingUrl: string
   websiteUrl: string
   supportEmail: string
@@ -80,6 +80,7 @@ type ControlPanelData = {
 }
 
 const TOKEN_KEY = 'guardscope_control_panel_token'
+type EntryMode = 'loading' | 'setup' | 'login' | 'recover' | 'reset'
 
 const C = {
   bg: '#f4f7fb',
@@ -320,44 +321,107 @@ function FloatingWatermarks() {
 }
 
 export default function ControlPanelPage() {
-  const [email, setEmail] = useState('')
+  const [mode, setMode] = useState<EntryMode>('loading')
+  const [username, setUsername] = useState('')
+  const [recoveryEmail, setRecoveryEmail] = useState('')
   const [password, setPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [token, setToken] = useState('')
-  const [setupToken, setSetupToken] = useState('')
+  const [resetToken, setResetToken] = useState('')
   const [data, setData] = useState<ControlPanelData | null>(null)
   const [loading, setLoading] = useState(false)
   const [changeLoading, setChangeLoading] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const reset = params.get('reset')
+    if (reset) {
+      setResetToken(reset)
+      setMode('reset')
+      return
+    }
+
     const saved = window.sessionStorage.getItem(TOKEN_KEY)
-    if (saved) setToken(saved)
+    if (saved) {
+      setToken(saved)
+      return
+    }
+
+    void loadSetupStatus()
   }, [])
 
   useEffect(() => {
     if (token) void loadPanel(token)
   }, [token])
 
+  async function loadSetupStatus() {
+    setError('')
+    try {
+      const res = await fetch('/api/control-panel/setup', { cache: 'no-store' })
+      const body = await res.json()
+      if (!res.ok) {
+        setMode('setup')
+        setError(body.error || 'Unable to read Control Panel setup status.')
+        return
+      }
+      setMode(body.configured ? 'login' : 'setup')
+    } catch {
+      setMode('setup')
+      setError('Unable to read Control Panel setup status.')
+    }
+  }
+
+  async function handleSetup(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    if (newPassword !== confirmPassword) {
+      setError('The passwords do not match.')
+      return
+    }
+
+    setChangeLoading(true)
+    try {
+      const res = await fetch('/api/control-panel/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: newPassword, recoveryEmail }),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        setError(body.error || 'Unable to create Control Panel owner.')
+        return
+      }
+      setPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setMode('login')
+      setNotice('Owner created. Sign in with the username and password you just created.')
+    } catch {
+      setError('Unable to create Control Panel owner.')
+    } finally {
+      setChangeLoading(false)
+    }
+  }
+
   async function handleSignIn(event: FormEvent) {
     event.preventDefault()
     setError('')
+    setNotice('')
     setLoading(true)
     try {
       const res = await fetch('/api/control-panel/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       })
       const body = await res.json()
       if (!res.ok) {
+        if (body.setupRequired) setMode('setup')
         setError(body.error || 'Unable to open Control Panel.')
-        return
-      }
-      if (body.requiresPasswordChange && body.setupToken) {
-        setSetupToken(body.setupToken)
-        setPassword('')
         return
       }
       window.sessionStorage.setItem(TOKEN_KEY, body.accessToken)
@@ -373,6 +437,7 @@ export default function ControlPanelPage() {
   async function handlePasswordChange(event: FormEvent) {
     event.preventDefault()
     setError('')
+    setNotice('')
     if (newPassword !== confirmPassword) {
       setError('The new passwords do not match.')
       return
@@ -383,7 +448,7 @@ export default function ControlPanelPage() {
       const res = await fetch('/api/control-panel/password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ setupToken, password: newPassword }),
+        body: JSON.stringify({ token: resetToken, password: newPassword }),
       })
       const body = await res.json()
       if (!res.ok) {
@@ -391,15 +456,44 @@ export default function ControlPanelPage() {
         return
       }
 
-      window.sessionStorage.setItem(TOKEN_KEY, body.accessToken)
-      setToken(body.accessToken)
-      setSetupToken('')
+      window.sessionStorage.removeItem(TOKEN_KEY)
+      setToken('')
+      setData(null)
+      setResetToken('')
       setNewPassword('')
       setConfirmPassword('')
+      window.history.replaceState(null, '', '/control-panel')
+      setMode('login')
+      setNotice('Password changed. Please log in with the new password.')
     } catch {
       setError('Unable to save new owner password.')
     } finally {
       setChangeLoading(false)
+    }
+  }
+
+  async function handleRecover(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/control-panel/recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, recoveryEmail }),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        setError(body.error || 'Unable to send recovery email.')
+        return
+      }
+      setMode('login')
+      setNotice('If the details match the owner account, a recovery link has been sent.')
+    } catch {
+      setError('Unable to send recovery email.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -432,6 +526,7 @@ export default function ControlPanelPage() {
     window.sessionStorage.removeItem(TOKEN_KEY)
     setToken('')
     setData(null)
+    setMode('login')
   }
 
   const ops = data?.ownerOperations
@@ -451,50 +546,85 @@ export default function ControlPanelPage() {
               <GuardScopeLogo variant="dark" size={48} textSize={24} />
             </a>
 
-            <form onSubmit={handleSignIn} style={{ width: '100%', display: 'grid', gap: 12, background: 'rgba(255,255,255,0.84)', border: `1px solid rgba(214,225,234,0.88)`, borderRadius: 8, padding: 22, boxShadow: '0 24px 70px rgba(6,27,43,0.12)', backdropFilter: 'blur(18px)' }}>
-              <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
-                Owner password
-                <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required style={{ height: 48, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 13px', font: 'inherit', color: C.text, background: '#fff', outline: 'none' }} />
-              </label>
+            <form
+              onSubmit={mode === 'setup' ? handleSetup : mode === 'recover' ? handleRecover : mode === 'reset' ? handlePasswordChange : handleSignIn}
+              style={{ width: '100%', display: 'grid', gap: 12, background: 'rgba(255,255,255,0.84)', border: `1px solid rgba(214,225,234,0.88)`, borderRadius: 8, padding: 22, boxShadow: '0 24px 70px rgba(6,27,43,0.12)', backdropFilter: 'blur(18px)' }}
+            >
+              {mode === 'loading' && <p style={{ color: C.body, fontSize: 13, textAlign: 'center' }}>Checking Control Panel...</p>}
 
-              <button disabled={loading} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: loading ? 0.72 : 1, cursor: loading ? 'wait' : 'pointer' }}>
-                {loading ? 'Opening...' : 'Open Control Panel'}
-              </button>
+              {(mode === 'setup' || mode === 'login' || mode === 'recover') && (
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  Username
+                  <input value={username} onChange={(event) => setUsername(event.target.value)} type="text" autoComplete="username" required style={{ height: 48, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 13px', font: 'inherit', color: C.text, background: '#fff', outline: 'none' }} />
+                </label>
+              )}
 
+              {mode === 'setup' && (
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  Recovery email
+                  <input value={recoveryEmail} onChange={(event) => setRecoveryEmail(event.target.value)} type="email" autoComplete="email" required style={{ height: 48, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 13px', font: 'inherit', color: C.text, background: '#fff', outline: 'none' }} />
+                </label>
+              )}
+
+              {mode === 'recover' && (
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  Recovery email
+                  <input value={recoveryEmail} onChange={(event) => setRecoveryEmail(event.target.value)} type="email" autoComplete="email" required style={{ height: 48, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 13px', font: 'inherit', color: C.text, background: '#fff', outline: 'none' }} />
+                </label>
+              )}
+
+              {mode === 'login' && (
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  Password
+                  <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required style={{ height: 48, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 13px', font: 'inherit', color: C.text, background: '#fff', outline: 'none' }} />
+                </label>
+              )}
+
+              {(mode === 'setup' || mode === 'reset') && (
+                <>
+                  <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                    {mode === 'setup' ? 'Password' : 'New password'}
+                    <input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 48, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 13px', font: 'inherit', color: C.text, background: '#fff', outline: 'none' }} />
+                  </label>
+                  <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                    Confirm password
+                    <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 48, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 13px', font: 'inherit', color: C.text, background: '#fff', outline: 'none' }} />
+                  </label>
+                </>
+              )}
+
+              {notice && (
+                <div style={{ border: `1px solid rgba(22,138,69,0.24)`, background: '#f0fff6', color: '#126b37', borderRadius: 8, padding: 11, fontSize: 12, lineHeight: 1.5 }}>
+                  {notice}
+                </div>
+              )}
               {error && (
                 <div style={{ border: `1px solid rgba(199,53,53,0.24)`, background: '#fff3f3', color: '#8b2020', borderRadius: 8, padding: 11, fontSize: 12, lineHeight: 1.5 }}>
                   {error}
                 </div>
               )}
+
+              <button disabled={loading || changeLoading || mode === 'loading'} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: loading || changeLoading || mode === 'loading' ? 0.72 : 1, cursor: loading || changeLoading ? 'wait' : 'pointer' }}>
+                {mode === 'setup' ? (changeLoading ? 'Creating...' : 'Create owner') :
+                 mode === 'recover' ? (loading ? 'Sending...' : 'Send recovery email') :
+                 mode === 'reset' ? (changeLoading ? 'Saving...' : 'Change password') :
+                 loading ? 'Opening...' : 'Open Control Panel'}
+              </button>
+
+              {mode === 'login' && (
+                <button type="button" onClick={() => { setError(''); setNotice(''); setMode('recover') }} style={{ justifySelf: 'center', color: C.cyan, fontSize: 13, fontWeight: 760, background: 'transparent', border: 0, cursor: 'pointer' }}>
+                  Forgot password?
+                </button>
+              )}
+
+              {mode === 'recover' && (
+                <button type="button" onClick={() => { setError(''); setNotice(''); setMode('login') }} style={{ justifySelf: 'center', color: C.muted, fontSize: 13, fontWeight: 760, background: 'transparent', border: 0, cursor: 'pointer' }}>
+                  Back to login
+                </button>
+              )}
             </form>
           </div>
         </section>
-
-        {setupToken && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(6,27,43,0.62)', display: 'grid', placeItems: 'center', padding: 20 }}>
-            <section role="dialog" aria-modal="true" aria-labelledby="change-owner-password" style={{ width: 'min(480px, 100%)', background: '#fff', borderRadius: 8, border: `1px solid ${C.border}`, boxShadow: '0 24px 80px rgba(0,0,0,0.24)', padding: 24 }}>
-              <p style={{ color: C.cyan, fontSize: 12, fontWeight: 840, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Required now</p>
-              <h2 id="change-owner-password" style={{ color: C.text, fontSize: 24, lineHeight: 1.15, marginBottom: 10 }}>Create your permanent owner password</h2>
-              <p style={{ color: C.body, fontSize: 14, lineHeight: 1.65, marginBottom: 18 }}>
-                The temporary password worked. Set a new password now; after this, only the new backend-stored password will open the Control Panel.
-              </p>
-              <form onSubmit={handlePasswordChange} style={{ display: 'grid', gap: 12 }}>
-                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
-                  New owner password
-                  <input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
-                </label>
-                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
-                  Confirm new password
-                  <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
-                </label>
-                <p style={{ color: C.muted, fontSize: 12, lineHeight: 1.55 }}>Use at least 14 characters with uppercase, lowercase, and a number.</p>
-                <button disabled={changeLoading} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: changeLoading ? 0.72 : 1 }}>
-                  {changeLoading ? 'Saving...' : 'Save permanent password'}
-                </button>
-              </form>
-            </section>
-          </div>
-        )}
       </main>
     )
   }
@@ -505,7 +635,7 @@ export default function ControlPanelPage() {
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 22 }}>
           <a href="/" aria-label="GuardScope home"><GuardScopeLogo variant="dark" size={32} textSize={17} /></a>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'end' }}>
-            {data && <span style={{ color: C.body, fontSize: 13 }}>{data.owner.email}</span>}
+            {data && <span style={{ color: C.body, fontSize: 13 }}>{data.owner.username}</span>}
             {data && <button onClick={() => void loadPanel()} style={{ border: `1px solid ${C.border}`, background: '#fff', borderRadius: 8, color: C.text, padding: '9px 12px', fontSize: 13, fontWeight: 780 }}>Refresh</button>}
             {token && <button onClick={signOut} style={{ border: `1px solid ${C.border}`, background: '#fff', borderRadius: 8, color: C.body, padding: '9px 12px', fontSize: 13, fontWeight: 760 }}>Sign out</button>}
           </div>
@@ -533,36 +663,7 @@ export default function ControlPanelPage() {
           </div>
         )}
 
-        {!data || !ops ? (
-          <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(300px,420px)', gap: 18, alignItems: 'stretch' }}>
-            <Panel title="Owner access">
-              <p style={{ color: C.body, fontSize: 14, lineHeight: 1.7, marginBottom: 18 }}>
-                Enter the current owner password to open the Control Panel. The first temporary password must be changed immediately.
-              </p>
-              <form onSubmit={handleSignIn} style={{ display: 'grid', gap: 12 }}>
-                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
-                  Owner password
-                  <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
-                </label>
-                <details>
-                  <summary style={{ color: C.muted, fontSize: 12, fontWeight: 760, cursor: 'pointer' }}>Advanced owner email</summary>
-                  <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" placeholder="bukassi@gmail.com" style={{ height: 42, width: '100%', marginTop: 9, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
-                </details>
-                <button disabled={loading} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: loading ? 0.72 : 1 }}>
-                  {loading ? 'Opening...' : 'Open Control Panel'}
-                </button>
-              </form>
-            </Panel>
-            <Panel title="What this panel tracks">
-              <div style={{ display: 'grid', gap: 10 }}>
-                {['Users and plan mix', 'Promo code inventory and claims', 'Scan volume and high-risk activity', 'Website and listing health', 'Support and bug-report source status'].map((item) => (
-                  <div key={item} style={{ color: C.body, fontSize: 13, borderBottom: `1px solid ${C.border}`, paddingBottom: 9 }}>{item}</div>
-                ))}
-              </div>
-            </Panel>
-          </section>
-        ) : (
-          <div style={{ display: 'grid', gap: 16 }}>
+        <div style={{ display: 'grid', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
               <Metric label="Store installs" value={fmt(data.marketplace.installs)} detail={data.marketplace.source} tone={C.amber} />
               <Metric label="Uninstalls" value={fmt(data.marketplace.uninstalls)} detail="Awaiting CWS source" tone={C.amber} />
@@ -672,34 +773,7 @@ export default function ControlPanelPage() {
             <p style={{ color: C.muted, fontSize: 12 }}>
               Last updated: {new Date(data.generatedAt).toLocaleString()} - Control Panel reads operational metadata only. The published extension was not changed.
             </p>
-          </div>
-        )}
-
-        {setupToken && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(6,27,43,0.62)', display: 'grid', placeItems: 'center', padding: 20 }}>
-            <section role="dialog" aria-modal="true" aria-labelledby="change-owner-password" style={{ width: 'min(480px, 100%)', background: '#fff', borderRadius: 8, border: `1px solid ${C.border}`, boxShadow: '0 24px 80px rgba(0,0,0,0.24)', padding: 24 }}>
-              <p style={{ color: C.cyan, fontSize: 12, fontWeight: 840, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Required now</p>
-              <h2 id="change-owner-password" style={{ color: C.text, fontSize: 24, lineHeight: 1.15, marginBottom: 10 }}>Create your permanent owner password</h2>
-              <p style={{ color: C.body, fontSize: 14, lineHeight: 1.65, marginBottom: 18 }}>
-                The temporary password worked. Set a new password now; after this, only the new backend-stored password will open the Control Panel.
-              </p>
-              <form onSubmit={handlePasswordChange} style={{ display: 'grid', gap: 12 }}>
-                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
-                  New owner password
-                  <input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
-                </label>
-                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
-                  Confirm new password
-                  <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
-                </label>
-                <p style={{ color: C.muted, fontSize: 12, lineHeight: 1.55 }}>Use at least 14 characters with uppercase, lowercase, and a number.</p>
-                <button disabled={changeLoading} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: changeLoading ? 0.72 : 1 }}>
-                  {changeLoading ? 'Saving...' : 'Save permanent password'}
-                </button>
-              </form>
-            </section>
-          </div>
-        )}
+        </div>
       </div>
     </main>
   )
