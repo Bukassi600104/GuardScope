@@ -1,7 +1,7 @@
 'use client'
 
 import type { FormEvent, ReactNode } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { GuardScopeLogo } from '../components/GuardScopeLogo'
 
 type Check = {
@@ -142,6 +142,183 @@ function SourceNotice({ title, note }: { title: string; note: string }) {
   )
 }
 
+function GmailMark() {
+  return (
+    <svg viewBox="0 0 120 88" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
+      <path d="M13 14h94v60H13z" fill="#fff" opacity="0.88" />
+      <path d="M13 14l47 35 47-35" fill="none" stroke="#EA4335" strokeWidth="13" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 16v58" stroke="#34A853" strokeWidth="13" strokeLinecap="round" />
+      <path d="M107 16v58" stroke="#4285F4" strokeWidth="13" strokeLinecap="round" />
+      <path d="M13 74h94" stroke="#FBBC04" strokeWidth="13" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function EnvelopeMark() {
+  return (
+    <svg viewBox="0 0 120 92" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
+      <rect x="12" y="18" width="96" height="58" rx="10" fill="none" stroke="currentColor" strokeWidth="9" />
+      <path d="M18 26l42 33 42-33M18 72l29-26M102 72L73 46" fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function BugMark() {
+  return (
+    <svg viewBox="0 0 110 110" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
+      <path d="M37 35c0-10 8-18 18-18s18 8 18 18v7H37v-7Z" fill="none" stroke="currentColor" strokeWidth="8" />
+      <rect x="28" y="40" width="54" height="52" rx="23" fill="none" stroke="currentColor" strokeWidth="8" />
+      <path d="M20 50H8M20 72H8M90 50h12M90 72h12M36 27 25 15M74 27l11-12M55 43v46" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function GuardMark() {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center' }}>
+      <GuardScopeLogo variant="dark" size={90} textSize={0} />
+    </div>
+  )
+}
+
+const watermarkItems = [
+  { kind: 'gmail', size: 154, x: 7, y: 12, vx: 0.26, vy: 0.18, rotate: -10 },
+  { kind: 'bug', size: 116, x: 24, y: 68, vx: 0.2, vy: -0.22, rotate: 12 },
+  { kind: 'guard', size: 142, x: 70, y: 16, vx: -0.24, vy: 0.19, rotate: 8 },
+  { kind: 'envelope', size: 132, x: 79, y: 72, vx: -0.18, vy: -0.2, rotate: -14 },
+  { kind: 'gmail', size: 112, x: 47, y: 8, vx: 0.16, vy: 0.24, rotate: 16 },
+  { kind: 'bug', size: 94, x: 8, y: 78, vx: 0.28, vy: -0.16, rotate: -18 },
+  { kind: 'guard', size: 100, x: 88, y: 38, vx: -0.25, vy: 0.12, rotate: 20 },
+  { kind: 'envelope', size: 156, x: 34, y: 34, vx: 0.18, vy: -0.17, rotate: 5 },
+]
+
+function FloatingWatermarks() {
+  const fieldRef = useRef<HTMLDivElement | null>(null)
+  const itemRefs = useRef<Array<HTMLDivElement | null>>([])
+
+  useEffect(() => {
+    const field = fieldRef.current
+    if (!field) return
+
+    const movers = watermarkItems.map((item) => ({
+      ...item,
+      x: 0,
+      y: 0,
+      vx: item.vx,
+      vy: item.vy,
+      initialized: false,
+    }))
+
+    let raf = 0
+    let last = performance.now()
+
+    function tick(now: number) {
+      if (!field) return
+      const rect = field.getBoundingClientRect()
+      const dt = Math.min(32, now - last)
+      last = now
+
+      movers.forEach((item) => {
+        if (!item.initialized) {
+          item.x = (rect.width - item.size) * (item.x / 100)
+          item.y = (rect.height - item.size) * (item.y / 100)
+          item.initialized = true
+        }
+
+        item.x += item.vx * dt
+        item.y += item.vy * dt
+
+        if (item.x < -item.size * 0.18 || item.x > rect.width - item.size * 0.82) {
+          item.vx *= -1
+          item.x = Math.max(-item.size * 0.18, Math.min(rect.width - item.size * 0.82, item.x))
+        }
+
+        if (item.y < -item.size * 0.18 || item.y > rect.height - item.size * 0.82) {
+          item.vy *= -1
+          item.y = Math.max(-item.size * 0.18, Math.min(rect.height - item.size * 0.82, item.y))
+        }
+      })
+
+      for (let i = 0; i < movers.length; i += 1) {
+        for (let j = i + 1; j < movers.length; j += 1) {
+          const a = movers[i]
+          const b = movers[j]
+          const ax = a.x + a.size / 2
+          const ay = a.y + a.size / 2
+          const bx = b.x + b.size / 2
+          const by = b.y + b.size / 2
+          const dx = ax - bx
+          const dy = ay - by
+          const distance = Math.hypot(dx, dy) || 1
+          const minDistance = (a.size + b.size) * 0.36
+
+          if (distance < minDistance) {
+            const push = (minDistance - distance) / minDistance
+            const nx = dx / distance
+            const ny = dy / distance
+            a.vx += nx * push * 0.035
+            a.vy += ny * push * 0.035
+            b.vx -= nx * push * 0.035
+            b.vy -= ny * push * 0.035
+          }
+        }
+      }
+
+      movers.forEach((item, index) => {
+        const speed = Math.hypot(item.vx, item.vy)
+        if (speed > 0.36) {
+          item.vx = (item.vx / speed) * 0.36
+          item.vy = (item.vy / speed) * 0.36
+        }
+        if (speed < 0.11) {
+          item.vx *= 1.05
+          item.vy *= 1.05
+        }
+
+        const node = itemRefs.current[index]
+        if (node) {
+          node.style.transform = `translate3d(${item.x}px, ${item.y}px, 0) rotate(${item.rotate + Math.sin(now / 4200 + index) * 8}deg)`
+        }
+      })
+
+      raf = requestAnimationFrame(tick)
+    }
+
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  function renderMark(kind: string) {
+    if (kind === 'gmail') return <GmailMark />
+    if (kind === 'bug') return <BugMark />
+    if (kind === 'guard') return <GuardMark />
+    return <EnvelopeMark />
+  }
+
+  return (
+    <div ref={fieldRef} aria-hidden="true" style={{ position: 'fixed', inset: 0, overflow: 'hidden', zIndex: 0, pointerEvents: 'none' }}>
+      {watermarkItems.map((item, index) => (
+        <div
+          key={`${item.kind}-${index}`}
+          ref={(node) => { itemRefs.current[index] = node }}
+          style={{
+            position: 'absolute',
+            width: item.size,
+            height: item.size,
+            color: item.kind === 'bug' ? '#c73535' : item.kind === 'envelope' ? '#0b95c9' : '#061b2b',
+            opacity: 0.075,
+            filter: 'drop-shadow(0 18px 22px rgba(6,27,43,0.2))',
+            willChange: 'transform',
+            transform: `translate3d(${item.x}vw, ${item.y}vh, 0) rotate(${item.rotate}deg)`,
+          }}
+        >
+          {renderMark(item.kind)}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function ControlPanelPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -262,6 +439,65 @@ export default function ControlPanelPage() {
     if (!data) return C.muted
     return data.checks.some((check) => check.status === 'missing') ? C.red : data.checks.some((check) => check.status === 'watch') ? C.amber : C.green
   }, [data])
+
+  if (!data || !ops) {
+    return (
+      <main style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#f7fbff 0%,#eef6fb 100%)', padding: 20, position: 'relative', overflow: 'hidden' }}>
+        <FloatingWatermarks />
+
+        <section style={{ minHeight: 'calc(100vh - 40px)', display: 'grid', placeItems: 'center', position: 'relative', zIndex: 1 }}>
+          <div style={{ width: 'min(390px, 100%)', display: 'grid', gap: 22, justifyItems: 'center' }}>
+            <a href="/" aria-label="GuardScope home" style={{ display: 'inline-flex', textDecoration: 'none' }}>
+              <GuardScopeLogo variant="dark" size={48} textSize={24} />
+            </a>
+
+            <form onSubmit={handleSignIn} style={{ width: '100%', display: 'grid', gap: 12, background: 'rgba(255,255,255,0.84)', border: `1px solid rgba(214,225,234,0.88)`, borderRadius: 8, padding: 22, boxShadow: '0 24px 70px rgba(6,27,43,0.12)', backdropFilter: 'blur(18px)' }}>
+              <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                Owner password
+                <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" required style={{ height: 48, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 13px', font: 'inherit', color: C.text, background: '#fff', outline: 'none' }} />
+              </label>
+
+              <button disabled={loading} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: loading ? 0.72 : 1, cursor: loading ? 'wait' : 'pointer' }}>
+                {loading ? 'Opening...' : 'Open Control Panel'}
+              </button>
+
+              {error && (
+                <div style={{ border: `1px solid rgba(199,53,53,0.24)`, background: '#fff3f3', color: '#8b2020', borderRadius: 8, padding: 11, fontSize: 12, lineHeight: 1.5 }}>
+                  {error}
+                </div>
+              )}
+            </form>
+          </div>
+        </section>
+
+        {setupToken && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(6,27,43,0.62)', display: 'grid', placeItems: 'center', padding: 20 }}>
+            <section role="dialog" aria-modal="true" aria-labelledby="change-owner-password" style={{ width: 'min(480px, 100%)', background: '#fff', borderRadius: 8, border: `1px solid ${C.border}`, boxShadow: '0 24px 80px rgba(0,0,0,0.24)', padding: 24 }}>
+              <p style={{ color: C.cyan, fontSize: 12, fontWeight: 840, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Required now</p>
+              <h2 id="change-owner-password" style={{ color: C.text, fontSize: 24, lineHeight: 1.15, marginBottom: 10 }}>Create your permanent owner password</h2>
+              <p style={{ color: C.body, fontSize: 14, lineHeight: 1.65, marginBottom: 18 }}>
+                The temporary password worked. Set a new password now; after this, only the new backend-stored password will open the Control Panel.
+              </p>
+              <form onSubmit={handlePasswordChange} style={{ display: 'grid', gap: 12 }}>
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  New owner password
+                  <input value={newPassword} onChange={(event) => setNewPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
+                </label>
+                <label style={{ display: 'grid', gap: 7, color: C.text, fontSize: 13, fontWeight: 760 }}>
+                  Confirm new password
+                  <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" required minLength={14} style={{ height: 46, border: `1px solid ${C.border}`, borderRadius: 8, padding: '0 12px', font: 'inherit', color: C.text }} />
+                </label>
+                <p style={{ color: C.muted, fontSize: 12, lineHeight: 1.55 }}>Use at least 14 characters with uppercase, lowercase, and a number.</p>
+                <button disabled={changeLoading} style={{ height: 48, border: 0, borderRadius: 8, background: C.ink, color: '#fff', fontSize: 14, fontWeight: 840, opacity: changeLoading ? 0.72 : 1 }}>
+                  {changeLoading ? 'Saving...' : 'Save permanent password'}
+                </button>
+              </form>
+            </section>
+          </div>
+        )}
+      </main>
+    )
+  }
 
   return (
     <main style={{ minHeight: '100vh', background: C.bg, padding: '24px 20px 54px' }}>
