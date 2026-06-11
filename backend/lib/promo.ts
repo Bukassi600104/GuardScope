@@ -103,6 +103,7 @@ export type RedeemResult =
   | { success: false; reason: string }
 
 export async function redeemCode(code: string, userEmail: string): Promise<RedeemResult> {
+  const normalizedEmail = userEmail.toLowerCase().trim()
   const validation = await validateCode(code)
   if (!validation.valid) {
     const messages: Record<string, string> = {
@@ -113,8 +114,18 @@ export async function redeemCode(code: string, userEmail: string): Promise<Redee
     return { success: false, reason: messages[validation.reason] ?? 'Invalid code.' }
   }
 
+  if (
+    validation.code.requester_email &&
+    validation.code.requester_email.toLowerCase().trim() !== normalizedEmail
+  ) {
+    return {
+      success: false,
+      reason: 'This launch code belongs to a different email address. Use the same email that requested the code.',
+    }
+  }
+
   // Look up user by email
-  const userUrl = `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(userEmail.toLowerCase().trim())}&select=id,tier&limit=1`
+  const userUrl = `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(normalizedEmail)}&select=id,tier&limit=1`
   const userRes = await fetch(userUrl, { headers: headers() })
   if (!userRes.ok) return { success: false, reason: 'Could not verify your account. Please try again.' }
   const users = await userRes.json() as { id: string; tier: string }[]
@@ -128,7 +139,7 @@ export async function redeemCode(code: string, userEmail: string): Promise<Redee
   const proExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
   // Mark code claimed (atomic — only succeeds if still unused)
-  const claimUrl = `${SUPABASE_URL}/rest/v1/promo_codes?code=eq.${encodeURIComponent(code.toUpperCase().trim())}&status=eq.unused`
+  const claimUrl = `${SUPABASE_URL}/rest/v1/promo_codes?code=eq.${encodeURIComponent(code.toUpperCase().trim())}&status=eq.unused&requester_email=eq.${encodeURIComponent(normalizedEmail)}`
   const claimRes = await fetch(claimUrl, {
     method: 'PATCH',
     headers: headers(),

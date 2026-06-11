@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json(
-        { success: true, message: 'We already sent you a code. Check your inbox and spam folder. We just resent it.' },
+        { success: true, message: 'We already sent your code to that email address. Check your inbox and spam folder. We just resent it.' },
         { headers: securityHeaders }
       )
     }
@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    let emailDelivered = true
     try {
       await sendWelcomeEmail({
         to: email,
@@ -117,13 +118,17 @@ export async function POST(req: NextRequest) {
         claimDeadline: new Date(promoCode.claim_deadline),
       })
     } catch (err) {
+      emailDelivered = false
       console.error('[promo/request] email send failed:', err)
     }
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Your promo code is on its way. Check your inbox and spam folder within 5 minutes.',
+        code: promoCode.code,
+        message: emailDelivered
+          ? 'Your launch code is ready. We also emailed it to you, but copy it now in case delivery is delayed.'
+          : 'Your launch code is ready. We could not confirm email delivery, so copy it now and use it in GuardScope.',
       },
       { headers: securityHeaders }
     )

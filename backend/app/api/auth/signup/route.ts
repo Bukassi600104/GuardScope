@@ -3,7 +3,7 @@ import { buildCorsHeaders } from '../../../../lib/cors'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY!
+const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY)!
 
 // Service key is optional — if set, we use admin endpoint (auto-confirms email).
 // If not set, we use the standard signup endpoint (sends confirmation email).
@@ -111,6 +111,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, needsConfirmation }, { headers: cors })
 
   } catch {
-    return NextResponse.json({ error: 'Registration failed — please try again' }, { status: 500, headers: cors })
+    return NextResponse.json({ error: 'Registration failed - please try again' }, { status: 500, headers: cors })
   }
 }

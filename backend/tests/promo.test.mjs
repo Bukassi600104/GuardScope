@@ -17,6 +17,8 @@ test('promo redemption requires authenticated matching account', () => {
   assert.match(validateRoute, /decodeJwt\(token\)/)
   assert.match(validateRoute, /jwt\.email\.toLowerCase\(\) !== email\.toLowerCase\(\)/)
   assert.match(validateRoute, /status: 403/)
+  assert.match(promo, /This launch code belongs to a different email address/)
+  assert.match(promo, /requester_email=eq/)
 })
 
 test('promo routes use guardscope.app support address', () => {
@@ -32,4 +34,7 @@ test('homepage launch code form stays on-page and collects required fields', () 
   assert.match(launchCodeForm, /country/)
   assert.match(requestRoute, /Launch-code claims are temporarily unavailable/)
   assert.match(requestRoute, /database lookup failed/)
+  assert.match(requestRoute, /code: promoCode\.code/)
+  assert.match(launchCodeForm, /navigator\.clipboard\.writeText\(code\)/)
+  assert.match(launchCodeForm, /Your launch code/)
 })

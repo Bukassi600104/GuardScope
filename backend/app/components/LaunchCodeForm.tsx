@@ -54,11 +54,15 @@ export function LaunchCodeForm() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [code, setCode] = useState('')
+  const [copied, setCopied] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     setMessage('')
+    setCode('')
+    setCopied(false)
     setLoading(true)
 
     try {
@@ -74,6 +78,9 @@ export function LaunchCodeForm() {
       }
 
       setMessage(body.message || 'Your promo code is on its way. Check your inbox and spam folder.')
+      if (typeof body.code === 'string' && body.code) {
+        setCode(body.code)
+      }
       setName('')
       setEmail('')
       setCountry('')
@@ -81,6 +88,16 @@ export function LaunchCodeForm() {
       setError('Unable to reach the launch-code service. Please try again shortly.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function copyCode() {
+    if (!code) return
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+    } catch {
+      setCopied(false)
     }
   }
 
@@ -103,6 +120,57 @@ export function LaunchCodeForm() {
 
       {error && <Alert tone="error">{error}</Alert>}
       {message && <Alert tone="success">{message}</Alert>}
+
+      {code && (
+        <div style={{
+          display: 'grid',
+          gap: 12,
+          border: '1px solid rgba(84,225,142,0.42)',
+          background: 'rgba(3,24,38,0.48)',
+          borderRadius: 8,
+          padding: 14,
+          color: '#fff',
+        }}>
+          <div style={{ display: 'grid', gap: 4 }}>
+            <span style={{ fontSize: 12, fontWeight: 760, color: 'rgba(255,255,255,0.68)' }}>Your launch code</span>
+            <strong style={{ fontSize: 24, letterSpacing: 0, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{code}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={copyCode}
+              style={{
+                minHeight: 40,
+                padding: '0 14px',
+                borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.18)',
+                background: 'rgba(255,255,255,0.1)',
+                color: '#fff',
+                fontWeight: 760,
+                cursor: 'pointer',
+              }}
+            >
+              {copied ? 'Copied' : 'Copy code'}
+            </button>
+            <a
+              href="/upgrade"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                minHeight: 40,
+                padding: '0 14px',
+                borderRadius: 8,
+                background: '#fff',
+                color: C.ink,
+                textDecoration: 'none',
+                fontWeight: 760,
+              }}
+            >
+              Use code
+            </a>
+          </div>
+        </div>
+      )}
 
       <button
         type="submit"
