@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const headers = getHeaders(req)
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/promo_codes?status=eq.unused&claim_deadline=gt.${new Date().toISOString()}&select=id`,
+      `${SUPABASE_URL}/rest/v1/promo_codes?status=eq.unused&requester_email=is.null&claim_deadline=gt.${encodeURIComponent(new Date().toISOString())}&select=id`,
       {
         headers: {
           'apikey': SERVICE_KEY,
