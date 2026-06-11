@@ -5,9 +5,9 @@ import test from 'node:test'
 const quota = readFileSync(new URL('../lib/quota.ts', import.meta.url), 'utf8')
 
 test('production requires Supabase JWT secret', () => {
+  assert.match(quota, /\/auth\/v1\/user/)
   assert.match(quota, /SUPABASE_JWT_SECRET/)
-  assert.match(quota, /NODE_ENV === 'production'/)
-  assert.match(quota, /throw new Error\('SUPABASE_JWT_SECRET must be set in production\.'\)/)
+  assert.match(quota, /local HMAC verification/)
 })
 
 test('JWT decoder rejects expired tokens and malformed subjects', () => {

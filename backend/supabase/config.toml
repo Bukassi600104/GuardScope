@@ -1,5 +1,5 @@
 # GuardScope Supabase config
-# Pushed via: npx supabase config push --project-ref zfuxxoyjfedmtoeydcvp
+# Linked production project ref: ojqbglwuwdxevqbeknoj
 
 [auth]
 site_url = "https://guardscope.app"

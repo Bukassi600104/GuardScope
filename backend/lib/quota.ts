@@ -12,14 +12,6 @@
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? ''
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
 
-// Security invariant: SUPABASE_JWT_SECRET must be set in production.
-// Without it, decodeJwt() cannot verify signatures and falls back to decode-only,
-// allowing forged JWTs to bypass quota enforcement.
-if (!process.env.SUPABASE_JWT_SECRET && process.env.NODE_ENV === 'production') {
-  console.error('[SECURITY] SUPABASE_JWT_SECRET is not set. JWT signatures are NOT verified. Halting application.')
-  throw new Error('SUPABASE_JWT_SECRET must be set in production.')
-}
-
 const FREE_LIMIT = 5
 
 export interface QuotaResult {
@@ -33,9 +25,10 @@ export interface QuotaResult {
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 /**
- * Decode AND cryptographically verify a Supabase JWT.
- * Supabase issues HS256 JWTs signed with JWT_SECRET (from env).
- * If JWT_SECRET is not configured, falls back to decode-only (dev mode).
+ * Decode and verify a Supabase JWT.
+ * Primary verification asks the configured Supabase Auth service for /auth/v1/user.
+ * This avoids coupling production to a manually copied JWT secret during project moves.
+ * If Supabase Auth is unavailable, local HMAC verification is used only when a JWT secret exists.
  *
  * Returns null if the token is invalid, expired, or signature doesn't match.
  */
@@ -54,7 +47,24 @@ export async function decodeJwt(token: string): Promise<{ sub?: string; email?: 
     // Validate UUID format of sub — prevents injection via crafted tokens
     if (payload.sub && !UUID_REGEX.test(payload.sub)) return null
 
-    // Cryptographic verification if JWT secret is available
+    if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try {
+        const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          headers: {
+            apikey: SUPABASE_SERVICE_KEY,
+            Authorization: `Bearer ${token}`,
+          },
+          cache: 'no-store',
+        })
+        if (!authRes.ok) return null
+        const user = await authRes.json() as { id?: string; email?: string }
+        if (!user.id || !UUID_REGEX.test(user.id)) return null
+        return { sub: user.id, email: user.email ?? payload.email }
+      } catch {
+        // Fall through to local HMAC verification if configured.
+      }
+    }
+
     const jwtSecret = process.env.SUPABASE_JWT_SECRET
     if (jwtSecret) {
       const { createHmac } = await import('crypto')
@@ -64,8 +74,7 @@ export async function decodeJwt(token: string): Promise<{ sub?: string; email?: 
         .digest('base64url')
       if (expected !== parts[2]) return null // signature mismatch — reject
     } else if (process.env.NODE_ENV === 'production') {
-      // In production, we MUST verify the signature. If jwtSecret is missing, reject.
-      return null;
+      return null
     }
 
     return payload

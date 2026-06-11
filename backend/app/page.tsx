@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { CSSProperties, ReactNode } from 'react'
 import { Navbar } from './components/Navbar'
 import { Footer } from './components/Footer'
+import { LaunchCodeForm } from './components/LaunchCodeForm'
 import { CTA_HREF, CTA_LABEL, QUOTAS } from '../lib/launch'
 
 export const metadata: Metadata = {
@@ -491,37 +492,7 @@ export default function Home() {
             </p>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 8, padding: 24 }}>
-            <form action="/api/promo/request" method="POST" style={{ display: 'grid', gap: 14 }}>
-              {[
-                { name: 'name', type: 'text', label: 'Full name', placeholder: 'Tony Adebayo' },
-                { name: 'email', type: 'email', label: 'Email address', placeholder: 'tony@example.com' },
-              ].map((field) => (
-                <label key={field.name} style={{ display: 'grid', gap: 7, fontSize: 12, fontWeight: 760, color: 'rgba(255,255,255,0.72)' }}>
-                  {field.label}
-                  <input
-                    type={field.type}
-                    name={field.name}
-                    required
-                    placeholder={field.placeholder}
-                    style={{
-                      width: '100%',
-                      border: '1px solid rgba(255,255,255,0.16)',
-                      borderRadius: 8,
-                      minHeight: 46,
-                      padding: '0 13px',
-                      color: '#fff',
-                      background: 'rgba(255,255,255,0.08)',
-                      font: 'inherit',
-                      outline: 'none',
-                    }}
-                  />
-                </label>
-              ))}
-              <button type="submit" style={{ ...s.buttonPrimary, background: '#fff', color: C.ink, marginTop: 4 }}>
-                Claim a launch code
-                <ArrowIcon />
-              </button>
-            </form>
+            <LaunchCodeForm />
             <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.58)', marginTop: 14 }}>
               We use this email only to deliver and support your promo code.
             </p>
