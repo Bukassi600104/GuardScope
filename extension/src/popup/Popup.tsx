@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type { AuthState } from '../utils/auth'
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
+import { BACKEND_URL } from '../config'
 
 // Decode JWT expiry without a library — Supabase JWTs are standard RS256 tokens.
 // Returns true if the token is expired or unparseable.
@@ -96,6 +95,13 @@ export default function Popup() {
       if (res.ok) {
         const data = await res.json() as { count: number; limit: number | null; tier: string }
         setUsageCount(data.count)
+        setAuth(prev => prev ? { ...prev, tier: data.tier as AuthState['tier'] } : prev)
+        chrome.storage.local.get('guardscope_auth', (result) => {
+          const stored = result.guardscope_auth as AuthState | undefined
+          if (stored?.isAuthenticated) {
+            chrome.storage.local.set({ guardscope_auth: { ...stored, tier: data.tier } })
+          }
+        })
       }
     } catch {
       // usage display is non-critical

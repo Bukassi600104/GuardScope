@@ -2,10 +2,7 @@
 
 import { getAuthState, setAuthState, clearAuthState } from './utils/auth'
 import type { AuthState } from './utils/auth'
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+import { BACKEND_URL } from './config'
 
 // ── Extension Badge ──────────────────────────────────────────────────────────
 // Sets the toolbar icon badge when a HIGH/CRITICAL email is detected.
@@ -302,9 +299,9 @@ async function getValidToken(): Promise<string | null> {
   }
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    const res = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: auth.refreshToken }),
     })
     if (!res.ok) {
@@ -315,12 +312,14 @@ async function getValidToken(): Promise<string | null> {
       access_token: string
       refresh_token: string
       expires_in: number
+      tier?: AuthState['tier']
     }
     const newAuth = {
       ...auth,
       token: data.access_token,
       refreshToken: data.refresh_token,
       tokenExpiresAt: Date.now() + data.expires_in * 1000,
+      tier: data.tier ?? auth.tier,
     }
     await setAuthState(newAuth)
     return data.access_token
@@ -336,13 +335,12 @@ async function getValidToken(): Promise<string | null> {
 async function signIn(email: string, password: string): Promise<{ success: boolean; error?: string }> {
   let res: Response
   try {
-    res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    res = await fetch(`${BACKEND_URL}/api/auth/signin`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, client: 'extension' }),
     })
   } catch (e) {
     return { success: false, error: `Network error: ${String(e)}` }
@@ -350,7 +348,7 @@ async function signIn(email: string, password: string): Promise<{ success: boole
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as Record<string, unknown>
-    return { success: false, error: (body.error_description as string) || 'Invalid credentials' }
+    return { success: false, error: (body.error as string) || (body.error_description as string) || 'Invalid credentials' }
   }
 
   const data = await res.json() as {
@@ -358,13 +356,14 @@ async function signIn(email: string, password: string): Promise<{ success: boole
     refresh_token: string
     expires_in: number
     user: { id: string; email: string }
+    tier?: AuthState['tier']
   }
 
   const authState: AuthState = {
     isAuthenticated: true,
     userId: data.user.id,
     email: data.user.email,
-    tier: 'free',
+    tier: data.tier ?? 'free',
     token: data.access_token,
     refreshToken: data.refresh_token,
     tokenExpiresAt: Date.now() + (data.expires_in ?? 3600) * 1000,

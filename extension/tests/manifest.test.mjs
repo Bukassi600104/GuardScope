@@ -8,6 +8,7 @@ test('manifest uses current production domain and MV3', () => {
   assert.equal(manifest.manifest_version, 3)
   assert.equal(manifest.homepage_url, 'https://guardscope.app')
   assert.ok(manifest.host_permissions.includes('https://guardscope.app/*'))
+  assert.equal(manifest.host_permissions.some((permission) => permission.includes('supabase.co')), false)
 })
 
 test('manifest permissions match documented launch set', () => {
@@ -20,4 +21,5 @@ test('extension CSP blocks remote scripts and objects', () => {
   assert.match(csp, /object-src 'none'/)
   const scriptDirective = csp.split(';').find((part) => part.trim().startsWith('script-src')) ?? ''
   assert.doesNotMatch(scriptDirective, /https?:\/\//)
+  assert.doesNotMatch(csp, /supabase\.co/)
 })

@@ -6,8 +6,7 @@ import TechnicalDetails from './components/TechnicalDetails'
 import type { AnalysisReport, AppState } from '../utils/analyze'
 import type { ExtractedEmail } from '../utils/emailExtractor'
 import { t } from '../utils/i18n'
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string
+import { BACKEND_URL } from '../config'
 
 // Returns today's date as YYYY-MM-DD (UTC) — used for daily anon quota reset
 const todayDate = () => new Date().toISOString().split('T')[0]
