@@ -25,6 +25,10 @@ export interface PromoCode {
   claimed_by: string | null
   claimed_at: string | null
   pro_expires_at: string | null
+  assigned_at?: string | null
+  requester_ip_hash?: string | null
+  requester_ua_hash?: string | null
+  request_source?: string | null
 }
 
 // ─── Check if email already has a code ───────────────────────────────────────
@@ -40,7 +44,8 @@ export async function getCodeForEmail(email: string): Promise<PromoCode | null> 
 export async function assignCodeToLead(
   name: string,
   email: string,
-  country: string
+  country: string,
+  metadata?: { ipHash?: string; userAgentHash?: string; source?: string }
 ): Promise<PromoCode | null> {
   for (let attempt = 0; attempt < 3; attempt++) {
     // Find next unassigned unused code. The follow-up PATCH still guards on
@@ -60,6 +65,10 @@ export async function assignCodeToLead(
         requester_name:    name.trim(),
         requester_email:   email.toLowerCase().trim(),
         requester_country: country,
+        assigned_at:       new Date().toISOString(),
+        requester_ip_hash: metadata?.ipHash ?? null,
+        requester_ua_hash: metadata?.userAgentHash ?? null,
+        request_source:    metadata?.source ?? 'website',
       }),
     })
     if (!updateRes.ok) return null

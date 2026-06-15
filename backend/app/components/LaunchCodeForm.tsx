@@ -56,6 +56,8 @@ export function LaunchCodeForm() {
   const [loading, setLoading] = useState(false)
   const [code, setCode] = useState('')
   const [copied, setCopied] = useState(false)
+  const [company, setCompany] = useState('')
+  const [startedAt, setStartedAt] = useState(() => Date.now())
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -69,7 +71,7 @@ export function LaunchCodeForm() {
       const res = await fetch('/api/promo/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, country }),
+        body: JSON.stringify({ name, email, country, company, startedAt }),
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -84,6 +86,8 @@ export function LaunchCodeForm() {
       setName('')
       setEmail('')
       setCountry('')
+      setCompany('')
+      setStartedAt(Date.now())
     } catch {
       setError('Unable to reach the launch-code service. Please try again shortly.')
     } finally {
@@ -103,6 +107,18 @@ export function LaunchCodeForm() {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 14 }}>
+      <input
+        type="text"
+        name="company"
+        value={company}
+        onChange={(event) => setCompany(event.target.value)}
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        style={{ position: 'absolute', left: -10000, width: 1, height: 1, opacity: 0 }}
+      />
+      <input type="hidden" name="startedAt" value={startedAt} readOnly />
+
       <label style={{ display: 'grid', gap: 7, fontSize: 12, fontWeight: 760, color: 'rgba(255,255,255,0.72)' }}>
         Full name
         <input value={name} onChange={(event) => setName(event.target.value)} type="text" required placeholder="Tony Adebayo" style={fieldStyle()} />

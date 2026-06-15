@@ -22,6 +22,13 @@ type PromoActivity = {
   proExpiresAt: string | null
 }
 
+type PromoAttempt = {
+  emailDomain: string | null
+  allowed: boolean
+  reason: string
+  createdAt: string
+}
+
 type UserActivity = {
   id: string
   email: string
@@ -87,9 +94,12 @@ type ControlPanelData = {
       assigned: number
       claimed: number
       expired: number
+      requests24h: number
+      blockedAttempts24h: number
       utilizationRate: number
       warning?: string
       recent: PromoActivity[]
+      recentAttempts: PromoAttempt[]
     }
     userSummary: {
       total: number
@@ -874,7 +884,7 @@ export default function ControlPanelPage() {
                 <RiskBars buckets={ops.analysisSummary.riskDistribution} />
               </Panel>
 
-              <Panel title="Launch code funnel" caption="Real promo-code inventory from Supabase">
+              <Panel title="Launch code funnel" caption="Real promo-code inventory and request activity from Supabase">
                 <div className="funnel">
                   {[
                     ['Total', ops.promoSummary.total, palette.ink],
@@ -892,6 +902,13 @@ export default function ControlPanelPage() {
                   <div className="utilization">
                     <strong>{ops.promoSummary.utilizationRate}%</strong>
                     <span>launch-code utilization</span>
+                  </div>
+                  <div className="checkRow compact">
+                    <div>
+                      <strong>{fmt(ops.promoSummary.requests24h)} allowed requests / {fmt(ops.promoSummary.blockedAttempts24h)} blocked</strong>
+                      <p>Promo-code request guard activity in the last 24 hours</p>
+                    </div>
+                    <StatusPill value={ops.promoSummary.blockedAttempts24h ? 'watch' : 'ok'} />
                   </div>
                 </div>
               </Panel>
@@ -913,8 +930,12 @@ export default function ControlPanelPage() {
           )}
 
           {view === 'codes' && (
-            <Panel title="Promo codes" caption="See who requested each code, whether it has been used, and when Pro access expires.">
+            <Panel title="Promo codes" caption="Only real requested/assigned codes are listed here. Seeded inventory rows are counted above but hidden from this table.">
               {ops.promoSummary.warning && <SourceNotice title="Promo metrics warning" note={ops.promoSummary.warning} />}
+              <div className="miniGrid">
+                <MetricCard icon="codes" label="Allowed today" value={fmt(ops.promoSummary.requests24h)} detail="Launch-code requests" tone={palette.green} />
+                <MetricCard icon="issues" label="Blocked today" value={fmt(ops.promoSummary.blockedAttempts24h)} detail="Bot/rate-limit/disposable checks" tone={ops.promoSummary.blockedAttempts24h ? palette.amber : palette.green} />
+              </div>
               <div className="tableWrap">
                 <table>
                   <thead>
@@ -945,6 +966,32 @@ export default function ControlPanelPage() {
                   </tbody>
                 </table>
                 {!ops.promoSummary.recent.length && <EmptyState>No promo-code activity has been recorded yet.</EmptyState>}
+              </div>
+              <div className="sectionGap">
+                <h3 className="subhead">Recent claim attempts</h3>
+                <div className="tableWrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Domain</th>
+                        <th>Decision</th>
+                        <th>Reason</th>
+                        <th>Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ops.promoSummary.recentAttempts.map((row) => (
+                        <tr key={`${row.createdAt}-${row.reason}-${row.emailDomain ?? 'unknown'}`}>
+                          <td>{row.emailDomain || 'unknown'}</td>
+                          <td><StatusPill value={row.allowed ? 'ok' : 'watch'} /></td>
+                          <td>{row.reason.replace(/_/g, ' ')}</td>
+                          <td>{dateLabel(row.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!ops.promoSummary.recentAttempts.length && <EmptyState>No promo-code guard activity has been recorded yet.</EmptyState>}
+                </div>
               </div>
             </Panel>
           )}
@@ -1135,6 +1182,8 @@ function ControlCenterStyles() {
       .secondaryButton { border: 1px solid ${palette.line}; background: #fff; border-radius: 8px; color: ${palette.text}; padding: 10px 13px; font-size: 13px; font-weight: 800; cursor: pointer; }
       .secondaryButton:hover { border-color: ${palette.cyan}; color: ${palette.cyan}; }
       .metricGrid { display: grid; grid-template-columns: repeat(6, minmax(146px, 1fr)); gap: 12px; margin-bottom: 16px; }
+      .miniGrid { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+      .miniGrid .metric { min-height: 112px; }
       .metric, .panel { background: rgba(255,255,255,0.94); border: 1px solid rgba(216,228,236,0.96); border-radius: 8px; box-shadow: 0 16px 50px rgba(6,23,36,0.055); }
       .metric { padding: 16px; min-height: 132px; }
       .metricTop { display: flex; align-items: center; gap: 9px; min-height: 26px; }
@@ -1160,8 +1209,11 @@ function ControlCenterStyles() {
       .utilization { border: 1px solid ${palette.line}; border-radius: 8px; padding: 13px; background: ${palette.panelSoft}; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: ${palette.body}; font-size: 13px; }
       .utilization strong { color: ${palette.cyan}; font-size: 26px; }
       .checkRow { display: flex; justify-content: space-between; gap: 14px; border: 1px solid ${palette.line}; border-radius: 8px; padding: 12px; }
+      .checkRow.compact { align-items: center; background: ${palette.panelSoft}; }
       .checkRow strong { color: ${palette.ink}; font-size: 13px; }
       .checkRow p { margin-top: 5px; }
+      .sectionGap { margin-top: 22px; }
+      .subhead { margin: 0 0 10px; color: ${palette.ink}; font-size: 14px; line-height: 1.2; }
       .sourceNotice { border: 1px solid ${palette.line}; border-left: 4px solid ${palette.amber}; border-radius: 8px; padding: 13px; background: #fffaf0; margin-bottom: 14px; }
       .sourceNotice strong { color: ${palette.ink}; font-size: 13px; }
       .sourceNotice p { color: ${palette.body}; font-size: 13px; line-height: 1.55; margin: 5px 0 0; }
@@ -1186,6 +1238,7 @@ function ControlCenterStyles() {
         .workspace { padding: 18px 14px 96px; }
         .topbar { flex-direction: column; }
         .metricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .miniGrid { grid-template-columns: 1fr; }
         .sourceGrid { grid-template-columns: 1fr; }
         .metricValue { font-size: 26px; }
       }

@@ -1,14 +1,16 @@
 /**
- * Rate limiting via Upstash Redis.
- * - Authenticated users: 10 requests/minute + 50 requests/hour (abuse prevention)
- * - Anonymous (IP-based): 5 requests/minute
+ * Shared rate limiting.
  *
- * Gracefully falls back to allow-all if Upstash credentials aren't configured.
- * This keeps the API functional in development and during initial deployment.
+ * Primary limiter: Upstash Redis when configured.
+ * Fallback limiter: Supabase-backed hashed event counters.
+ *
+ * Production must not silently fail open. If neither limiter is available in
+ * production, protected requests are denied instead of allowing unlimited use.
  */
 
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { checkDbRateLimit, isProductionRuntime, productionLimiterUnavailableResult } from './dbRateLimit'
 
 let redis: Redis | null = null
 let authRatelimit: Ratelimit | null = null
@@ -18,7 +20,14 @@ let anonDailyRatelimit: Ratelimit | null = null
 let anonFreeQuota: Ratelimit | null = null
 
 function getInstances() {
-  if (authRatelimit) return { authRatelimit, authHourlyRatelimit: authHourlyRatelimit!, anonRatelimit: anonRatelimit!, anonDailyRatelimit: anonDailyRatelimit! }
+  if (authRatelimit) {
+    return {
+      authRatelimit,
+      authHourlyRatelimit: authHourlyRatelimit!,
+      anonRatelimit: anonRatelimit!,
+      anonDailyRatelimit: anonDailyRatelimit!,
+    }
+  }
 
   const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.UPSTASH_REDIS_URL ?? ''
   const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.UPSTASH_REDIS_TOKEN ?? ''
@@ -34,7 +43,6 @@ function getInstances() {
     analytics: false,
     prefix: 'gs_auth',
   })
-  // Abuse prevention: 50 analyses per hour per user (Phase 6-5)
   authHourlyRatelimit = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(50, '1 h'),
@@ -47,15 +55,12 @@ function getInstances() {
     analytics: false,
     prefix: 'gs_anon',
   })
-  // Abuse cap: 30 analyses per day per IP — prevents cost abuse beyond the free quota
   anonDailyRatelimit = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(30, '1 d'),
     analytics: false,
     prefix: 'gs_anon_daily',
   })
-  // Free plan quota: 5 analyses per day per IP (business rule, not abuse protection)
-  // Fixed window resets cleanly on a 24-hour boundary from first request.
   anonFreeQuota = new Ratelimit({
     redis,
     limiter: Ratelimit.fixedWindow(5, '1 d'),
@@ -69,26 +74,27 @@ function getInstances() {
 export interface RateLimitResult {
   allowed: boolean
   remaining: number
-  resetAt: number  // unix ms
+  resetAt: number
 }
 
-/**
- * Check and increment the free daily quota for anonymous (unauthenticated) users.
- * 5 analyses per day per IP. Uses fixed window — resets 24 hours after the first request.
- * Falls back to allow-all if Redis is unavailable (infra fault ≠ user fault).
- */
 export async function checkAnonFreeQuota(
   ip: string
 ): Promise<{ allowed: boolean; count: number; limit: number }> {
   try {
-    getInstances() // ensure all limiters are initialised
-    if (!anonFreeQuota) return { allowed: true, count: 0, limit: 5 }
+    getInstances()
+    if (!anonFreeQuota) {
+      const dbResult = await checkDbRateLimit('anon_free_daily', ip, 5, 24 * 60 * 60 * 1000)
+      if (dbResult) return { allowed: dbResult.allowed, count: 5 - dbResult.remaining, limit: 5 }
+      if (isProductionRuntime()) return { allowed: false, count: 5, limit: 5 }
+      return { allowed: true, count: 0, limit: 5 }
+    }
+
     const result = await anonFreeQuota.limit(ip)
-    // remaining can go negative if burst exceeded — clamp to 0 before computing used count
     const count = result.limit - Math.max(0, result.remaining)
     return { allowed: result.success, count, limit: result.limit }
   } catch {
-    return { allowed: true, count: 0, limit: 5 } // fail open
+    if (isProductionRuntime()) return { allowed: false, count: 5, limit: 5 }
+    return { allowed: true, count: 0, limit: 5 }
   }
 }
 
@@ -100,39 +106,61 @@ export async function checkRateLimit(
     const { authRatelimit: auth, authHourlyRatelimit: authHourly, anonRatelimit: anon } = getInstances()
 
     if (isAuthenticated) {
-      if (!auth) return { allowed: true, remaining: 99, resetAt: 0 }
-      // Check per-minute limit first
+      if (!auth) {
+        const minute = await checkDbRateLimit('auth_minute', identifier, 10, 60 * 1000)
+        if (minute && !minute.allowed) return minute
+
+        const hourly = await checkDbRateLimit('auth_hourly', identifier, 50, 60 * 60 * 1000)
+        if (hourly) return hourly.allowed ? (minute ?? hourly) : hourly
+
+        return isProductionRuntime()
+          ? productionLimiterUnavailableResult()
+          : { allowed: true, remaining: 99, resetAt: 0 }
+      }
+
       const minuteResult = await auth.limit(identifier)
       if (!minuteResult.success) {
         return { allowed: false, remaining: minuteResult.remaining, resetAt: minuteResult.reset }
       }
-      // Check hourly abuse limit
+
       if (authHourly) {
         const hourlyResult = await authHourly.limit(identifier)
         if (!hourlyResult.success) {
           return { allowed: false, remaining: 0, resetAt: hourlyResult.reset }
         }
       }
+
       return { allowed: true, remaining: minuteResult.remaining, resetAt: minuteResult.reset }
     }
 
-    const limiter = anon
-    if (!limiter) return { allowed: true, remaining: 99, resetAt: 0 }
-    // Check per-minute limit first
-    const result = await limiter.limit(identifier)
+    if (!anon) {
+      const minute = await checkDbRateLimit('anon_minute', identifier, 5, 60 * 1000)
+      if (minute && !minute.allowed) return minute
+
+      const daily = await checkDbRateLimit('anon_daily', identifier, 30, 24 * 60 * 60 * 1000)
+      if (daily) return daily.allowed ? (minute ?? daily) : daily
+
+      return isProductionRuntime()
+        ? productionLimiterUnavailableResult()
+        : { allowed: true, remaining: 99, resetAt: 0 }
+    }
+
+    const result = await anon.limit(identifier)
     if (!result.success) {
       return { allowed: false, remaining: result.remaining, resetAt: result.reset }
     }
-    // Check daily cap to prevent cost abuse
+
     if (anonDailyRatelimit) {
       const dailyResult = await anonDailyRatelimit.limit(identifier)
       if (!dailyResult.success) {
         return { allowed: false, remaining: 0, resetAt: dailyResult.reset }
       }
     }
+
     return { allowed: true, remaining: result.remaining, resetAt: result.reset }
   } catch {
-    // Redis unreachable — allow request (fail open)
-    return { allowed: true, remaining: 99, resetAt: 0 }
+    return isProductionRuntime()
+      ? productionLimiterUnavailableResult()
+      : { allowed: true, remaining: 99, resetAt: 0 }
   }
 }

@@ -5,7 +5,7 @@ AI-powered Gmail phishing investigation in a Chrome side panel.
 GuardScope is a published Chrome MV3 extension and Next.js backend that helps users inspect suspicious Gmail messages before they click, reply, or open attachments. It combines deterministic security checks with Mercury-2 AI analysis to produce a plain-English risk report with evidence, a 0-100 score, and recommended action.
 
 **Launch status:** Published on the Chrome Web Store.
-**Chrome Web Store:** https://chromewebstore.google.com/detail/guardscope-email-security/fbjajijepjmcmkcidfbmjbjmmegokhif
+**Chrome Web Store:** https://chromewebstore.google.com/detail/guardscope-email-security/fbjajjiepjmcmkcidfbmjbjmmegokhif
 **Production domain:** https://guardscope.app
 **Primary AI engine:** Mercury-2 by InceptionLabs.
 
@@ -105,7 +105,7 @@ The release gate is not just compilation. Manual Gmail QA is required before Chr
 
 ## Chrome Web Store Release Checklist
 
-- Public listing is live at `https://chromewebstore.google.com/detail/guardscope-email-security/fbjajijepjmcmkcidfbmjbjmmegokhif`.
+- Public listing is live at `https://chromewebstore.google.com/detail/guardscope-email-security/fbjajjiepjmcmkcidfbmjbjmmegokhif`.
 - Production backend deployed at `https://guardscope.app`.
 - Privacy Policy live at `https://guardscope.app/privacy`.
 - Terms live at `https://guardscope.app/terms`.

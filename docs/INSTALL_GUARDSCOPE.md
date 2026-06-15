@@ -2,7 +2,7 @@
 
 Public Chrome Web Store listing:
 
-https://chromewebstore.google.com/detail/guardscope-email-security/fbjajijepjmcmkcidfbmjbjmmegokhif
+https://chromewebstore.google.com/detail/guardscope-email-security/fbjajjiepjmcmkcidfbmjbjmmegokhif
 
 ## Installation Steps
 

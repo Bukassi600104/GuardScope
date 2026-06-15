@@ -4,6 +4,7 @@ import { sendWelcomeEmail } from '../../../../lib/email'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 import { buildCorsHeaders } from '../../../../lib/cors'
 import { logOperationalEvent } from '../../../../lib/operationalEvents'
+import { guardPromoRequest } from '../../../../lib/promoAbuse'
 
 const STATIC_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  let body: { name?: string; email?: string; country?: string } = {}
+  let body: { name?: string; email?: string; country?: string; company?: string; startedAt?: number } = {}
   try {
     body = await req.json()
   } catch {
@@ -45,6 +46,8 @@ export async function POST(req: NextRequest) {
         name: form.get('name') as string,
         email: form.get('email') as string,
         country: form.get('country') as string,
+        company: form.get('company') as string,
+        startedAt: Number(form.get('startedAt')),
       }
     } catch {
       body = {}
@@ -54,6 +57,8 @@ export async function POST(req: NextRequest) {
   const name = typeof body.name === 'string' ? body.name.trim().slice(0, MAX_NAME_LEN) : ''
   const email = typeof body.email === 'string' ? body.email.trim().slice(0, MAX_EMAIL_LEN) : ''
   const country = typeof body.country === 'string' ? body.country.trim().slice(0, MAX_COUNTRY_LEN) : ''
+  const company = typeof body.company === 'string' ? body.company.slice(0, 200) : ''
+  const startedAt = typeof body.startedAt === 'number' ? body.startedAt : 0
 
   if (!name || name.length < 2) {
     return NextResponse.json(
@@ -100,6 +105,26 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const promoGuard = await guardPromoRequest({
+      email,
+      ip,
+      userAgent: req.headers.get('user-agent') ?? 'unknown',
+      honeypot: company,
+      startedAt,
+    })
+    if (!promoGuard.allowed) {
+      logOperationalEvent({
+        severity: 'warning',
+        source: 'api/promo/request',
+        eventType: 'promo_request_blocked',
+        message: `Launch-code request blocked: ${promoGuard.reason}`,
+      }).catch(() => {})
+      return NextResponse.json(
+        { error: 'We could not process this launch-code request. Please wait a moment and try again, or email support@guardscope.app.' },
+        { status: 429, headers: securityHeaders }
+      )
+    }
+
     const remaining = await countRemainingCodes()
     if (remaining === 0) {
       return NextResponse.json(
@@ -108,7 +133,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const promoCode = await assignCodeToLead(name, email, country)
+    const promoCode = await assignCodeToLead(name, email, country, {
+      ipHash: promoGuard.ipHash,
+      userAgentHash: promoGuard.userAgentHash,
+      source: 'website',
+    })
     if (!promoCode) {
       return NextResponse.json(
         { error: 'No promo codes are available right now. Please try again in a moment.' },

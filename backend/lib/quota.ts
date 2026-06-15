@@ -14,6 +14,14 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.en
 
 const FREE_LIMIT = 5
 
+function isProductionRuntime() {
+  return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
+}
+
+function quotaUnavailableResult(tier: string): QuotaResult {
+  return { allowed: false, count: FREE_LIMIT, limit: FREE_LIMIT, tier }
+}
+
 export interface QuotaResult {
   allowed: boolean
   count: number
@@ -99,7 +107,8 @@ export async function checkAndIncrementQuota(
     return { allowed: true, count: 0, limit: null, tier }
   }
 
-  if (!SUPABASE_SERVICE_KEY) {
+  if (!SUPABASE_SERVICE_KEY || !SUPABASE_URL) {
+    if (isProductionRuntime()) return quotaUnavailableResult(tier)
     // No service key configured — allow all (dev mode)
     return { allowed: true, count: 0, limit: FREE_LIMIT, tier }
   }
@@ -124,6 +133,7 @@ export async function checkAndIncrementQuota(
     )
 
     if (!checkRes.ok) {
+      if (isProductionRuntime()) return quotaUnavailableResult(tier)
       // Network/auth issue — fail open (don't block legitimate users for infra problems)
       return { allowed: true, count: 0, limit: FREE_LIMIT, tier }
     }
@@ -180,9 +190,11 @@ export async function checkAndIncrementQuota(
       }
     }
 
+    if (isProductionRuntime()) return quotaUnavailableResult(tier)
     // Fallback: allow if we can't determine (network issue during update)
     return { allowed: true, count: currentCount, limit: FREE_LIMIT, tier }
   } catch {
+    if (isProductionRuntime()) return quotaUnavailableResult(tier)
     // Network error — allow request but don't enforce
     return { allowed: true, count: 0, limit: FREE_LIMIT, tier }
   }

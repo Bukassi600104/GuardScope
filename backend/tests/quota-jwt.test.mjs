@@ -20,3 +20,11 @@ test('signed-in free user quota remains monthly by account', () => {
   assert.match(quota, /const month = now\.getMonth\(\) \+ 1/)
   assert.match(quota, /analysis_count/)
 })
+
+test('signed-in quota does not fail open in production', () => {
+  assert.match(quota, /quotaUnavailableResult/)
+  assert.match(quota, /isProductionRuntime\(\)/)
+  assert.match(quota, /!SUPABASE_SERVICE_KEY \|\| !SUPABASE_URL/)
+  assert.match(quota, /if \(!checkRes\.ok\) \{/)
+  assert.match(quota, /return quotaUnavailableResult\(tier\)/)
+})

@@ -7,6 +7,11 @@ const validateRoute = readFileSync(new URL('../app/api/promo/validate/route.ts',
 const requestRoute = readFileSync(new URL('../app/api/promo/request/route.ts', import.meta.url), 'utf8')
 const homePage = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8')
 const launchCodeForm = readFileSync(new URL('../app/components/LaunchCodeForm.tsx', import.meta.url), 'utf8')
+const promoAbuse = readFileSync(new URL('../lib/promoAbuse.ts', import.meta.url), 'utf8')
+const rateLimit = readFileSync(new URL('../lib/ratelimit.ts', import.meta.url), 'utf8')
+const dbRateLimit = readFileSync(new URL('../lib/dbRateLimit.ts', import.meta.url), 'utf8')
+const cors = readFileSync(new URL('../lib/cors.ts', import.meta.url), 'utf8')
+const abuseMigration = readFileSync(new URL('../supabase/migrations/20260615203641_abuse_controls.sql', import.meta.url), 'utf8')
 
 test('promo assignment retries and guards concurrent claims', () => {
   assert.match(promo, /for \(let attempt = 0; attempt < 3; attempt\+\+\)/)
@@ -37,4 +42,45 @@ test('homepage launch code form stays on-page and collects required fields', () 
   assert.match(requestRoute, /code: promoCode\.code/)
   assert.match(launchCodeForm, /navigator\.clipboard\.writeText\(code\)/)
   assert.match(launchCodeForm, /Your launch code/)
+})
+
+test('promo requests use bot traps and server-side abuse telemetry', () => {
+  assert.match(requestRoute, /guardPromoRequest/)
+  assert.match(requestRoute, /promo_request_blocked/)
+  assert.match(launchCodeForm, /name="company"/)
+  assert.match(launchCodeForm, /startedAt/)
+  assert.match(promoAbuse, /promo_claim_attempts/)
+  assert.match(promoAbuse, /honeypot/)
+  assert.match(promoAbuse, /disposable_email/)
+  assert.match(promoAbuse, /ip_daily_code_limit/)
+  assert.match(promoAbuse, /email_already_requested/)
+  assert.doesNotMatch(promoAbuse, /ip_address|raw_ip|requester_ip[^_]/)
+  assert.match(promo, /requester_ip_hash/)
+  assert.match(promo, /assigned_at/)
+})
+
+test('rate limits do not fail open in production when Redis is missing', () => {
+  assert.match(rateLimit, /checkDbRateLimit/)
+  assert.match(rateLimit, /productionLimiterUnavailableResult/)
+  assert.doesNotMatch(rateLimit, /Redis unreachable[\s\S]*allowed: true/)
+  assert.match(dbRateLimit, /api_rate_events/)
+  assert.match(dbRateLimit, /securityHash/)
+})
+
+test('CORS only allows the published extension in production', () => {
+  assert.match(cors, /fbjajjiepjmcmkcidfbmjbjmmegokhif/)
+  assert.match(cors, /allowedExtensionOrigins/)
+  assert.match(cors, /return allowedExtensionOrigins\(\)\.has\(origin\) \? origin : 'null'/)
+  assert.doesNotMatch(cors, /origin\.startsWith\('chrome-extension:\/\/'\) return origin/)
+})
+
+test('abuse migration stores hashed telemetry behind RLS', () => {
+  assert.match(abuseMigration, /create table if not exists public\.api_rate_events/)
+  assert.match(abuseMigration, /create table if not exists public\.promo_claim_attempts/)
+  assert.match(abuseMigration, /identifier_hash text not null/)
+  assert.match(abuseMigration, /email_hash text not null/)
+  assert.match(abuseMigration, /ip_hash text not null/)
+  assert.match(abuseMigration, /alter table public\.promo_claim_attempts enable row level security/)
+  assert.match(abuseMigration, /revoke all on public\.promo_claim_attempts from anon, authenticated/)
+  assert.doesNotMatch(abuseMigration, / raw_ip | ip_address | email text not null/)
 })

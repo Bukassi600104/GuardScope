@@ -6,7 +6,7 @@ This document maps GuardScope's website, extension behavior, legal copy, and lis
 
 GuardScope is published publicly on the Chrome Web Store:
 
-https://chromewebstore.google.com/detail/guardscope-email-security/fbjajijepjmcmkcidfbmjbjmmegokhif
+https://chromewebstore.google.com/detail/guardscope-email-security/fbjajjiepjmcmkcidfbmjbjmmegokhif
 
 ## Listing
 

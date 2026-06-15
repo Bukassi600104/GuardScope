@@ -15,6 +15,7 @@ const password = readFileSync(new URL('../lib/controlPanelPassword.ts', import.m
 const ownerOperations = readFileSync(new URL('../lib/ownerOperations.ts', import.meta.url), 'utf8')
 const credentialMigration = readFileSync(new URL('../supabase/migrations/006_control_panel_credentials.sql', import.meta.url), 'utf8')
 const operationalEventsMigration = readFileSync(new URL('../supabase/migrations/007_operational_events.sql', import.meta.url), 'utf8')
+const abuseMigration = readFileSync(new URL('../supabase/migrations/20260615203641_abuse_controls.sql', import.meta.url), 'utf8')
 
 test('control panel is owner-gated and read-only', () => {
   assert.match(statusRoute, /verifyControlPanelBearer/)
@@ -53,8 +54,12 @@ test('control panel reports owner operations metrics', () => {
   assert.match(ownerOperations, /issueSummary/)
   assert.match(ownerOperations, /trend14d/)
   assert.match(ownerOperations, /riskDistribution/)
+  assert.match(ownerOperations, /blockedAttempts24h/)
+  assert.match(ownerOperations, /promo_claim_attempts/)
+  assert.match(ownerOperations, /requester_email=not\.is\.null/)
   assert.match(operationalEventsMigration, /create table if not exists public\.operational_events/)
   assert.match(operationalEventsMigration, /revoke all on table public\.operational_events from anon, authenticated/)
+  assert.match(abuseMigration, /create table if not exists public\.promo_claim_attempts/)
 })
 
 test('control panel page renders owner dashboard sections', () => {
@@ -67,6 +72,8 @@ test('control panel page renders owner dashboard sections', () => {
   assert.match(page, /High-risk scans/)
   assert.match(page, /Recent accounts/)
   assert.match(page, /Data handling/)
+  assert.match(page, /Recent claim attempts/)
+  assert.match(page, /Only real requested\/assigned codes/)
 })
 
 test('legacy launch control page redirects to control panel', () => {

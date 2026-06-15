@@ -19,8 +19,11 @@ export type PromoSummary = {
   assigned: number
   claimed: number
   expired: number
+  requests24h: number
+  blockedAttempts24h: number
   utilizationRate: number
   recent: PromoActivity[]
+  recentAttempts: PromoAttempt[]
   warning?: string
 }
 
@@ -34,6 +37,13 @@ export type PromoActivity = {
   claimDeadline: string | null
   claimedAt: string | null
   proExpiresAt: string | null
+}
+
+export type PromoAttempt = {
+  emailDomain: string | null
+  allowed: boolean
+  reason: string
+  createdAt: string
 }
 
 export type UserSummary = {
@@ -204,18 +214,23 @@ async function getPromoSummary() {
     assigned: 0,
     claimed: 0,
     expired: 0,
+    requests24h: 0,
+    blockedAttempts24h: 0,
     utilizationRate: 0,
     recent: [],
+    recentAttempts: [],
   }
 
   return safeMetric(fallback, async () => {
     const now = encodeURIComponent(new Date().toISOString())
-    const [total, available, assigned, claimed, expired, recentRows] = await Promise.all([
+    const [total, available, assigned, claimed, expired, requests24h, blockedAttempts24h, recentRows, attemptRows] = await Promise.all([
       countRows('promo_codes', ''),
       countRows('promo_codes', `status=eq.unused&requester_email=is.null&claim_deadline=gt.${now}`),
       countRows('promo_codes', 'status=eq.unused&requester_email=not.is.null'),
       countRows('promo_codes', 'status=eq.claimed'),
       countRows('promo_codes', 'status=eq.expired'),
+      countRows('promo_claim_attempts', `allowed=eq.true&created_at=gte.${isoDaysBack(1)}`),
+      countRows('promo_claim_attempts', `allowed=eq.false&created_at=gte.${isoDaysBack(1)}`),
       selectRows<{
         code: string
         status: string
@@ -228,7 +243,16 @@ async function getPromoSummary() {
         pro_expires_at: string | null
       }>(
         'promo_codes',
-        'select=code,status,requester_name,requester_email,requester_country,created_at,claim_deadline,claimed_at,pro_expires_at&order=claimed_at.desc.nullslast,created_at.desc&limit=30'
+        'select=code,status,requester_name,requester_email,requester_country,created_at,claim_deadline,claimed_at,pro_expires_at&requester_email=not.is.null&order=assigned_at.desc.nullslast,created_at.desc&limit=30'
+      ),
+      selectRows<{
+        email_domain: string | null
+        allowed: boolean
+        reason: string
+        created_at: string
+      }>(
+        'promo_claim_attempts',
+        'select=email_domain,allowed,reason,created_at&order=created_at.desc&limit=20'
       ),
     ])
 
@@ -238,6 +262,8 @@ async function getPromoSummary() {
       assigned,
       claimed,
       expired,
+      requests24h,
+      blockedAttempts24h,
       utilizationRate: percentage(claimed, total),
       recent: recentRows.map((row) => ({
         code: row.code,
@@ -249,6 +275,12 @@ async function getPromoSummary() {
         claimDeadline: row.claim_deadline,
         claimedAt: row.claimed_at,
         proExpiresAt: row.pro_expires_at,
+      })),
+      recentAttempts: attemptRows.map((row) => ({
+        emailDomain: row.email_domain,
+        allowed: row.allowed,
+        reason: row.reason,
+        createdAt: row.created_at,
       })),
     }
   })
