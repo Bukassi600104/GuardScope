@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildCorsHeaders } from '../../../../lib/cors'
 import { checkRateLimit } from '../../../../lib/ratelimit'
+import { logOperationalEvent } from '../../../../lib/operationalEvents'
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
 const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY)!
@@ -110,7 +111,13 @@ export async function POST(req: NextRequest) {
     const needsConfirmation = !data.id
     return NextResponse.json({ success: true, needsConfirmation }, { headers: cors })
 
-  } catch {
+  } catch (err) {
+    logOperationalEvent({
+      severity: 'error',
+      source: 'api/auth/signup',
+      eventType: 'signup_exception',
+      message: err instanceof Error ? err.message : 'Registration failed',
+    }).catch(() => {})
     return NextResponse.json({ error: 'Registration failed - please try again' }, { status: 500, headers: cors })
   }
 }

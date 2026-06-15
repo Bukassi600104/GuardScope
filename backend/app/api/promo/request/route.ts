@@ -3,6 +3,7 @@ import { assignCodeToLead, getCodeForEmail, countRemainingCodes } from '../../..
 import { sendWelcomeEmail } from '../../../../lib/email'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 import { buildCorsHeaders } from '../../../../lib/cors'
+import { logOperationalEvent } from '../../../../lib/operationalEvents'
 
 const STATIC_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -85,6 +86,12 @@ export async function POST(req: NextRequest) {
         })
       } catch (err) {
         console.error('[promo/request] resend email failed:', err)
+        logOperationalEvent({
+          severity: 'warning',
+          source: 'api/promo/request',
+          eventType: 'promo_email_resend_failed',
+          message: err instanceof Error ? err.message : 'Promo email resend failed',
+        }).catch(() => {})
       }
 
       return NextResponse.json(
@@ -120,6 +127,12 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       emailDelivered = false
       console.error('[promo/request] email send failed:', err)
+      logOperationalEvent({
+        severity: 'warning',
+        source: 'api/promo/request',
+        eventType: 'promo_email_send_failed',
+        message: err instanceof Error ? err.message : 'Promo email delivery failed',
+      }).catch(() => {})
     }
 
     return NextResponse.json(
@@ -134,6 +147,12 @@ export async function POST(req: NextRequest) {
     )
   } catch (err) {
     console.error('[promo/request] database lookup failed:', err)
+    logOperationalEvent({
+      severity: 'critical',
+      source: 'api/promo/request',
+      eventType: 'promo_database_unavailable',
+      message: err instanceof Error ? err.message : 'Promo database lookup failed',
+    }).catch(() => {})
     return NextResponse.json(
       { error: 'Launch-code claims are temporarily unavailable while GuardScope reconnects to its secure database. Please try again shortly or email support@guardscope.app.' },
       { status: 503, headers: securityHeaders }

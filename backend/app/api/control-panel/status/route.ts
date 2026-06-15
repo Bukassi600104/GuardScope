@@ -41,6 +41,10 @@ export async function GET(req: NextRequest) {
   ])
 
   const promoRemaining = ownerOperations.promoSummary.available
+  const issueWarning = ownerOperations.issueSummary.warning
+  const issueDetail = issueWarning
+    ? issueWarning
+    : `${ownerOperations.issueSummary.open} open operational events, ${ownerOperations.issueSummary.critical} critical.`
   const promoDetail = ownerOperations.promoSummary.warning
     ? ownerOperations.promoSummary.warning
     : `${promoRemaining} unclaimed launch codes available.`
@@ -66,6 +70,16 @@ export async function GET(req: NextRequest) {
       status: ownerOperations.promoSummary.warning ? 'watch' : promoRemaining > 10 ? 'ok' : 'watch',
       detail: promoDetail,
     },
+    {
+      label: 'Operational issues',
+      status: issueWarning ? 'watch' : ownerOperations.issueSummary.critical > 0 ? 'missing' : ownerOperations.issueSummary.open > 0 ? 'watch' : 'ok',
+      detail: issueDetail,
+    },
+    {
+      label: 'Scan telemetry',
+      status: ownerOperations.analysisSummary.warning ? 'watch' : 'ok',
+      detail: ownerOperations.analysisSummary.warning ?? `${ownerOperations.analysisSummary.last24h} scans in the last 24 hours.`,
+    },
   ]
 
   return NextResponse.json({
@@ -83,10 +97,12 @@ export async function GET(req: NextRequest) {
       note: 'Chrome Web Store install and uninstall counts are not exposed to this website yet. The published extension was not changed.',
     },
     bugReports: {
-      open: null,
-      source: SUPPORT_EMAIL,
-      status: 'support_inbox',
-      note: 'Bug reports currently arrive through support email and store reviews unless a dedicated bug table or ticketing integration is added.',
+      open: ownerOperations.issueSummary.open,
+      source: 'operational_events',
+      status: ownerOperations.issueSummary.warning ? 'not_configured' : 'connected',
+      note: ownerOperations.issueSummary.warning
+        ? 'Apply migration 007_operational_events.sql to capture backend failures in the Control Center. Support email and store reviews still need manual review.'
+        : `Capturing backend operational events. Continue checking ${SUPPORT_EMAIL} and Chrome Web Store reviews for user-submitted issues.`,
     },
     checks,
   })

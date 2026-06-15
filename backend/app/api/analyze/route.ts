@@ -26,6 +26,7 @@ import { checkRateLimit, checkAnonFreeQuota } from '../../../lib/ratelimit'
 import { getCachedResult, setCachedResult } from '../../../lib/cache'
 import { createHash } from 'crypto'
 import { buildCorsHeaders } from '../../../lib/cors'
+import { logOperationalEvent } from '../../../lib/operationalEvents'
 
 const MAX_BODY_BYTES = 500_000
 
@@ -416,6 +417,13 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       // Mercury unavailable — return rule-based fallback so users always get a response
       Sentry.captureException(err, { extra: { fromEmail: email.fromEmail, senderDomain } })
+      logOperationalEvent({
+        severity: 'warning',
+        source: 'api/analyze',
+        eventType: 'ai_analysis_fallback',
+        message: err instanceof Error ? err.message : 'AI analysis fallback triggered',
+        metadata: { senderDomain: senderDomain || null },
+      }).catch(() => {})
       // Obfuscate internal error details from user-facing response
       const userFacingError = (err instanceof Error && err.message.includes('API'))
         ? 'AI analysis temporarily unavailable'
