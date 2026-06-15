@@ -12,6 +12,8 @@ const rateLimit = readFileSync(new URL('../lib/ratelimit.ts', import.meta.url), 
 const dbRateLimit = readFileSync(new URL('../lib/dbRateLimit.ts', import.meta.url), 'utf8')
 const cors = readFileSync(new URL('../lib/cors.ts', import.meta.url), 'utf8')
 const abuseMigration = readFileSync(new URL('../supabase/migrations/20260615203641_abuse_controls.sql', import.meta.url), 'utf8')
+const grantMigration = readFileSync(new URL('../supabase/migrations/20260615232425_tighten_public_table_grants.sql', import.meta.url), 'utf8')
+const legacyUpgradeRoute = readFileSync(new URL('../app/api/upgrade/route.ts', import.meta.url), 'utf8')
 
 test('promo assignment retries and guards concurrent claims', () => {
   assert.match(promo, /for \(let attempt = 0; attempt < 3; attempt\+\+\)/)
@@ -83,4 +85,21 @@ test('abuse migration stores hashed telemetry behind RLS', () => {
   assert.match(abuseMigration, /alter table public\.promo_claim_attempts enable row level security/)
   assert.match(abuseMigration, /revoke all on public\.promo_claim_attempts from anon, authenticated/)
   assert.doesNotMatch(abuseMigration, / raw_ip | ip_address | email text not null/)
+})
+
+test('legacy upgrade endpoint is suspended and uses restricted CORS', () => {
+  assert.match(legacyUpgradeRoute, /payments_suspended/)
+  assert.match(legacyUpgradeRoute, /buildCorsHeaders\(req\)/)
+  assert.doesNotMatch(legacyUpgradeRoute, /Access-Control-Allow-Origin': '\*'/)
+  assert.doesNotMatch(legacyUpgradeRoute, /transaction\/initialize/)
+})
+
+test('public Supabase table access is read-only where clients need it', () => {
+  assert.match(grantMigration, /drop policy if exists "own_history"/)
+  assert.match(grantMigration, /for select\s+to authenticated\s+using \(auth\.uid\(\) = user_id\)/)
+  assert.match(grantMigration, /revoke all on table public\.analysis_history from anon/)
+  assert.match(grantMigration, /revoke insert, update, delete[\s\S]*public\.analysis_history from authenticated/)
+  assert.match(grantMigration, /revoke all on table public\.promo_codes from anon, authenticated/)
+  assert.match(grantMigration, /drop policy if exists "Service can insert users"/)
+  assert.match(grantMigration, /to service_role/)
 })

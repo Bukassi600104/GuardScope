@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
   if (!access_token || !password) {
     return NextResponse.json({ error: 'access_token and password are required' }, { status: 400, headers: cors })
   }
-  if (password.length < 8) {
-    return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400, headers: cors })
+  if (password.length < 12) {
+    return NextResponse.json({ error: 'Password must be at least 12 characters' }, { status: 400, headers: cors })
   }
   if (password.length > 72) {
     return NextResponse.json({ error: 'Password is too long' }, { status: 400, headers: cors })

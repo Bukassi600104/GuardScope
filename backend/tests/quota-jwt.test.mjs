@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const quota = readFileSync(new URL('../lib/quota.ts', import.meta.url), 'utf8')
+const signupRoute = readFileSync(new URL('../app/api/auth/signup/route.ts', import.meta.url), 'utf8')
+const resetPasswordRoute = readFileSync(new URL('../app/api/auth/reset-password/route.ts', import.meta.url), 'utf8')
 
 test('production requires Supabase JWT secret', () => {
   assert.match(quota, /\/auth\/v1\/user/)
@@ -27,4 +29,10 @@ test('signed-in quota does not fail open in production', () => {
   assert.match(quota, /!SUPABASE_SERVICE_KEY \|\| !SUPABASE_URL/)
   assert.match(quota, /if \(!checkRes\.ok\) \{/)
   assert.match(quota, /return quotaUnavailableResult\(tier\)/)
+})
+
+test('password reset keeps the same minimum strength as signup', () => {
+  assert.match(signupRoute, /password\.length < 12/)
+  assert.match(resetPasswordRoute, /password\.length < 12/)
+  assert.doesNotMatch(resetPasswordRoute, /password\.length < 8/)
 })
