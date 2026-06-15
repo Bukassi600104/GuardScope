@@ -28,6 +28,13 @@ test('promo redemption requires authenticated matching account', () => {
   assert.match(promo, /requester_email=eq/)
 })
 
+test('promo redemption distinguishes active promo, expired promo, and paid pro', () => {
+  assert.match(promo, /select=id,tier,pro_expires_at/)
+  assert.match(promo, /activePromoPro/)
+  assert.match(promo, /paidOrTeamPro/)
+  assert.match(promo, /new Date\(user\.pro_expires_at\) > new Date\(\)/)
+})
+
 test('promo routes use guardscope.app support address', () => {
   assert.doesNotMatch(promo, /guardscope\.io/)
   assert.doesNotMatch(requestRoute, /guardscope\.io/)

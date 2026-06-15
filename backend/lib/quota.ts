@@ -223,15 +223,33 @@ async function incrementUsageFireAndForget(userId: string): Promise<void> {
   upsertUsageRow(userId, month, year).catch(() => {})
 }
 
+async function expirePromoProTier(userId: string): Promise<void> {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}&tier=eq.pro`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ tier: 'free', pro_expires_at: null }),
+    })
+  } catch {
+    // Non-critical cleanup. The caller still treats the account as free.
+  }
+}
+
 /**
  * Fetch the user's tier from the public.users table.
+ * Promo Pro access expires at pro_expires_at; paid Pro has no expiry timestamp.
  * Falls back to 'free' if the user doesn't exist yet (auto-created by trigger).
  */
 export async function getUserTier(userId: string): Promise<string> {
   if (!SUPABASE_SERVICE_KEY) return 'free'
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/users?select=tier&id=eq.${userId}`,
+      `${SUPABASE_URL}/rest/v1/users?select=tier,pro_expires_at&id=eq.${userId}`,
       {
         headers: {
           'apikey': SUPABASE_SERVICE_KEY,
@@ -240,8 +258,14 @@ export async function getUserTier(userId: string): Promise<string> {
       }
     )
     if (res.ok) {
-      const rows = await res.json() as Array<{ tier: string }>
-      return rows[0]?.tier ?? 'free'
+      const rows = await res.json() as Array<{ tier: string; pro_expires_at: string | null }>
+      const user = rows[0]
+      if (!user) return 'free'
+      if (user.tier === 'pro' && user.pro_expires_at && new Date(user.pro_expires_at) <= new Date()) {
+        await expirePromoProTier(userId)
+        return 'free'
+      }
+      return user.tier ?? 'free'
     }
   } catch { /* fallback */ }
   return 'free'

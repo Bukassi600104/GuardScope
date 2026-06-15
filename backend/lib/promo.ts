@@ -134,13 +134,15 @@ export async function redeemCode(code: string, userEmail: string): Promise<Redee
   }
 
   // Look up user by email
-  const userUrl = `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(normalizedEmail)}&select=id,tier&limit=1`
+  const userUrl = `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(normalizedEmail)}&select=id,tier,pro_expires_at&limit=1`
   const userRes = await fetch(userUrl, { headers: headers() })
   if (!userRes.ok) return { success: false, reason: 'Could not verify your account. Please try again.' }
-  const users = await userRes.json() as { id: string; tier: string }[]
+  const users = await userRes.json() as { id: string; tier: string; pro_expires_at: string | null }[]
   const user = users[0]
   if (!user) return { success: false, reason: 'Account not found. Please sign up first, then redeem your code.' }
-  if (user.tier === 'pro' || user.tier === 'team') {
+  const activePromoPro = user.tier === 'pro' && user.pro_expires_at && new Date(user.pro_expires_at) > new Date()
+  const paidOrTeamPro = user.tier === 'team' || (user.tier === 'pro' && !user.pro_expires_at)
+  if (activePromoPro || paidOrTeamPro) {
     return { success: false, reason: 'Your account is already on a Pro or Team plan.' }
   }
 

@@ -23,6 +23,13 @@ test('signed-in free user quota remains monthly by account', () => {
   assert.match(quota, /analysis_count/)
 })
 
+test('promo pro tier expires by pro_expires_at while paid pro can remain active', () => {
+  assert.match(quota, /select=tier,pro_expires_at/)
+  assert.match(quota, /user\.tier === 'pro' && user\.pro_expires_at/)
+  assert.match(quota, /expirePromoProTier\(userId\)/)
+  assert.match(quota, /return 'free'/)
+})
+
 test('signed-in quota does not fail open in production', () => {
   assert.match(quota, /quotaUnavailableResult/)
   assert.match(quota, /isProductionRuntime\(\)/)
