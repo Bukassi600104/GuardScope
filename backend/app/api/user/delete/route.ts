@@ -1,13 +1,10 @@
 /**
- * DELETE /api/user/delete — GDPR right to erasure.
+ * DELETE /api/user/delete - GDPR right to erasure.
  *
- * Deletes the authenticated user's account and all associated data:
- *   - analysis_history rows
- *   - usage rows
- *   - users row
- *   - Supabase auth user (auth.users)
+ * Deletes the authenticated user's Supabase auth account. Database cascades
+ * remove linked GuardScope rows such as analysis history, usage, and profile
+ * metadata. Email content is never stored, so there is nothing else to erase.
  *
- * Email content is never stored, so there's nothing else to erase.
  * Requires a valid Bearer JWT.
  */
 import { NextRequest, NextResponse } from 'next/server'
@@ -42,34 +39,8 @@ export async function DELETE(req: NextRequest) {
   const userId = jwt.sub
 
   try {
-    // 1. Delete analysis history
-    await fetch(`${SUPABASE_URL}/rest/v1/analysis_history?user_id=eq.${userId}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    })
-
-    // 2. Delete usage records
-    await fetch(`${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    })
-
-    // 3. Delete public users row
-    await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
-      method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    })
-
-    // 4. Delete Supabase auth user (hard delete — removes from auth.users)
+    // Delete auth first. Cascades remove app rows; this avoids leaving an auth
+    // account alive if lower-priority cleanup partially fails.
     const authRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
       method: 'DELETE',
       headers: {
@@ -84,9 +55,21 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to delete account. Please contact support.' }, { status: 500, headers: cors })
     }
 
+    const serviceHeaders = {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    }
+
+    // Best-effort cleanup for any legacy rows that predate cascade constraints.
+    await Promise.allSettled([
+      fetch(`${SUPABASE_URL}/rest/v1/analysis_history?user_id=eq.${userId}`, { method: 'DELETE', headers: serviceHeaders }),
+      fetch(`${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}`, { method: 'DELETE', headers: serviceHeaders }),
+      fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'DELETE', headers: serviceHeaders }),
+    ])
+
     return NextResponse.json({ success: true, message: 'Account and all data deleted.' }, { headers: cors })
   } catch (err) {
     console.error('[user/delete] error:', err)
-    return NextResponse.json({ error: 'Deletion failed — please try again or contact support.' }, { status: 500, headers: cors })
+    return NextResponse.json({ error: 'Deletion failed - please try again or contact support.' }, { status: 500, headers: cors })
   }
 }
