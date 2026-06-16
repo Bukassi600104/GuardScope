@@ -13,6 +13,8 @@ const dbRateLimit = readFileSync(new URL('../lib/dbRateLimit.ts', import.meta.ur
 const cors = readFileSync(new URL('../lib/cors.ts', import.meta.url), 'utf8')
 const abuseMigration = readFileSync(new URL('../supabase/migrations/20260615203641_abuse_controls.sql', import.meta.url), 'utf8')
 const grantMigration = readFileSync(new URL('../supabase/migrations/20260615232425_tighten_public_table_grants.sql', import.meta.url), 'utf8')
+const rlsFunctionHardeningMigration = readFileSync(new URL('../supabase/migrations/20260616090216_harden_rls_and_function_privileges.sql', import.meta.url), 'utf8')
+const rebuildSql = readFileSync(new URL('../supabase/guardscope_rebuild.sql', import.meta.url), 'utf8')
 const legacyUpgradeRoute = readFileSync(new URL('../app/api/upgrade/route.ts', import.meta.url), 'utf8')
 
 test('promo assignment retries and guards concurrent claims', () => {
@@ -79,6 +81,8 @@ test('rate limits do not fail open in production when Redis is missing', () => {
 test('CORS only allows the published extension in production', () => {
   assert.match(cors, /fbjajjiepjmcmkcidfbmjbjmmegokhif/)
   assert.match(cors, /allowedExtensionOrigins/)
+  assert.match(cors, /CANONICAL_SITE_ORIGIN = 'https:\/\/guardscope\.app'/)
+  assert.match(cors, /allowedWebsiteOrigins\(\)\.has\(origin\)/)
   assert.match(cors, /return allowedExtensionOrigins\(\)\.has\(origin\) \? origin : 'null'/)
   assert.doesNotMatch(cors, /origin\.startsWith\('chrome-extension:\/\/'\) return origin/)
 })
@@ -109,4 +113,15 @@ test('public Supabase table access is read-only where clients need it', () => {
   assert.match(grantMigration, /revoke all on table public\.promo_codes from anon, authenticated/)
   assert.match(grantMigration, /drop policy if exists "Service can insert users"/)
   assert.match(grantMigration, /to service_role/)
+})
+
+test('Supabase recovery SQL keeps hardened RLS and function privileges', () => {
+  for (const sql of [rlsFunctionHardeningMigration, rebuildSql]) {
+    assert.match(sql, /revoke all on table public\.teams from anon/)
+    assert.match(sql, /revoke all on table public\.team_members from anon/)
+    assert.match(sql, /revoke (all|execute) on function public\.handle_new_user\(\) from public, anon, authenticated/)
+    assert.match(sql, /create policy "service_role_all"[\s\S]*to service_role[\s\S]*using \(true\)/)
+    assert.doesNotMatch(sql, /auth\.role\(\) = 'service_role'/)
+    assert.doesNotMatch(sql, /for all using \(owner_id = auth\.uid\(\)\)/)
+  }
 })

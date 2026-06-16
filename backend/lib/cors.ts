@@ -6,7 +6,8 @@
  * testing.
  */
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://guardscope.app'
+const CANONICAL_SITE_ORIGIN = 'https://guardscope.app'
+const BACKEND_URL = process.env.NEXT_PUBLIC_APP_URL ?? CANONICAL_SITE_ORIGIN
 const PUBLISHED_EXTENSION_ID = 'fbjajjiepjmcmkcidfbmjbjmmegokhif'
 
 function isProductionRuntime() {
@@ -25,12 +26,25 @@ function allowedExtensionOrigins() {
   ])
 }
 
+function allowedWebsiteOrigins() {
+  const configured = [
+    CANONICAL_SITE_ORIGIN,
+    'https://www.guardscope.app',
+    BACKEND_URL,
+    process.env.NEXT_PUBLIC_SITE_URL,
+  ]
+    .map((origin) => origin?.trim())
+    .filter(Boolean)
+
+  return new Set(configured)
+}
+
 export function getAllowedOrigin(req: { headers: { get: (k: string) => string | null } }): string {
   const origin = req.headers.get('origin') ?? ''
 
-  if (!origin) return BACKEND_URL
+  if (!origin) return CANONICAL_SITE_ORIGIN
   if (origin === 'https://mail.google.com') return origin
-  if (origin === BACKEND_URL) return origin
+  if (allowedWebsiteOrigins().has(origin)) return origin
 
   if (origin.startsWith('chrome-extension://')) {
     if (!isProductionRuntime()) return origin

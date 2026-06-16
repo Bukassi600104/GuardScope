@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { buildCorsHeaders } from '../../../../lib/cors'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? ''
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
 const STATIC_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
@@ -19,24 +19,34 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const headers = getHeaders(req)
+
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/promo_codes?status=eq.unused&requester_email=is.null&claim_deadline=gt.${encodeURIComponent(new Date().toISOString())}&select=id`,
       {
         headers: {
-          'apikey': SERVICE_KEY,
-          'Authorization': `Bearer ${SERVICE_KEY}`,
-          'Prefer': 'count=exact',
-          'Range': '0-0',
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          Prefer: 'count=exact',
+          Range: '0-0',
         },
-      }
+      },
     )
-    // Content-Range: 0-0/N — N is total count
+
+    if (!res.ok) {
+      return NextResponse.json({ available: false, remaining: 0 }, { headers })
+    }
+
+    // Content-Range: 0-0/N. N is the total count.
     const range = res.headers.get('content-range') ?? ''
     const total = parseInt(range.split('/')[1] ?? '0', 10)
+
+    if (!Number.isFinite(total) || total < 0) {
+      return NextResponse.json({ available: false, remaining: 0 }, { headers })
+    }
+
     return NextResponse.json({ available: total > 0, remaining: total }, { headers })
   } catch {
-    // On error default to available=true so we don't hide the promo option
-    return NextResponse.json({ available: true, remaining: -1 }, { headers })
+    return NextResponse.json({ available: false, remaining: 0 }, { headers })
   }
 }

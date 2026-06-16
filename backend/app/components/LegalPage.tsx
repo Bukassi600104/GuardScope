@@ -22,6 +22,21 @@ const C = {
   success: '#158a46',
 }
 
+function renderBullet(bullet: string) {
+  const strongPrefix = bullet.match(/^<strong>([^<]+)<\/strong>\s*(.*)$/)
+
+  if (!strongPrefix) return bullet
+
+  const [, label, rest] = strongPrefix
+
+  return (
+    <>
+      <strong>{label}</strong>
+      {rest ? ` ${rest}` : null}
+    </>
+  )
+}
+
 export function LegalPage({
   eyebrow,
   title,
@@ -75,7 +90,7 @@ export function LegalPage({
                   {section.bullets.map((bullet) => (
                     <li key={bullet} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                       <span style={{ flexShrink: 0, width: 7, height: 7, borderRadius: '50%', background: section.highlight ? C.success : C.cyan, marginTop: 8 }} />
-                      <span style={{ fontSize: 14, color: C.body, lineHeight: 1.75 }} dangerouslySetInnerHTML={{ __html: bullet }} />
+                      <span style={{ fontSize: 14, color: C.body, lineHeight: 1.75 }}>{renderBullet(bullet)}</span>
                     </li>
                   ))}
                 </ul>

@@ -17,7 +17,8 @@ begin
   new.updated_at = now();
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql
+set search_path = '';
 
 create table if not exists public.users (
   id uuid references auth.users on delete cascade primary key,
@@ -113,7 +114,8 @@ begin
   on conflict (id) do update set email = excluded.email;
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer
+set search_path = '';
 
 create trigger on_auth_user_created
   after insert on auth.users
@@ -156,42 +158,71 @@ alter table public.control_panel_credentials enable row level security;
 
 drop policy if exists "Users can read own row" on public.users;
 create policy "Users can read own row" on public.users
-  for select using (auth.uid() = id);
+  for select
+  to authenticated
+  using ((select auth.uid()) = id);
 
 drop policy if exists "Service can insert users" on public.users;
-create policy "Service can insert users" on public.users
-  for insert with check (true);
+create policy "service_role_insert_users" on public.users
+  for insert
+  to service_role
+  with check (true);
 
 drop policy if exists "Users can update own row" on public.users;
 
 drop policy if exists "Users can read own usage" on public.usage;
 create policy "Users can read own usage" on public.usage
-  for select using (auth.uid() = user_id);
+  for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "Service can manage usage" on public.usage;
 
 drop policy if exists "team_owner_all" on public.teams;
-create policy "team_owner_all" on public.teams
-  for all using (owner_id = auth.uid());
-
 drop policy if exists "team_member_read" on public.teams;
-create policy "team_member_read" on public.teams
-  for select using (
-    id in (select team_id from public.team_members where user_id = auth.uid())
+create policy "team_read" on public.teams
+  for select
+  to authenticated
+  using (
+    owner_id = (select auth.uid())
+    or id in (
+      select tm.team_id
+      from public.team_members tm
+      where tm.user_id = (select auth.uid())
+    )
   );
+create policy "team_owner_insert" on public.teams
+  for insert
+  to authenticated
+  with check (owner_id = (select auth.uid()));
+create policy "team_owner_update" on public.teams
+  for update
+  to authenticated
+  using (owner_id = (select auth.uid()))
+  with check (owner_id = (select auth.uid()));
+create policy "team_owner_delete" on public.teams
+  for delete
+  to authenticated
+  using (owner_id = (select auth.uid()));
 
 drop policy if exists "own_membership" on public.team_members;
 create policy "own_membership" on public.team_members
-  for select using (user_id = auth.uid());
+  for select
+  to authenticated
+  using (user_id = (select auth.uid()));
 
 drop policy if exists "own_history" on public.analysis_history;
-create policy "own_history" on public.analysis_history
-  for all using (user_id = auth.uid());
+create policy "Users can read own analysis history" on public.analysis_history
+  for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "service_role_all" on public.promo_codes;
 create policy "service_role_all" on public.promo_codes
-  using (auth.role() = 'service_role')
-  with check (auth.role() = 'service_role');
+  for all
+  to service_role
+  using (true)
+  with check (true);
 
 revoke all on table public.control_panel_credentials from anon, authenticated;
 grant select, insert, update on table public.control_panel_credentials to service_role;
@@ -199,6 +230,12 @@ grant select, insert, update on table public.control_panel_credentials to servic
 grant usage on schema public to anon, authenticated, service_role;
 grant select, insert, update, delete on all tables in schema public to service_role;
 grant usage, select on all sequences in schema public to service_role;
+revoke all on table public.teams from anon;
+revoke all on table public.team_members from anon;
+revoke all on table public.team_members from authenticated;
+grant select on table public.team_members to authenticated;
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+revoke all on function public.update_updated_at_column() from public, anon, authenticated;
 
 do $$
 declare
