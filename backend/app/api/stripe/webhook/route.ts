@@ -12,7 +12,7 @@ function isValidUUID(id: string | undefined): id is string {
 }
 
 async function updateUserTier(userId: string, tier: 'free' | 'pro', stripeCustomerId?: string, stripeSubscriptionId?: string) {
-  const patch: Record<string, unknown> = { tier }
+  const patch: Record<string, unknown> = { tier, pro_expires_at: null }
   if (stripeCustomerId) patch.stripe_customer_id = stripeCustomerId
   if (stripeSubscriptionId) patch.stripe_subscription_id = stripeSubscriptionId
 

@@ -12,7 +12,7 @@ function isValidUUID(id: string | undefined): id is string {
 }
 
 async function updateUserTier(userId: string, tier: 'free' | 'pro', paystackCustomerCode?: string) {
-  const patch: Record<string, unknown> = { tier }
+  const patch: Record<string, unknown> = { tier, pro_expires_at: null }
   if (paystackCustomerCode) patch.paystack_customer_code = paystackCustomerCode
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
