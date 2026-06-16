@@ -21,3 +21,14 @@ test('extension auth goes through guardscope.app backend only', () => {
   assert.doesNotMatch(background, /VITE_SUPABASE/)
   assert.doesNotMatch(background, /auth\/v1\/token/)
 })
+
+test('extension lifecycle telemetry is best-effort and privacy-safe', () => {
+  const lifecycleBlock = background.slice(0, background.indexOf('// ── Extension Badge'))
+  assert.match(lifecycleBlock, /INSTALL_ID_KEY = 'guardscope_install_id'/)
+  assert.match(lifecycleBlock, /crypto\.randomUUID\(\)/)
+  assert.match(lifecycleBlock, /\/api\/extension\/lifecycle/)
+  assert.match(lifecycleBlock, /chrome\.runtime\.setUninstallURL/)
+  assert.match(background, /reportLifecycleEvent\('install'\)/)
+  assert.match(background, /reportLifecycleEvent\('update', details\.previousVersion\)/)
+  assert.doesNotMatch(lifecycleBlock, /fromEmail|subject|guardscope_current_email|guardscope_email_/)
+})

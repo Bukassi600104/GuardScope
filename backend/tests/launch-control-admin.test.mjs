@@ -13,9 +13,11 @@ const launch = readFileSync(new URL('../lib/launch.ts', import.meta.url), 'utf8'
 const auth = readFileSync(new URL('../lib/controlPanelAuth.ts', import.meta.url), 'utf8')
 const password = readFileSync(new URL('../lib/controlPanelPassword.ts', import.meta.url), 'utf8')
 const ownerOperations = readFileSync(new URL('../lib/ownerOperations.ts', import.meta.url), 'utf8')
+const lifecycleRoute = readFileSync(new URL('../app/api/extension/lifecycle/route.ts', import.meta.url), 'utf8')
 const credentialMigration = readFileSync(new URL('../supabase/migrations/006_control_panel_credentials.sql', import.meta.url), 'utf8')
 const operationalEventsMigration = readFileSync(new URL('../supabase/migrations/007_operational_events.sql', import.meta.url), 'utf8')
 const abuseMigration = readFileSync(new URL('../supabase/migrations/20260615203641_abuse_controls.sql', import.meta.url), 'utf8')
+const lifecycleMigration = readFileSync(new URL('../supabase/migrations/20260616220803_extension_lifecycle_telemetry.sql', import.meta.url), 'utf8')
 
 test('control panel is owner-gated and read-only', () => {
   assert.match(statusRoute, /verifyControlPanelBearer/)
@@ -55,11 +57,31 @@ test('control panel reports owner operations metrics', () => {
   assert.match(ownerOperations, /trend14d/)
   assert.match(ownerOperations, /riskDistribution/)
   assert.match(ownerOperations, /blockedAttempts24h/)
+  assert.match(ownerOperations, /extensionSummary/)
+  assert.match(ownerOperations, /extension_installations/)
+  assert.match(ownerOperations, /extension_lifecycle_events/)
   assert.match(ownerOperations, /promo_claim_attempts/)
   assert.match(ownerOperations, /requester_email=not\.is\.null/)
   assert.match(operationalEventsMigration, /create table if not exists public\.operational_events/)
   assert.match(operationalEventsMigration, /revoke all on table public\.operational_events from anon, authenticated/)
   assert.match(abuseMigration, /create table if not exists public\.promo_claim_attempts/)
+})
+
+test('extension lifecycle telemetry is hashed and owner-visible', () => {
+  assert.match(lifecycleRoute, /securityHash\(`extension-install:\$\{input\.installId\}`\)/)
+  assert.match(lifecycleRoute, /checkRateLimit\(`extension-lifecycle:\$\{ip\}`/)
+  assert.match(lifecycleRoute, /EVENT_TYPES = \['install', 'update', 'uninstall'\] as const/)
+  assert.match(lifecycleRoute, /EVENT_TYPE_SET = new Set<string>\(EVENT_TYPES\)/)
+  assert.match(lifecycleRoute, /PUBLISHED_EXTENSION_ID = 'fbjajjiepjmcmkcidfbmjbjmmegokhif'/)
+  assert.match(lifecycleRoute, /PUBLISHED_EXTENSION_ORIGIN = `chrome-extension:\/\/\$\{PUBLISHED_EXTENSION_ID\}`/)
+  assert.match(lifecycleRoute, /isAllowedTelemetryOrigin/)
+  assert.match(lifecycleRoute, /Lifecycle telemetry origin is not allowed/)
+  assert.doesNotMatch(lifecycleRoute, /requester_email|fromEmail|subject|email_body|raw_ip/)
+  assert.match(lifecycleMigration, /create table if not exists public\.extension_installations/)
+  assert.match(lifecycleMigration, /install_id_hash text primary key/)
+  assert.match(lifecycleMigration, /revoke all on table public\.extension_installations from anon, authenticated/)
+  assert.match(lifecycleMigration, /revoke all on table public\.extension_lifecycle_events from anon, authenticated/)
+  assert.match(statusRoute, /GuardScope extension lifecycle telemetry/)
 })
 
 test('control panel page renders owner dashboard sections', () => {

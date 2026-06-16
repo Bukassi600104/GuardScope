@@ -4,6 +4,47 @@ import { getAuthState, setAuthState, clearAuthState } from './utils/auth'
 import type { AuthState } from './utils/auth'
 import { BACKEND_URL } from './config'
 
+const INSTALL_ID_KEY = 'guardscope_install_id'
+
+async function getOrCreateInstallId(): Promise<string> {
+  const stored = await chrome.storage.local.get(INSTALL_ID_KEY)
+  if (typeof stored[INSTALL_ID_KEY] === 'string') return stored[INSTALL_ID_KEY]
+
+  const installId = crypto.randomUUID()
+  await chrome.storage.local.set({ [INSTALL_ID_KEY]: installId })
+  return installId
+}
+
+async function configureUninstallUrl(): Promise<void> {
+  try {
+    const installId = await getOrCreateInstallId()
+    const version = chrome.runtime.getManifest().version
+    await chrome.runtime.setUninstallURL(
+      `${BACKEND_URL}/api/extension/lifecycle?install_id=${encodeURIComponent(installId)}&version=${encodeURIComponent(version)}`
+    )
+  } catch {
+    // Lifecycle telemetry is non-critical and must never interrupt protection.
+  }
+}
+
+async function reportLifecycleEvent(eventType: 'install' | 'update', previousVersion?: string): Promise<void> {
+  try {
+    const installId = await getOrCreateInstallId()
+    await fetch(`${BACKEND_URL}/api/extension/lifecycle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        install_id: installId,
+        event_type: eventType,
+        version: chrome.runtime.getManifest().version,
+        previous_version: previousVersion,
+      }),
+    })
+  } catch {
+    // Lifecycle telemetry is best-effort and stores no email content.
+  }
+}
+
 // ── Extension Badge ──────────────────────────────────────────────────────────
 // Sets the toolbar icon badge when a HIGH/CRITICAL email is detected.
 // Cleared when a new email is opened (fresh context).
@@ -109,10 +150,18 @@ chrome.action.onClicked.addListener((tab) => {
 })
 
 chrome.runtime.onInstalled.addListener((details) => {
+  configureUninstallUrl()
   if (details.reason === 'install') {
+    reportLifecycleEvent('install')
     // First-time install: open onboarding tab
     chrome.tabs.create({ url: chrome.runtime.getURL('src/onboarding/onboarding.html') })
+  } else if (details.reason === 'update') {
+    reportLifecycleEvent('update', details.previousVersion)
   }
+})
+
+chrome.runtime.onStartup.addListener(() => {
+  configureUninstallUrl()
 })
 
 // Trusted internal origins: the extension's own pages (popup, sidebar, onboarding)

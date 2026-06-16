@@ -11,6 +11,7 @@ export type OwnerOperationsSnapshot = {
   userSummary: UserSummary
   analysisSummary: AnalysisSummary
   issueSummary: IssueSummary
+  extensionSummary: ExtensionSummary
 }
 
 export type PromoSummary = {
@@ -115,6 +116,16 @@ export type OperationalIssue = {
   message: string
   status: string
   createdAt: string
+}
+
+export type ExtensionSummary = {
+  installs: number
+  uninstalls: number
+  activeApproximate: number
+  installs24h: number
+  updates24h: number
+  events24h: number
+  warning?: string
 }
 
 function hasSupabaseConfig() {
@@ -485,12 +496,43 @@ async function getIssueSummary() {
   })
 }
 
+async function getExtensionSummary() {
+  const fallback: ExtensionSummary = {
+    installs: 0,
+    uninstalls: 0,
+    activeApproximate: 0,
+    installs24h: 0,
+    updates24h: 0,
+    events24h: 0,
+  }
+
+  return safeMetric(fallback, async () => {
+    const [installs, uninstalls, installs24h, updates24h, events24h] = await Promise.all([
+      countRows('extension_installations', ''),
+      countRows('extension_installations', 'uninstalled_at=not.is.null'),
+      countRows('extension_lifecycle_events', `event_type=eq.install&created_at=gte.${isoDaysBack(1)}`),
+      countRows('extension_lifecycle_events', `event_type=eq.update&created_at=gte.${isoDaysBack(1)}`),
+      countRows('extension_lifecycle_events', `created_at=gte.${isoDaysBack(1)}`),
+    ])
+
+    return {
+      installs,
+      uninstalls,
+      activeApproximate: Math.max(0, installs - uninstalls),
+      installs24h,
+      updates24h,
+      events24h,
+    }
+  })
+}
+
 export async function getOwnerOperationsSnapshot(): Promise<OwnerOperationsSnapshot> {
-  const [promo, users, analyses, issues] = await Promise.all([
+  const [promo, users, analyses, issues, extension] = await Promise.all([
     getPromoSummary(),
     getUserSummary(),
     getAnalysisSummary(),
     getIssueSummary(),
+    getExtensionSummary(),
   ])
 
   return {
@@ -498,5 +540,6 @@ export async function getOwnerOperationsSnapshot(): Promise<OwnerOperationsSnaps
     userSummary: { ...users.data, ...(users.warning ? { warning: users.warning } : {}) },
     analysisSummary: { ...analyses.data, ...(analyses.warning ? { warning: analyses.warning } : {}) },
     issueSummary: { ...issues.data, ...(issues.warning ? { warning: issues.warning } : {}) },
+    extensionSummary: { ...extension.data, ...(extension.warning ? { warning: extension.warning } : {}) },
   }
 }

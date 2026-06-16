@@ -90,11 +90,14 @@ export async function GET(req: NextRequest) {
     supportEmail: SUPPORT_EMAIL,
     ownerOperations,
     marketplace: {
-      installs: null,
-      uninstalls: null,
-      source: 'Chrome Web Store dashboard',
-      status: 'not_connected',
-      note: 'Chrome Web Store install and uninstall counts are not exposed to this website yet. The published extension was not changed.',
+      installs: ownerOperations.extensionSummary.installs,
+      uninstalls: ownerOperations.extensionSummary.uninstalls,
+      activeApproximate: ownerOperations.extensionSummary.activeApproximate,
+      source: 'GuardScope extension lifecycle telemetry',
+      status: ownerOperations.extensionSummary.warning ? 'not_configured' : 'connected',
+      note: ownerOperations.extensionSummary.warning
+        ? `${ownerOperations.extensionSummary.warning}. Chrome Web Store dashboard remains the source of truth for historical install totals.`
+        : 'Counts begin after users receive the extension version that sends lifecycle events. Chrome Web Store remains the source of truth for historical install totals.',
     },
     bugReports: {
       open: ownerOperations.issueSummary.open,
