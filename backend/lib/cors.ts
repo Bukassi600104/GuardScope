@@ -9,6 +9,7 @@
 const CANONICAL_SITE_ORIGIN = 'https://guardscope.app'
 const BACKEND_URL = process.env.NEXT_PUBLIC_APP_URL ?? CANONICAL_SITE_ORIGIN
 const PUBLISHED_EXTENSION_ID = 'fbjajjiepjmcmkcidfbmjbjmmegokhif'
+export const PUBLISHED_CHROME_EXTENSION_ORIGIN = `chrome-extension://${PUBLISHED_EXTENSION_ID}`
 
 function isProductionRuntime() {
   return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
@@ -21,7 +22,7 @@ function allowedExtensionOrigins() {
     .filter(Boolean) ?? []
 
   return new Set([
-    `chrome-extension://${PUBLISHED_EXTENSION_ID}`,
+    PUBLISHED_CHROME_EXTENSION_ORIGIN,
     ...configured,
   ])
 }
@@ -52,6 +53,13 @@ export function getAllowedOrigin(req: { headers: { get: (k: string) => string | 
   }
 
   return 'null'
+}
+
+export function isAllowedExtensionRequest(req: { headers: { get: (k: string) => string | null } }): boolean {
+  const origin = req.headers.get('origin') ?? ''
+  if (!origin.startsWith('chrome-extension://')) return false
+  if (!isProductionRuntime()) return true
+  return allowedExtensionOrigins().has(origin)
 }
 
 export function buildCorsHeaders(

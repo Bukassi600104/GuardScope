@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { buildCorsHeaders } from '../../../../lib/cors'
+import { buildCorsHeaders, isAllowedExtensionRequest } from '../../../../lib/cors'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 import { getUserTier } from '../../../../lib/quota'
 
@@ -38,6 +38,9 @@ export async function POST(req: NextRequest) {
   }
   if (!EMAIL_REGEX.test(email)) {
     return NextResponse.json({ error: 'Invalid email address' }, { status: 400, headers: cors })
+  }
+  if (body.client === 'extension' && !isAllowedExtensionRequest(req)) {
+    return NextResponse.json({ error: 'Extension sign-in is only available from the GuardScope extension.' }, { status: 403, headers: cors })
   }
 
   try {

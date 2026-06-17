@@ -127,9 +127,19 @@ The signup page also reflects the backend response: users are told to confirm
 their email when Supabase requires confirmation, and otherwise they are sent to
 sign in.
 
+### Extension Auth Token Boundary
+
+Extension sign-in and token refresh now require a request origin that matches an
+allowed Chrome extension origin. The public website can still perform its normal
+sign-in check, but it cannot receive extension-style access and refresh tokens
+by adding `client: "extension"` to the request body.
+
+This keeps token-bearing responses bound to the installed extension surface and
+reduces impact if website JavaScript is ever compromised.
+
 ## Verification Commands
 
-- `npm test` in `backend`: 35/35 passed
+- `npm test` in `backend`: 36/36 passed
 - `npm run build` in `backend`: passed
 - `npm audit --json` in `backend`: 0 vulnerabilities
 - `npm test` in `extension`: 8/8 passed
@@ -143,6 +153,13 @@ sign in.
   `Access-Control-Allow-Origin: null`
 - Live signup probe: hostile-origin invalid signup returned 400 with
   `Access-Control-Allow-Origin: null`
+- Live auth-boundary probes:
+  - Website-origin `client: "extension"` sign-in returned 403 before token
+    issuance.
+  - Published extension-origin malformed sign-in reached normal validation.
+  - Website-origin token refresh returned 403.
+  - Published extension-origin fake refresh token reached normal 401 session
+    expiry handling.
 - Browser verification: `/signup` loaded on `https://guardscope.app`, and the
   create-account view rendered without submitting production account data.
 - Live promo counts: 100 total codes, 99 available, 1 assigned/unredeemed, 0

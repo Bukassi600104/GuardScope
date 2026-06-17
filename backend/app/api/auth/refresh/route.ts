@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { buildCorsHeaders } from '../../../../lib/cors'
+import { buildCorsHeaders, isAllowedExtensionRequest } from '../../../../lib/cors'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 import { getUserTier } from '../../../../lib/quota'
 
@@ -12,6 +12,10 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const cors = buildCorsHeaders(req)
+  if (!isAllowedExtensionRequest(req)) {
+    return NextResponse.json({ error: 'Session refresh is only available from the GuardScope extension.' }, { status: 403, headers: cors })
+  }
+
   const rawIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? ''
   const ip = /^[0-9a-fA-F.:]{3,45}$/.test(rawIp) ? rawIp : 'unknown'
   const rateResult = await checkRateLimit(`authrefresh:${ip}`, false)
