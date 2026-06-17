@@ -7,6 +7,7 @@ const validateRoute = readFileSync(new URL('../app/api/promo/validate/route.ts',
 const requestRoute = readFileSync(new URL('../app/api/promo/request/route.ts', import.meta.url), 'utf8')
 const homePage = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8')
 const launchCodeForm = readFileSync(new URL('../app/components/LaunchCodeForm.tsx', import.meta.url), 'utf8')
+const upgradePage = readFileSync(new URL('../app/upgrade/page.tsx', import.meta.url), 'utf8')
 const promoAbuse = readFileSync(new URL('../lib/promoAbuse.ts', import.meta.url), 'utf8')
 const rateLimit = readFileSync(new URL('../lib/ratelimit.ts', import.meta.url), 'utf8')
 const dbRateLimit = readFileSync(new URL('../lib/dbRateLimit.ts', import.meta.url), 'utf8')
@@ -29,6 +30,13 @@ test('promo redemption requires authenticated matching account', () => {
   assert.match(validateRoute, /status: 403/)
   assert.match(promo, /This launch code belongs to a different email address/)
   assert.match(promo, /requester_email=eq/)
+})
+
+test('promo redemption failures do not enumerate code status publicly', () => {
+  assert.match(validateRoute, /PROMO_ACTIVATION_FAILED/)
+  assert.match(validateRoute, /This launch code could not be activated/)
+  assert.match(validateRoute, /\{ error: PROMO_ACTIVATION_FAILED \}/)
+  assert.doesNotMatch(validateRoute, /\{ error: result\.reason \}/)
 })
 
 test('promo redemption distinguishes active promo, expired promo, and paid pro', () => {
@@ -56,6 +64,14 @@ test('homepage launch code form stays on-page and collects required fields', () 
   assert.doesNotMatch(requestRoute, /success: true,\s*code: promoCode\.code/)
   assert.match(launchCodeForm, /navigator\.clipboard\.writeText\(code\)/)
   assert.match(launchCodeForm, /Your launch code/)
+})
+
+test('website upgrade page routes activation to the authenticated extension flow', () => {
+  assert.match(upgradePage, /Activate inside the extension/)
+  assert.match(upgradePage, /CHROME_WEB_STORE_URL/)
+  assert.match(upgradePage, /trusted extension origin/)
+  assert.doesNotMatch(upgradePage, /fetch\('\/api\/promo\/validate'/)
+  assert.doesNotMatch(upgradePage, /body: JSON\.stringify\(\{ code/)
 })
 
 test('promo requests use bot traps and server-side abuse telemetry', () => {

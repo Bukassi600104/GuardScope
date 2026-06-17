@@ -137,9 +137,22 @@ by adding `client: "extension"` to the request body.
 This keeps token-bearing responses bound to the installed extension surface and
 reduces impact if website JavaScript is ever compromised.
 
+### Promo Redemption Enumeration Guard
+
+Promo-code activation remains authenticated and bound to the signed-in account
+email, but public activation failures no longer reveal whether a code was not
+found, expired, already used, or assigned to another email. The user-facing
+message is intentionally neutral so attackers cannot use the endpoint as a
+promo-code status oracle.
+
+The website `/upgrade` page no longer submits unauthenticated code/email pairs
+to `/api/promo/validate`. It now routes users to activate codes from the
+signed-in Chrome extension, which is the surface that holds the required
+authenticated session.
+
 ## Verification Commands
 
-- `npm test` in `backend`: 36/36 passed
+- `npm test` in `backend`: 38/38 passed
 - `npm run build` in `backend`: passed
 - `npm audit --json` in `backend`: 0 vulnerabilities
 - `npm test` in `extension`: 8/8 passed
@@ -160,8 +173,15 @@ reduces impact if website JavaScript is ever compromised.
   - Website-origin token refresh returned 403.
   - Published extension-origin fake refresh token reached normal 401 session
     expiry handling.
+- Live upgrade/promo probes:
+  - `/upgrade` rendered extension-based activation instructions and no longer
+    contained the old unauthenticated activation form or `/api/promo/validate`
+    fetch path.
+  - Unauthenticated promo-code validation returned 401.
 - Browser verification: `/signup` loaded on `https://guardscope.app`, and the
   create-account view rendered without submitting production account data.
+  `/upgrade` loaded with the extension activation panel and `Add to Chrome`
+  CTA.
 - Live promo counts: 100 total codes, 99 available, 1 assigned/unredeemed, 0
   claimed
 - Supabase anon REST checks on sensitive tables returned 401

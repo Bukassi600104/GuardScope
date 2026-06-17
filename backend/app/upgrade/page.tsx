@@ -1,9 +1,8 @@
 'use client'
 
-import type { FormEvent, ReactNode } from 'react'
-import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { GuardScopeLogo } from '../components/GuardScopeLogo'
-import { QUOTAS, SUPPORT_EMAIL } from '../../lib/launch'
+import { CHROME_WEB_STORE_URL, QUOTAS, SUPPORT_EMAIL } from '../../lib/launch'
 
 const C = {
   bg: '#f6faff',
@@ -17,26 +16,6 @@ const C = {
   danger: '#be3030',
   amber: '#ad6b00',
 }
-
-const fieldStyle = {
-  width: '100%',
-  height: 48,
-  borderRadius: 8,
-  border: `1px solid ${C.border}`,
-  background: '#fff',
-  padding: '0 14px',
-  fontSize: 14,
-  color: C.text,
-  outline: 'none',
-} as const
-
-const labelStyle = {
-  display: 'grid',
-  gap: 7,
-  fontSize: 13,
-  fontWeight: 700,
-  color: C.text,
-} as const
 
 function CheckIcon() {
   return (
@@ -57,45 +36,6 @@ function Alert({ tone, children }: { tone: 'error' | 'success' | 'info'; childre
 }
 
 export default function UpgradePage() {
-  const [code, setCode] = useState('')
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [proExpiry, setProExpiry] = useState<string | null>(null)
-
-  async function handleRedeem(e: FormEvent) {
-    e.preventDefault()
-    setError('')
-
-    if (!code.trim() || !email.trim()) {
-      setError('Enter both your launch code and account email.')
-      return
-    }
-
-    setLoading(true)
-    try {
-      const res = await fetch('/api/promo/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code.toUpperCase().trim(), email: email.trim() }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Unable to activate this code. Please check it and try again.')
-        return
-      }
-
-      setProExpiry(data.pro_expires_at || null)
-      setSuccess(true)
-    } catch {
-      setError('Network error. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <main style={{ minHeight: '100vh', background: C.bg, padding: '28px 24px 54px' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
@@ -137,32 +77,34 @@ export default function UpgradePage() {
 
           <section style={{ border: `1px solid ${C.border}`, borderRadius: 8, background: C.panel, padding: '32px', boxShadow: '0 24px 70px rgba(0,30,47,0.08)' }}>
             <h2 style={{ fontSize: 28, lineHeight: 1.15, color: C.text, marginBottom: 8 }}>
-              {success ? 'Launch code activated' : 'Claim a launch code'}
+              Activate inside the extension
             </h2>
             <p style={{ fontSize: 14, color: C.body, lineHeight: 1.7, marginBottom: 24 }}>
-              {success ? 'Your account now has temporary Pro access for the launch program.' : 'Enter the code you received and the email for the account you want to upgrade.'}
+              For account security, launch codes are redeemed only after you sign in through the GuardScope Chrome extension.
             </p>
 
-            {!success ? (
-              <form onSubmit={handleRedeem} className="auth-form-grid">
-                {error && <Alert tone="error">{error}</Alert>}
-                <label style={labelStyle}>Launch code<input style={{ ...fieldStyle, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 760 }} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} required placeholder="GUARDSCOPE-XXXX" autoComplete="off" /></label>
-                <label style={labelStyle}>Account email<input style={fieldStyle} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" autoComplete="email" /></label>
-                <Alert tone="info">Use the same email you use for GuardScope sign-in. If you do not have an account yet, create one first, then return here.</Alert>
-                <button type="submit" disabled={loading} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14, opacity: loading ? 0.72 : 1 }}>
-                  {loading ? 'Activating...' : 'Activate code'}
-                </button>
-                <a href="/signup" style={{ justifySelf: 'center', color: C.cyan, fontSize: 13, fontWeight: 740 }}>Create account or sign in</a>
-              </form>
-            ) : (
-              <div style={{ display: 'grid', gap: 16 }}>
-                <Alert tone="success">
-                  Pro access is active{proExpiry ? ` until ${new Date(proExpiry).toLocaleDateString()}` : ''}. Open the extension and sign in with {email}.
-                </Alert>
-                <a href="/signup" style={{ display: 'grid', placeItems: 'center', height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14 }}>Go to sign in</a>
-                <a href="/privacy" style={{ justifySelf: 'center', color: C.muted, fontSize: 13, fontWeight: 650 }}>Review privacy policy</a>
+            <div style={{ display: 'grid', gap: 16 }}>
+              <Alert tone="info">If you received a code by email, keep that email open, then activate the code from the signed-in extension panel.</Alert>
+              <div style={{ display: 'grid', gap: 12 }}>
+                {[
+                  ['Install or open GuardScope', 'Use the public Chrome Web Store extension so activation happens from the trusted extension origin.'],
+                  ['Sign in with the requesting email', 'Use the same GuardScope account email that requested the launch code.'],
+                  ['Paste the launch code in the extension', 'Open the promo-code section and activate Pro from there.'],
+                ].map(([heading, copy], index) => (
+                  <div key={heading} style={{ display: 'grid', gridTemplateColumns: '34px 1fr', gap: 12, padding: '14px', border: `1px solid ${C.border}`, borderRadius: 8, background: index === 2 ? '#f1fbf6' : '#f7fbff' }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, display: 'grid', placeItems: 'center', background: index === 2 ? 'rgba(22,138,69,0.13)' : 'rgba(13,142,194,0.12)', color: index === 2 ? C.success : C.cyan, fontSize: 13, fontWeight: 900 }}>{index + 1}</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 820, color: C.text }}>{heading}</div>
+                      <div style={{ marginTop: 3, fontSize: 13, lineHeight: 1.6, color: C.body }}>{copy}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                <a href={CHROME_WEB_STORE_URL} style={{ display: 'grid', placeItems: 'center', minHeight: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14, textAlign: 'center' }}>Add to Chrome</a>
+                <a href="/signup" style={{ display: 'grid', placeItems: 'center', minHeight: 48, borderRadius: 8, border: `1px solid ${C.border}`, color: C.text, fontWeight: 780, fontSize: 14, textAlign: 'center' }}>Create account or sign in</a>
+              </div>
+            </div>
 
             <div style={{ marginTop: 24, paddingTop: 18, borderTop: `1px solid ${C.border}`, display: 'grid', gap: 8 }}>
               <div style={{ fontSize: 12, color: C.muted }}>Launch access is limited and may be revoked for fraud, resale, or quota bypass attempts.</div>

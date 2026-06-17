@@ -11,6 +11,9 @@ const STATIC_HEADERS = {
   'Referrer-Policy': 'no-referrer',
 }
 
+const PROMO_ACTIVATION_FAILED =
+  'This launch code could not be activated. Check that you are signed in with the same email that requested the code, then try again.'
+
 function getHeaders(req: NextRequest): Record<string, string> {
   return { ...STATIC_HEADERS, ...buildCorsHeaders(req) }
 }
@@ -80,7 +83,7 @@ export async function POST(req: NextRequest) {
 
   if (!result.success) {
     return NextResponse.json(
-      { error: result.reason },
+      { error: PROMO_ACTIVATION_FAILED },
       { status: 400, headers: SECURITY_HEADERS }
     )
   }
