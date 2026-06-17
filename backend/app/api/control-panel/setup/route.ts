@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   getStoredControlPanelCredential,
+  isControlPanelSetupTokenRequired,
   saveControlPanelCredential,
   validateNewOwnerPassword,
   validateOwnerUsername,
   validateRecoveryEmail,
+  verifyControlPanelSetupToken,
 } from '../../../../lib/controlPanelPassword'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 
@@ -13,7 +15,10 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const credential = await getStoredControlPanelCredential()
-    return NextResponse.json({ configured: Boolean(credential) })
+    return NextResponse.json({
+      configured: Boolean(credential),
+      setupTokenRequired: !credential && isControlPanelSetupTokenRequired(),
+    })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unable to read Control Panel setup status.' },
@@ -30,7 +35,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too many setup attempts. Please try again later.' }, { status: 429 })
   }
 
-  let body: { username?: string; password?: string; recoveryEmail?: string } = {}
+  try {
+    const existing = await getStoredControlPanelCredential()
+    if (existing) {
+      return NextResponse.json({ error: 'Control Panel owner already exists.' }, { status: 409 })
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unable to read Control Panel setup status.' },
+      { status: 500 }
+    )
+  }
+
+  let body: { username?: string; password?: string; recoveryEmail?: string; setupToken?: string } = {}
   try {
     body = await req.json()
   } catch {
@@ -40,6 +57,14 @@ export async function POST(req: NextRequest) {
   const username = body.username?.trim() ?? ''
   const password = body.password ?? ''
   const recoveryEmail = body.recoveryEmail?.trim().toLowerCase() ?? ''
+  const setupToken = body.setupToken ?? ''
+
+  if (!verifyControlPanelSetupToken(setupToken)) {
+    return NextResponse.json(
+      { error: 'Control Panel owner setup is locked. Provide the production owner setup token.' },
+      { status: 403 }
+    )
+  }
 
   const usernameError = validateOwnerUsername(username)
   if (usernameError) return NextResponse.json({ error: usernameError }, { status: 400 })
@@ -51,11 +76,6 @@ export async function POST(req: NextRequest) {
   if (emailError) return NextResponse.json({ error: emailError }, { status: 400 })
 
   try {
-    const existing = await getStoredControlPanelCredential()
-    if (existing) {
-      return NextResponse.json({ error: 'Control Panel owner already exists.' }, { status: 409 })
-    }
-
     await saveControlPanelCredential({ username, password, recoveryEmail })
     return NextResponse.json({ success: true })
   } catch (error) {

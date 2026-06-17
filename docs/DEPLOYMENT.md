@@ -20,6 +20,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_JWT_SECRET=
+CONTROL_PANEL_SESSION_SECRET=
+CONTROL_PANEL_SETUP_TOKEN=
 INCEPTION_API_KEY=
 VIRUSTOTAL_API_KEY=
 GOOGLE_SAFE_BROWSING_API_KEY=
@@ -40,6 +42,14 @@ Do not set `AUTH_AUTO_CONFIRM_SIGNUP` in production. Leaving it unset makes
 public account creation use Supabase's standard signup flow and email
 confirmation policy. Set `AUTH_AUTO_CONFIRM_SIGNUP=true` only for controlled
 internal test environments where automatic email confirmation is intentional.
+
+`CONTROL_PANEL_SESSION_SECRET` should be a long random secret used to sign owner
+Control Panel sessions. If it is not set, GuardScope falls back to
+`SUPABASE_JWT_SECRET`.
+
+Set `CONTROL_PANEL_SETUP_TOKEN` to a long random one-time owner setup secret and
+store it outside the repository. Production first-owner setup is locked without
+this token if the owner credential row is ever missing after a database reset.
 
 ## Supabase Migrations
 

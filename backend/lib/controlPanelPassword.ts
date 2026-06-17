@@ -6,6 +6,7 @@ const scrypt = promisify(scryptCallback)
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '').trim()
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? '').trim()
 const SESSION_SECRET = (process.env.CONTROL_PANEL_SESSION_SECRET ?? process.env.SUPABASE_JWT_SECRET ?? '').trim()
+const SETUP_TOKEN = (process.env.CONTROL_PANEL_SETUP_TOKEN ?? '').trim()
 const SESSION_TTL_SECONDS = 60 * 60 * 8
 const RESET_TTL_SECONDS = 60 * 30
 
@@ -44,6 +45,10 @@ function hasSupabaseConfig() {
   return Boolean(SUPABASE_URL && SERVICE_KEY)
 }
 
+function isProductionRuntime() {
+  return process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
+}
+
 function base64url(input: string | Buffer) {
   return Buffer.from(input).toString('base64url')
 }
@@ -51,6 +56,19 @@ function base64url(input: string | Buffer) {
 function signingSecret() {
   if (SESSION_SECRET) return SESSION_SECRET
   return ''
+}
+
+export function isControlPanelSetupTokenRequired() {
+  return isProductionRuntime() || Boolean(SETUP_TOKEN)
+}
+
+export function verifyControlPanelSetupToken(token: string) {
+  if (!isControlPanelSetupTokenRequired()) return true
+  if (!SETUP_TOKEN || !token) return false
+
+  const expected = Buffer.from(SETUP_TOKEN)
+  const provided = Buffer.from(token)
+  return expected.length === provided.length && timingSafeEqual(expected, provided)
 }
 
 function signPayload(payload: ControlPanelSession | ControlPanelResetSession) {

@@ -150,6 +150,17 @@ to `/api/promo/validate`. It now routes users to activate codes from the
 signed-in Chrome extension, which is the surface that holds the required
 authenticated session.
 
+### Control Panel First-Owner Setup Guard
+
+The owner Control Panel setup endpoint now requires a production setup token
+when no owner credential exists. This prevents an attacker from claiming the
+Control Panel if the credential row is accidentally deleted or a database is
+rebuilt without restoring the owner record.
+
+Existing owner login is unchanged. If first-owner setup is ever needed again in
+production, set `CONTROL_PANEL_SETUP_TOKEN` in Vercel, open `/control-panel`,
+and enter that token with the new owner username, recovery email, and password.
+
 ## Verification Commands
 
 - `npm test` in `backend`: 38/38 passed
@@ -178,6 +189,11 @@ authenticated session.
     contained the old unauthenticated activation form or `/api/promo/validate`
     fetch path.
   - Unauthenticated promo-code validation returned 401.
+- Live Control Panel probes:
+  - `/api/control-panel/setup` returned `configured: true`.
+  - First-owner setup POST returned 409 because the owner already exists.
+  - `/control-panel` rendered the normal Control Center entry state without the
+    first-owner setup token field.
 - Browser verification: `/signup` loaded on `https://guardscope.app`, and the
   create-account view rendered without submitting production account data.
   `/upgrade` loaded with the extension activation panel and `Add to Chrome`

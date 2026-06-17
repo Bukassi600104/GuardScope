@@ -493,13 +493,15 @@ function FloatingWatermarks() {
   )
 }
 
-function AuthShell({ mode, username, recoveryEmail, password, newPassword, confirmPassword, loading, changeLoading, notice, error, setUsername, setRecoveryEmail, setPassword, setNewPassword, setConfirmPassword, setMode, onSubmit }: {
+function AuthShell({ mode, username, recoveryEmail, password, newPassword, confirmPassword, setupToken, setupTokenRequired, loading, changeLoading, notice, error, setUsername, setRecoveryEmail, setPassword, setNewPassword, setConfirmPassword, setSetupToken, setMode, onSubmit }: {
   mode: EntryMode
   username: string
   recoveryEmail: string
   password: string
   newPassword: string
   confirmPassword: string
+  setupToken: string
+  setupTokenRequired: boolean
   loading: boolean
   changeLoading: boolean
   notice: string
@@ -509,6 +511,7 @@ function AuthShell({ mode, username, recoveryEmail, password, newPassword, confi
   setPassword: (value: string) => void
   setNewPassword: (value: string) => void
   setConfirmPassword: (value: string) => void
+  setSetupToken: (value: string) => void
   setMode: (value: EntryMode) => void
   onSubmit: (event: FormEvent) => void
 }) {
@@ -556,6 +559,13 @@ function AuthShell({ mode, username, recoveryEmail, password, newPassword, confi
               </>
             )}
 
+            {mode === 'setup' && setupTokenRequired && (
+              <label className="field">
+                Owner setup token
+                <input value={setupToken} onChange={(event) => setSetupToken(event.target.value)} type="password" autoComplete="off" required />
+              </label>
+            )}
+
             {notice && <div className="notice success">{notice}</div>}
             {error && <div className="notice danger">{error}</div>}
 
@@ -588,6 +598,8 @@ export default function ControlPanelPage() {
   const [password, setPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [setupToken, setSetupToken] = useState('')
+  const [setupTokenRequired, setSetupTokenRequired] = useState(false)
   const [token, setToken] = useState('')
   const [resetToken, setResetToken] = useState('')
   const [data, setData] = useState<ControlPanelData | null>(null)
@@ -628,6 +640,7 @@ export default function ControlPanelPage() {
         setError(body.error || 'Unable to read Control Center setup status.')
         return
       }
+      setSetupTokenRequired(Boolean(body.setupTokenRequired))
       setMode(body.configured ? 'login' : 'setup')
     } catch {
       setMode('setup')
@@ -649,7 +662,7 @@ export default function ControlPanelPage() {
       const res = await fetch('/api/control-panel/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password: newPassword, recoveryEmail }),
+        body: JSON.stringify({ username, password: newPassword, recoveryEmail, setupToken }),
       })
       const body = await res.json()
       if (!res.ok) {
@@ -659,6 +672,7 @@ export default function ControlPanelPage() {
       setPassword('')
       setNewPassword('')
       setConfirmPassword('')
+      setSetupToken('')
       setMode('login')
       setNotice('Owner created. Sign in with the username and password you just created.')
     } catch {
@@ -811,6 +825,8 @@ export default function ControlPanelPage() {
           password={password}
           newPassword={newPassword}
           confirmPassword={confirmPassword}
+          setupToken={setupToken}
+          setupTokenRequired={setupTokenRequired}
           loading={loading}
           changeLoading={changeLoading}
           notice={notice}
@@ -820,6 +836,7 @@ export default function ControlPanelPage() {
           setPassword={setPassword}
           setNewPassword={setNewPassword}
           setConfirmPassword={setConfirmPassword}
+          setSetupToken={setSetupToken}
           setMode={(nextMode) => {
             setError('')
             setNotice('')
