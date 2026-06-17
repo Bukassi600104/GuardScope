@@ -17,6 +17,7 @@ type PromoActivity = {
   requesterEmail: string | null
   requesterCountry: string | null
   createdAt: string | null
+  assignedAt: string | null
   claimDeadline: string | null
   claimedAt: string | null
   proExpiresAt: string | null
@@ -181,7 +182,13 @@ function riskTone(value: string) {
 function statusLabel(status: string) {
   if (status === 'missing') return 'Needs attention'
   if (status === 'watch') return 'Watch'
+  if (status === 'assigned') return 'Assigned'
   return status.replace(/_/g, ' ')
+}
+
+function promoDisplayStatus(row: PromoActivity) {
+  if (row.status === 'unused' && row.requesterEmail) return 'assigned'
+  return row.status
 }
 
 function healthState(checks: Check[], issues: ControlPanelData['ownerOperations']['issueSummary']) {
@@ -930,7 +937,7 @@ export default function ControlPanelPage() {
           )}
 
           {view === 'codes' && (
-            <Panel title="Promo codes" caption="Only real requested/assigned codes are listed here. Seeded inventory rows are counted above but hidden from this table.">
+            <Panel title="Promo codes" caption="Only assigned or redeemed codes are listed here. Seeded inventory rows are counted above but hidden from this table.">
               {ops.promoSummary.warning && <SourceNotice title="Promo metrics warning" note={ops.promoSummary.warning} />}
               <div className="miniGrid">
                 <MetricCard icon="codes" label="Allowed today" value={fmt(ops.promoSummary.requests24h)} detail="Launch-code requests" tone={palette.green} />
@@ -945,7 +952,7 @@ export default function ControlPanelPage() {
                       <th>Name</th>
                       <th>Email</th>
                       <th>Country</th>
-                      <th>Requested</th>
+                      <th>Assigned</th>
                       <th>Used</th>
                       <th>Pro expires</th>
                     </tr>
@@ -954,11 +961,11 @@ export default function ControlPanelPage() {
                     {ops.promoSummary.recent.map((row) => (
                       <tr key={`${row.code}-${row.requesterEmail ?? 'empty'}`}>
                         <td className="mono">{row.code}</td>
-                        <td><StatusPill value={row.status} /></td>
+                        <td><StatusPill value={promoDisplayStatus(row)} /></td>
                         <td>{row.requesterName || 'Unassigned'}</td>
                         <td>{row.requesterEmail || 'No email'}</td>
                         <td>{row.requesterCountry || 'n/a'}</td>
-                        <td>{dateLabel(row.createdAt)}</td>
+                        <td>{dateLabel(row.assignedAt ?? row.createdAt)}</td>
                         <td>{dateLabel(row.claimedAt)}</td>
                         <td>{dateLabel(row.proExpiresAt)}</td>
                       </tr>

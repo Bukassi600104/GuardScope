@@ -24,6 +24,12 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()' },
 ]
 
+const pageHeaders = [
+  ...securityHeaders,
+  { key: 'Access-Control-Allow-Origin', value: 'https://guardscope.app' },
+  { key: 'Content-Security-Policy', value: pageCsp },
+]
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
@@ -35,10 +41,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/((?!api).*)',
-        headers: [
-          ...securityHeaders,
-          { key: 'Content-Security-Policy', value: pageCsp },
-        ],
+        headers: pageHeaders,
       },
     ]
   },

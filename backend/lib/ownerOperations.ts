@@ -35,6 +35,7 @@ export type PromoActivity = {
   requesterEmail: string | null
   requesterCountry: string | null
   createdAt: string | null
+  assignedAt: string | null
   claimDeadline: string | null
   claimedAt: string | null
   proExpiresAt: string | null
@@ -249,12 +250,13 @@ async function getPromoSummary() {
         requester_email: string | null
         requester_country: string | null
         created_at: string | null
+        assigned_at: string | null
         claim_deadline: string | null
         claimed_at: string | null
         pro_expires_at: string | null
       }>(
         'promo_codes',
-        'select=code,status,requester_name,requester_email,requester_country,created_at,claim_deadline,claimed_at,pro_expires_at&requester_email=not.is.null&order=assigned_at.desc.nullslast,created_at.desc&limit=30'
+        'select=code,status,requester_name,requester_email,requester_country,created_at,assigned_at,claim_deadline,claimed_at,pro_expires_at&requester_email=not.is.null&order=assigned_at.desc.nullslast,created_at.desc&limit=30'
       ),
       selectRows<{
         email_domain: string | null
@@ -283,6 +285,7 @@ async function getPromoSummary() {
         requesterEmail: row.requester_email,
         requesterCountry: row.requester_country,
         createdAt: row.created_at,
+        assignedAt: row.assigned_at,
         claimDeadline: row.claim_deadline,
         claimedAt: row.claimed_at,
         proExpiresAt: row.pro_expires_at,

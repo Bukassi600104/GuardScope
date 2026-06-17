@@ -11,6 +11,7 @@ const promoAbuse = readFileSync(new URL('../lib/promoAbuse.ts', import.meta.url)
 const rateLimit = readFileSync(new URL('../lib/ratelimit.ts', import.meta.url), 'utf8')
 const dbRateLimit = readFileSync(new URL('../lib/dbRateLimit.ts', import.meta.url), 'utf8')
 const cors = readFileSync(new URL('../lib/cors.ts', import.meta.url), 'utf8')
+const nextConfig = readFileSync(new URL('../next.config.ts', import.meta.url), 'utf8')
 const abuseMigration = readFileSync(new URL('../supabase/migrations/20260615203641_abuse_controls.sql', import.meta.url), 'utf8')
 const grantMigration = readFileSync(new URL('../supabase/migrations/20260615232425_tighten_public_table_grants.sql', import.meta.url), 'utf8')
 const rlsFunctionHardeningMigration = readFileSync(new URL('../supabase/migrations/20260616090216_harden_rls_and_function_privileges.sql', import.meta.url), 'utf8')
@@ -94,6 +95,8 @@ test('CORS only allows the published extension in production', () => {
   assert.match(cors, /allowedWebsiteOrigins\(\)\.has\(origin\)/)
   assert.match(cors, /return allowedExtensionOrigins\(\)\.has\(origin\) \? origin : 'null'/)
   assert.doesNotMatch(cors, /origin\.startsWith\('chrome-extension:\/\/'\) return origin/)
+  assert.match(nextConfig, /Access-Control-Allow-Origin', value: 'https:\/\/guardscope\.app'/)
+  assert.doesNotMatch(nextConfig, /Access-Control-Allow-Origin', value: '\*'/)
 })
 
 test('abuse migration stores hashed telemetry behind RLS', () => {

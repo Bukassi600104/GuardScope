@@ -58,6 +58,7 @@ test('control panel reports owner operations metrics', () => {
   assert.match(ownerOperations, /riskDistribution/)
   assert.match(ownerOperations, /blockedAttempts24h/)
   assert.match(ownerOperations, /extensionSummary/)
+  assert.match(ownerOperations, /assigned_at/)
   assert.match(ownerOperations, /extension_installations/)
   assert.match(ownerOperations, /extension_lifecycle_events/)
   assert.match(ownerOperations, /promo_claim_attempts/)
@@ -95,7 +96,8 @@ test('control panel page renders owner dashboard sections', () => {
   assert.match(page, /Recent accounts/)
   assert.match(page, /Data handling/)
   assert.match(page, /Recent claim attempts/)
-  assert.match(page, /Only real requested\/assigned codes/)
+  assert.match(page, /Only assigned or redeemed codes/)
+  assert.match(page, /promoDisplayStatus/)
 })
 
 test('legacy launch control page redirects to control panel', () => {

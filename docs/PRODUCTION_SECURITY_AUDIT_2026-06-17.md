@@ -18,6 +18,8 @@ publication.
 
 - Promo codes total: 100
 - Promo codes unused: 100
+- Promo codes currently available for new requests: 99
+- Promo codes assigned but not redeemed: 1
 - Promo-code request records: 1
 - Promo codes claimed: 0
 - App user records: 1
@@ -27,10 +29,11 @@ publication.
   - `extension_installations`: 401
 
 This does not support the concern that launch codes have been drained or
-claimed through a bypass. The Chrome Web Store install count can be higher than
-Control Panel registrations because Chrome reports extension installs, while
-GuardScope registrations only count users who create/sign in to a GuardScope
-account.
+claimed through a bypass. One launch code is assigned to an email address but
+has not been redeemed; 99 remain available for new requests. The Chrome Web
+Store install count can be higher than Control Panel registrations because
+Chrome reports extension installs, while GuardScope registrations only count
+users who create/sign in to a GuardScope account.
 
 ## Fixes Applied
 
@@ -49,6 +52,34 @@ The route only includes a browser-visible code when all of these are true:
 
 By default, this prevents someone from entering another person's email address
 and immediately seeing that person's code in the browser response.
+
+Repeat requests for an already assigned code are now guarded separately from
+new requests. Resends are rate-limited by hashed email and IP telemetry, and
+blocked resend attempts return a neutral message without exposing whether a
+specific address owns a code.
+
+### Website And API Headers
+
+Public website pages no longer return wildcard browser CORS. The deployed pages
+return:
+
+- `Access-Control-Allow-Origin: https://guardscope.app`
+- `Content-Security-Policy` with `frame-src 'none'`, `object-src 'none'`, and
+  `base-uri 'self'`
+- `X-Frame-Options: DENY`
+- `X-Content-Type-Options: nosniff`
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+
+Production API probes from an untrusted browser origin returned
+`Access-Control-Allow-Origin: null` on sensitive promo and extension lifecycle
+endpoints.
+
+### Control Panel Clarity
+
+The owner Control Panel now distinguishes assigned-but-unredeemed promo codes
+from truly available inventory. Assigned codes display as `Assigned`, and the
+codes table uses the assignment timestamp rather than the original seed
+creation timestamp.
 
 ### Extension Lifecycle Visibility
 
@@ -81,6 +112,10 @@ characters.
 - `vercel deploy --prod --yes`: deployed and aliased to `https://guardscope.app`
 - Live health check: `GET /api/health` returned 200
 - Live invalid promo request check: returned 400 without code exposure
+- Live CORS probes: hostile origin received `Access-Control-Allow-Origin: null`
+  from protected API routes
+- Live promo counts: 100 total codes, 99 available, 1 assigned/unredeemed, 0
+  claimed
 - Supabase anon REST checks on sensitive tables returned 401
 
 ## Chrome Web Store Package
