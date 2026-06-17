@@ -8,6 +8,7 @@ const resetPasswordRoute = readFileSync(new URL('../app/api/auth/reset-password/
 const resetPasswordPage = readFileSync(new URL('../app/reset-password/page.tsx', import.meta.url), 'utf8')
 const deleteUserRoute = readFileSync(new URL('../app/api/user/delete/route.ts', import.meta.url), 'utf8')
 const analyzeRoute = readFileSync(new URL('../app/api/analyze/route.ts', import.meta.url), 'utf8')
+const signupPage = readFileSync(new URL('../app/signup/page.tsx', import.meta.url), 'utf8')
 
 test('production requires Supabase JWT secret', () => {
   assert.match(quota, /\/auth\/v1\/user/)
@@ -58,6 +59,20 @@ test('password reset keeps the same minimum strength as signup', () => {
   assert.match(resetPasswordPage, /minLength=\{12\}/)
   assert.doesNotMatch(resetPasswordRoute, /password\.length < 8/)
   assert.doesNotMatch(resetPasswordPage, /Password must be at least 8 characters|At least 8 characters|minLength=\{8\}/)
+})
+
+test('public signup does not auto-confirm accounts unless explicitly enabled', () => {
+  assert.match(signupRoute, /AUTH_AUTO_CONFIRM_SIGNUP/)
+  assert.match(signupRoute, /AUTO_CONFIRM_SIGNUP && SUPABASE_SERVICE_KEY/)
+  assert.doesNotMatch(signupRoute, /if \(SUPABASE_SERVICE_KEY\) \{/)
+  assert.match(signupRoute, /needsConfirmation: false/)
+  assert.match(signupRoute, /const needsConfirmation = !data\.id/)
+})
+
+test('signup page shows confirmation-specific guidance when needed', () => {
+  assert.match(signupPage, /signupNeedsConfirmation/)
+  assert.match(signupPage, /Boolean\(data\.needsConfirmation\)/)
+  assert.match(signupPage, /Confirm your email from your inbox/)
 })
 
 test('account deletion removes auth user before best-effort row cleanup', () => {

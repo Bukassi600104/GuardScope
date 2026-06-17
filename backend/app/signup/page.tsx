@@ -78,6 +78,7 @@ export default function SignupPage() {
   const [signupPassword, setSignupPassword] = useState('')
   const [signupLoading, setSignupLoading] = useState(false)
   const [signupError, setSignupError] = useState('')
+  const [signupNeedsConfirmation, setSignupNeedsConfirmation] = useState(false)
 
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
@@ -109,6 +110,7 @@ export default function SignupPage() {
         return
       }
 
+      setSignupNeedsConfirmation(Boolean(data.needsConfirmation))
       setView('signup_success')
     } catch {
       setSignupError('Network error. Please try again.')
@@ -178,7 +180,8 @@ export default function SignupPage() {
     view === 'signup' ? `Start with ${QUOTAS.signedInFreeMonthly} signed-in scans per month, then activate a launch code when you have one.` :
     view === 'forgot' ? 'Enter your account email and we will send password reset instructions.' :
     view === 'forgot_sent' ? 'If an account exists for that email, a reset link is on the way.' :
-    view === 'signup_success' ? 'You can now sign in. If email confirmation is enabled, check your inbox before signing in.' :
+    view === 'signup_success' && signupNeedsConfirmation ? 'Check your inbox and confirm your email before signing in.' :
+    view === 'signup_success' ? 'Your account is ready. Sign in to continue.' :
     'Access your quota, launch-code status, and GuardScope account settings.'
 
   return (
@@ -277,7 +280,11 @@ export default function SignupPage() {
 
             {view === 'signup_success' && (
               <div style={{ display: 'grid', gap: 16 }}>
-                <Alert tone="success">Your account was created. Sign in to continue, then activate a launch code if you have one.</Alert>
+                <Alert tone="success">
+                  {signupNeedsConfirmation
+                    ? 'Your account was created. Confirm your email from your inbox, then sign in and activate a launch code if you have one.'
+                    : 'Your account was created. Sign in to continue, then activate a launch code if you have one.'}
+                </Alert>
                 <button type="button" onClick={() => setView('signin')} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14 }}>Go to sign in</button>
               </div>
             )}

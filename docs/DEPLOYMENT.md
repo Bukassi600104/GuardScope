@@ -36,6 +36,11 @@ PAYSTACK_PRO_PLAN_CODE=
 
 Stripe and Paystack routes currently return `payments_suspended` during early access, but the env slots are documented for later activation.
 
+Do not set `AUTH_AUTO_CONFIRM_SIGNUP` in production. Leaving it unset makes
+public account creation use Supabase's standard signup flow and email
+confirmation policy. Set `AUTH_AUTO_CONFIRM_SIGNUP=true` only for controlled
+internal test environments where automatic email confirmation is intentional.
+
 ## Supabase Migrations
 
 Apply migrations in order:

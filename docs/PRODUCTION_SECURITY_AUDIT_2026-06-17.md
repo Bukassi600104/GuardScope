@@ -112,9 +112,24 @@ Chrome extension origin.
 The password reset page now matches the backend and signup policy: at least 12
 characters.
 
+### Signup Email Ownership
+
+The public signup route no longer auto-confirms arbitrary new accounts just
+because the backend has a Supabase service-role key. Production signup now uses
+Supabase's standard `/auth/v1/signup` flow by default, so the Supabase project's
+email-confirmation policy can verify email ownership.
+
+The admin auto-confirm path remains available only when
+`AUTH_AUTO_CONFIRM_SIGNUP=true` is explicitly set. This should be used only for
+controlled internal testing, not for public launch traffic.
+
+The signup page also reflects the backend response: users are told to confirm
+their email when Supabase requires confirmation, and otherwise they are sent to
+sign in.
+
 ## Verification Commands
 
-- `npm test` in `backend`: 33/33 passed
+- `npm test` in `backend`: 35/35 passed
 - `npm run build` in `backend`: passed
 - `npm audit --json` in `backend`: 0 vulnerabilities
 - `npm test` in `extension`: 8/8 passed
@@ -126,6 +141,10 @@ characters.
   from protected API routes
 - Live analyze probe: hostile-origin invalid request returned 400 with
   `Access-Control-Allow-Origin: null`
+- Live signup probe: hostile-origin invalid signup returned 400 with
+  `Access-Control-Allow-Origin: null`
+- Browser verification: `/signup` loaded on `https://guardscope.app`, and the
+  create-account view rendered without submitting production account data.
 - Live promo counts: 100 total codes, 99 available, 1 assigned/unredeemed, 0
   claimed
 - Supabase anon REST checks on sensitive tables returned 401

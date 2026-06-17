@@ -6,9 +6,10 @@ import { logOperationalEvent } from '../../../../lib/operationalEvents'
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
 const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY)!
 
-// Service key is optional — if set, we use admin endpoint (auto-confirms email).
-// If not set, we use the standard signup endpoint (sends confirmation email).
+// Standard signup is the production default so email ownership can be verified.
+// Auto-confirm is reserved for controlled internal testing when explicitly enabled.
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_KEY ?? ''
+const AUTO_CONFIRM_SIGNUP = process.env.AUTH_AUTO_CONFIRM_SIGNUP === 'true'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -19,7 +20,7 @@ export async function OPTIONS(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const cors = buildCorsHeaders(req)
 
-  // Rate limit signups — 5 attempts per minute per IP to prevent mass account creation
+  // Rate limit signups: 5 attempts per minute per IP to prevent mass account creation.
   const rawIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? ''
   const ip = /^[0-9a-fA-F.:]{3,45}$/.test(rawIp) ? rawIp : 'unknown'
   const rateResult = await checkRateLimit(`signup:${ip}`, false)
@@ -53,8 +54,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    if (SUPABASE_SERVICE_KEY) {
-      // Admin path: auto-confirms email — no confirmation step for the user.
+    if (AUTO_CONFIRM_SIGNUP && SUPABASE_SERVICE_KEY) {
       const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
         method: 'POST',
         headers: {
@@ -79,10 +79,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: msg }, { status: 400, headers: cors })
       }
 
-      return NextResponse.json({ success: true }, { headers: cors })
+      return NextResponse.json({ success: true, needsConfirmation: false }, { headers: cors })
     }
 
-    // Standard path: uses anon key — Supabase sends a confirmation email.
     const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
       method: 'POST',
       headers: {
@@ -106,11 +105,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 400, headers: cors })
     }
 
-    // If email confirmation is disabled in Supabase dashboard, user is ready immediately.
-    // If enabled, they'll get a confirmation email — signal this to the frontend.
     const needsConfirmation = !data.id
     return NextResponse.json({ success: true, needsConfirmation }, { headers: cors })
-
   } catch (err) {
     logOperationalEvent({
       severity: 'error',
