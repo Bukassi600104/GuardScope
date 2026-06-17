@@ -142,3 +142,41 @@ export async function guardPromoRequest(input: PromoGuardInput): Promise<PromoGu
   await recordAttempt({ emailHash, ipHash, userAgentHash, emailDomain: domain, allowed: true, reason: 'allowed' })
   return { allowed: true, reason: 'allowed', emailHash, ipHash, userAgentHash }
 }
+
+export async function guardPromoResend(input: PromoGuardInput): Promise<PromoGuardResult> {
+  const domain = emailDomain(input.email)
+  const now = Date.now()
+
+  if (!hasSupabaseConfig()) {
+    return {
+      allowed: process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV !== 'production',
+      reason: 'promo_abuse_store_unavailable',
+    }
+  }
+
+  const emailHash = securityHash(`promo-email:${input.email.toLowerCase().trim()}`)
+  const ipHash = securityHash(`promo-ip:${input.ip}`)
+  const userAgentHash = securityHash(`promo-ua:${input.userAgent || 'unknown'}`)
+
+  const deny = async (reason: string): Promise<PromoGuardResult> => {
+    await recordAttempt({ emailHash, ipHash, userAgentHash, emailDomain: domain, allowed: false, reason })
+    return { allowed: false, reason, emailHash, ipHash, userAgentHash }
+  }
+
+  if (!emailHash || !ipHash) return { allowed: false, reason: 'promo_abuse_hash_unavailable' }
+  if (input.honeypot?.trim()) return deny('honeypot')
+
+  const since24h = encodeURIComponent(new Date(now - 24 * 60 * 60 * 1000).toISOString())
+  const [emailResends24h, ipResends24h, ipTotal24h] = await Promise.all([
+    countAttempts(`email_hash=eq.${encodeURIComponent(emailHash)}&reason=eq.resend_allowed&created_at=gte.${since24h}`),
+    countAttempts(`ip_hash=eq.${encodeURIComponent(ipHash)}&reason=eq.resend_allowed&created_at=gte.${since24h}`),
+    countAttempts(`ip_hash=eq.${encodeURIComponent(ipHash)}&created_at=gte.${since24h}`),
+  ])
+
+  if (emailResends24h >= 2) return deny('email_resend_daily_limit')
+  if (ipResends24h >= 5) return deny('ip_resend_daily_limit')
+  if (ipTotal24h >= 12) return deny('ip_attempt_limit')
+
+  await recordAttempt({ emailHash, ipHash, userAgentHash, emailDomain: domain, allowed: true, reason: 'resend_allowed' })
+  return { allowed: true, reason: 'resend_allowed', emailHash, ipHash, userAgentHash }
+}

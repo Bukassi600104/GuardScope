@@ -4,7 +4,7 @@ import { sendWelcomeEmail } from '../../../../lib/email'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 import { buildCorsHeaders } from '../../../../lib/cors'
 import { logOperationalEvent } from '../../../../lib/operationalEvents'
-import { guardPromoRequest } from '../../../../lib/promoAbuse'
+import { guardPromoRequest, guardPromoResend } from '../../../../lib/promoAbuse'
 
 const STATIC_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -83,6 +83,26 @@ export async function POST(req: NextRequest) {
   try {
     const existing = await getCodeForEmail(email)
     if (existing) {
+      const resendGuard = await guardPromoResend({
+        email,
+        ip,
+        userAgent: req.headers.get('user-agent') ?? 'unknown',
+        honeypot: company,
+        startedAt,
+      })
+      if (!resendGuard.allowed) {
+        logOperationalEvent({
+          severity: 'warning',
+          source: 'api/promo/request',
+          eventType: 'promo_resend_blocked',
+          message: `Launch-code resend blocked: ${resendGuard.reason}`,
+        }).catch(() => {})
+        return NextResponse.json(
+          { success: true, message: 'If a launch code is assigned to that email, it will arrive shortly. Check your inbox and spam folder.' },
+          { headers: securityHeaders }
+        )
+      }
+
       try {
         await sendWelcomeEmail({
           to: email,
