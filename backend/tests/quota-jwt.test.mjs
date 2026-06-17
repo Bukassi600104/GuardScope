@@ -7,6 +7,7 @@ const signupRoute = readFileSync(new URL('../app/api/auth/signup/route.ts', impo
 const resetPasswordRoute = readFileSync(new URL('../app/api/auth/reset-password/route.ts', import.meta.url), 'utf8')
 const resetPasswordPage = readFileSync(new URL('../app/reset-password/page.tsx', import.meta.url), 'utf8')
 const deleteUserRoute = readFileSync(new URL('../app/api/user/delete/route.ts', import.meta.url), 'utf8')
+const analyzeRoute = readFileSync(new URL('../app/api/analyze/route.ts', import.meta.url), 'utf8')
 
 test('production requires Supabase JWT secret', () => {
   assert.match(quota, /\/auth\/v1\/user/)
@@ -38,6 +39,16 @@ test('signed-in quota does not fail open in production', () => {
   assert.match(quota, /!SUPABASE_SERVICE_KEY \|\| !SUPABASE_URL/)
   assert.match(quota, /if \(!checkRes\.ok\) \{/)
   assert.match(quota, /return quotaUnavailableResult\(tier\)/)
+  assert.match(quota, /const created = await upsertUsageRow\(userId, month, year\)/)
+  assert.match(quota, /if \(!created && isProductionRuntime\(\)\) return quotaUnavailableResult\(tier\)/)
+  assert.match(quota, /Promise<boolean>/)
+  assert.match(quota, /return res\.ok/)
+})
+
+test('anonymous quota is enforced even when IP is bucketed as unknown', () => {
+  assert.match(analyzeRoute, /const ip = \/\^\[0-9a-fA-F\.:\]\{3,45\}\$\/\.test\(rawIp\) \? rawIp : 'unknown'/)
+  assert.match(analyzeRoute, /const quota = await checkAnonFreeQuota\(ip\)/)
+  assert.doesNotMatch(analyzeRoute, /if \(ip !== 'unknown'\)\s*\{\s*const quota = await checkAnonFreeQuota\(ip\)/)
 })
 
 test('password reset keeps the same minimum strength as signup', () => {

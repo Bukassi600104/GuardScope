@@ -142,7 +142,8 @@ export async function checkAndIncrementQuota(
 
     if (rows.length === 0) {
       // No row for this month yet — upsert with count=1 and allow
-      await upsertUsageRow(userId, month, year)
+      const created = await upsertUsageRow(userId, month, year)
+      if (!created && isProductionRuntime()) return quotaUnavailableResult(tier)
       return { allowed: true, count: 1, limit: FREE_LIMIT, tier }
     }
 
@@ -200,9 +201,9 @@ export async function checkAndIncrementQuota(
   }
 }
 
-async function upsertUsageRow(userId: string, month: number, year: number): Promise<void> {
+async function upsertUsageRow(userId: string, month: number, year: number): Promise<boolean> {
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/usage`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/usage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -212,7 +213,10 @@ async function upsertUsageRow(userId: string, month: number, year: number): Prom
       },
       body: JSON.stringify({ user_id: userId, month, year, analysis_count: 1 }),
     })
-  } catch { /* best-effort */ }
+    return res.ok
+  } catch {
+    return false
+  }
 }
 
 async function incrementUsageFireAndForget(userId: string): Promise<void> {

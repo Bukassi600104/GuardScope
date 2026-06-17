@@ -257,17 +257,14 @@ export async function POST(req: NextRequest) {
       )
     }
   } else {
-    // Anonymous users: 5 analyses per day per IP (free plan quota).
-    // Uses the proven @upstash/ratelimit library — same infrastructure as rate limiting.
-    // 'unknown' IPs are allowed through — best-effort only.
-    if (ip !== 'unknown') {
-      const quota = await checkAnonFreeQuota(ip)
-      if (!quota.allowed) {
-        return NextResponse.json(
-          { error: 'limit_reached', count: quota.count, limit: quota.limit, message: 'Daily analysis limit reached. Sign in to continue.' },
-          { status: 429, headers: SECURITY_HEADERS }
-        )
-      }
+    // Anonymous users: 5 analyses per day per IP. Unknown IPs are bucketed
+    // together instead of skipping quota enforcement.
+    const quota = await checkAnonFreeQuota(ip)
+    if (!quota.allowed) {
+      return NextResponse.json(
+        { error: 'limit_reached', count: quota.count, limit: quota.limit, message: 'Daily analysis limit reached. Sign in to continue.' },
+        { status: 429, headers: SECURITY_HEADERS }
+      )
     }
   }
 

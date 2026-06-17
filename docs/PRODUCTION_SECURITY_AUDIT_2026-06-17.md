@@ -81,6 +81,16 @@ from truly available inventory. Assigned codes display as `Assigned`, and the
 codes table uses the assignment timestamp rather than the original seed
 creation timestamp.
 
+### Quota Fail-Closed Hardening
+
+Signed-in free-user quota enforcement no longer allows a first monthly scan if
+the initial usage-row write fails in production. The scan is denied when the
+quota system cannot prove and persist the increment.
+
+Anonymous scans now run the 5-per-day quota check even when the caller IP cannot
+be parsed and must be bucketed as `unknown`; unknown IPs no longer skip the
+anonymous daily quota path.
+
 ### Extension Lifecycle Visibility
 
 Extension version `1.0.2` adds privacy-safe lifecycle telemetry:
@@ -104,7 +114,7 @@ characters.
 
 ## Verification Commands
 
-- `npm test` in `backend`: 32/32 passed
+- `npm test` in `backend`: 33/33 passed
 - `npm run build` in `backend`: passed
 - `npm audit --json` in `backend`: 0 vulnerabilities
 - `npm test` in `extension`: 8/8 passed
@@ -114,6 +124,8 @@ characters.
 - Live invalid promo request check: returned 400 without code exposure
 - Live CORS probes: hostile origin received `Access-Control-Allow-Origin: null`
   from protected API routes
+- Live analyze probe: hostile-origin invalid request returned 400 with
+  `Access-Control-Allow-Origin: null`
 - Live promo counts: 100 total codes, 99 available, 1 assigned/unredeemed, 0
   claimed
 - Supabase anon REST checks on sensitive tables returned 401
