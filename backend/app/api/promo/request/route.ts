@@ -23,6 +23,7 @@ export async function OPTIONS(req: NextRequest) {
 const MAX_NAME_LEN = 100
 const MAX_EMAIL_LEN = 254
 const MAX_COUNTRY_LEN = 100
+const ALLOW_BROWSER_CODE_FALLBACK = process.env.PROMO_BROWSER_CODE_FALLBACK === 'true'
 
 export async function POST(req: NextRequest) {
   const securityHeaders = getHeaders(req)
@@ -167,10 +168,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        code: promoCode.code,
+        ...(emailDelivered || !ALLOW_BROWSER_CODE_FALLBACK ? {} : { code: promoCode.code }),
         message: emailDelivered
-          ? 'Your launch code is ready. We also emailed it to you, but copy it now in case delivery is delayed.'
-          : 'Your launch code is ready. We could not confirm email delivery, so copy it now and use it in GuardScope.',
+          ? 'Your launch code is ready. We emailed it to you. Check your inbox and spam folder.'
+          : ALLOW_BROWSER_CODE_FALLBACK
+            ? 'Your launch code is ready. We could not confirm email delivery, so copy it now and use it in GuardScope.'
+            : 'Your launch code is reserved, but email delivery is delayed. Please check again shortly or email support@guardscope.app.',
       },
       { headers: securityHeaders }
     )

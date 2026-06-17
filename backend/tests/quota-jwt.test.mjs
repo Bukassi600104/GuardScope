@@ -5,6 +5,7 @@ import test from 'node:test'
 const quota = readFileSync(new URL('../lib/quota.ts', import.meta.url), 'utf8')
 const signupRoute = readFileSync(new URL('../app/api/auth/signup/route.ts', import.meta.url), 'utf8')
 const resetPasswordRoute = readFileSync(new URL('../app/api/auth/reset-password/route.ts', import.meta.url), 'utf8')
+const resetPasswordPage = readFileSync(new URL('../app/reset-password/page.tsx', import.meta.url), 'utf8')
 const deleteUserRoute = readFileSync(new URL('../app/api/user/delete/route.ts', import.meta.url), 'utf8')
 
 test('production requires Supabase JWT secret', () => {
@@ -42,7 +43,10 @@ test('signed-in quota does not fail open in production', () => {
 test('password reset keeps the same minimum strength as signup', () => {
   assert.match(signupRoute, /password\.length < 12/)
   assert.match(resetPasswordRoute, /password\.length < 12/)
+  assert.match(resetPasswordPage, /password\.length < 12/)
+  assert.match(resetPasswordPage, /minLength=\{12\}/)
   assert.doesNotMatch(resetPasswordRoute, /password\.length < 8/)
+  assert.doesNotMatch(resetPasswordPage, /Password must be at least 8 characters|At least 8 characters|minLength=\{8\}/)
 })
 
 test('account deletion removes auth user before best-effort row cleanup', () => {

@@ -64,8 +64,8 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     setError('')
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+    if (password.length < 12) {
+      setError('Password must be at least 12 characters.')
       return
     }
     if (password !== confirmPassword) {
@@ -124,13 +124,13 @@ export default function ResetPasswordPage() {
               {error && <Alert tone="error">{error}</Alert>}
               <label style={{ display: 'grid', gap: 7, fontSize: 13, fontWeight: 700, color: C.text }}>
                 New password
-                <input style={fieldStyle} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" placeholder="At least 8 characters" />
+                <input style={fieldStyle} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={12} autoComplete="new-password" placeholder="At least 12 characters" />
               </label>
               <label style={{ display: 'grid', gap: 7, fontSize: 13, fontWeight: 700, color: C.text }}>
                 Confirm password
-                <input style={fieldStyle} type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} autoComplete="new-password" placeholder="Re-enter your password" />
+                <input style={fieldStyle} type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={12} autoComplete="new-password" placeholder="Re-enter your password" />
               </label>
-              <Alert tone="info">Use a unique password. Account creation requires 12 characters; reset links currently follow the backend reset-password policy.</Alert>
+              <Alert tone="info">Use a unique password with at least 12 characters. This matches the GuardScope account creation policy.</Alert>
               <button type="submit" disabled={loading} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14, opacity: loading ? 0.72 : 1 }}>
                 {loading ? 'Updating password...' : 'Update password'}
               </button>
