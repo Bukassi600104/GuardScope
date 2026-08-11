@@ -4,7 +4,7 @@ export const dynamic = 'force-static'
 
 export async function GET() {
   const body = [
-    'Contact: mailto:security@guardscope.io',
+    'Contact: mailto:security@guardscope.app',
     'Expires: 2027-03-08T00:00:00.000Z',
     'Preferred-Languages: en',
     'Canonical: https://guardscope.app/.well-known/security.txt',
