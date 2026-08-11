@@ -1,6 +1,21 @@
 // GuardScope Auth Utils — Phase 1 placeholder
 // Full implementation in Phase 3 (Supabase Auth + JWT management)
 
+export interface AccountStatus {
+  accessMode: 'legacy' | 'trial' | 'paid'
+  accessPlan: 'trial' | 'pro' | 'team'
+  subscriptionStatus: 'trialing' | 'active' | 'past_due' | 'non_renewing' | 'attention' | 'completed' | 'canceled' | 'unpaid' | 'paused'
+  entitled: boolean
+  trialScansUsed: number
+  trialScanLimit: number
+  trialScansRemaining: number
+  currentPeriodEnd: string | null
+  nextPaymentAt: string | null
+  cancelAtPeriodEnd: boolean
+  paymentProvider: 'paystack'
+  paymentReady: boolean
+}
+
 export interface AuthState {
   isAuthenticated: boolean
   userId: string | null
@@ -9,6 +24,7 @@ export interface AuthState {
   token: string | null
   refreshToken?: string | null
   tokenExpiresAt?: number | null  // unix ms
+  account?: AccountStatus | null
 }
 
 const DEFAULT_AUTH_STATE: AuthState = {
@@ -17,6 +33,7 @@ const DEFAULT_AUTH_STATE: AuthState = {
   email: null,
   tier: 'free',
   token: null,
+  account: null,
 }
 
 export async function getAuthState(): Promise<AuthState> {

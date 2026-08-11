@@ -223,7 +223,6 @@ export default function App() {
           const count = anonData?.date === todayDate() ? (anonData.count ?? 0) : 0
           setAnonCount(count)
           // If already at today's limit, reflect that immediately
-          if (!auth?.isAuthenticated && count >= 5) setAppState('limit_reached')
         }
       )
     })
@@ -360,7 +359,11 @@ export default function App() {
       }
 
       if (!response?.success) {
-        if (response?.status === 429 || response?.error === 'limit_reached') {
+        if (response?.status === 401 || response?.error === 'account_required') {
+          setIsAuthenticated(false)
+          setShowSignIn(true)
+          setAppState('limit_reached')
+        } else if (response?.status === 402 || response?.error === 'subscription_required' || response?.status === 429 || response?.error === 'limit_reached') {
           setAppState('limit_reached')
         } else if (response?.error?.includes('Network error')) {
           setError('Cannot reach GuardScope servers. Check your internet connection and try again.')
@@ -379,18 +382,8 @@ export default function App() {
         const reportData = response.report
         // Increment anon counter immediately on successful response — before any delay
         // so navigation/panel-close can't lose the increment.
-        chrome.storage.local.get(['guardscope_history', 'guardscope_anon_data', 'guardscope_auth'], (r) => {
+        chrome.storage.local.get(['guardscope_history'], (r) => {
           setHistory((r.guardscope_history as HistoryEntry[]) ?? [])
-          const auth = r.guardscope_auth as { isAuthenticated?: boolean } | undefined
-          if (!auth?.isAuthenticated) {
-            const today = todayDate()
-            const anonData = r.guardscope_anon_data as { count: number; date: string } | undefined
-            // Reset count if it's from a previous day
-            const currentCount = anonData?.date === today ? (anonData.count ?? 0) : 0
-            const newCount = currentCount + 1
-            chrome.storage.local.set({ guardscope_anon_data: { count: newCount, date: today } })
-            setAnonCount(newCount)
-          }
         })
         // Show gauge settling on real score for 1.8s before switching to result view
         setPendingScore(reportData.risk_score)

@@ -136,7 +136,7 @@ export default function SignupPage() {
         return
       }
 
-      window.location.href = '/'
+      window.location.href = '/account'
     } catch {
       setSigninError('Network error. Please try again.')
     } finally {

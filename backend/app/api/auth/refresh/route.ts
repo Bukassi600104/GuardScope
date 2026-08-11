@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { buildCorsHeaders, isAllowedExtensionRequest } from '../../../../lib/cors'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 import { getUserTier } from '../../../../lib/quota'
+import { getAccountStatus } from '../../../../lib/access'
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
 const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY)!
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     const tier = await getUserTier(data.user.id)
+    const account = await getAccountStatus(data.user.id)
     return NextResponse.json({
       success: true,
       access_token: data.access_token,
@@ -66,6 +68,7 @@ export async function POST(req: NextRequest) {
       expires_in: data.expires_in,
       user: data.user,
       tier,
+      account,
     }, { headers: cors })
   } catch {
     return NextResponse.json({ error: 'Network error - please try again' }, { status: 500, headers: cors })

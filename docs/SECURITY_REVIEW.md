@@ -14,7 +14,7 @@
 - Anonymous free quota is server-side: 5 analyses per day per IP.
 - Promo redemption requires authentication and matching JWT email.
 - Promo code claiming uses a `status=unused` guard.
-- Stripe and Paystack webhooks use signature verification.
+- Paystack webhooks use HMAC signature verification and idempotent event storage.
 
 ## Required Production Environment
 
@@ -45,7 +45,7 @@
 Run before launch:
 
 ```powershell
-rg -n "sk-|SUPABASE_SERVICE|STRIPE_SECRET|PAYSTACK_SECRET|VIRUSTOTAL_API_KEY|GOOGLE_SAFE_BROWSING_API_KEY|INCEPTION_API_KEY|UPSTASH" extension backend
+rg -n "sk-|SUPABASE_SERVICE|PAYSTACK_SECRET|VIRUSTOTAL_API_KEY|GOOGLE_SAFE_BROWSING_API_KEY|INCEPTION_API_KEY|UPSTASH" extension backend
 rg -n "eval\(|new Function|http://" extension/src extension/manifest.json
 npm run build --prefix backend
 npm run build --prefix extension

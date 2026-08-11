@@ -1,67 +1,61 @@
+import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { decodeJwt } from '../../../../lib/quota'
-import * as crypto from 'crypto'
+import { getPaystackReadiness } from '../../../../lib/access'
+import { authenticateRequest } from '../../../../lib/requestAuth'
 
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://guardscope.app'
 
-// NGN pricing: Pro = ₦7,500/month
-const PAYSTACK_PRO_AMOUNT_KOBO = 750_000 // Paystack uses kobo (₦ × 100)
-
 export async function POST(req: NextRequest) {
-  // Payments suspended during early access promo period
-  if (process.env.PAYMENTS_ENABLED !== 'true') {
+  if (!getPaystackReadiness().ready) {
     return NextResponse.json(
-      { error: 'payments_suspended', message: 'Payments are not yet active. Use your promo code to access Pro.' },
+      { error: 'billing_not_configured', message: 'Subscription checkout is being prepared. Your account and trial remain available.' },
       { status: 503 }
     )
   }
 
-  const authHeader = req.headers.get('authorization') ?? ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  const jwtPayload = token ? await decodeJwt(token) : null
-
-  if (!jwtPayload?.sub || !jwtPayload?.email) {
+  const auth = await authenticateRequest(req)
+  if (!auth?.userId || !auth.email) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }
 
-  if (!PAYSTACK_SECRET) {
-    return NextResponse.json({ error: 'Paystack not configured' }, { status: 503 })
-  }
+  let body: { interval?: 'monthly' | 'annual' } = {}
+  try { body = await req.json() } catch { /* defaults to monthly */ }
+  const interval = body.interval === 'annual' ? 'annual' : 'monthly'
+  const planCode = interval === 'annual'
+    ? process.env.PAYSTACK_PRO_ANNUAL_PLAN_CODE
+    : (process.env.PAYSTACK_PRO_MONTHLY_PLAN_CODE ?? process.env.PAYSTACK_PRO_PLAN_CODE)
+  if (!planCode) return NextResponse.json({ error: 'Selected billing plan is not configured' }, { status: 503 })
 
-  // Generate idempotency reference
-  const reference = `gs_pro_${jwtPayload.sub}_${Date.now()}`
-
+  const reference = `gs_${interval}_${auth.userId}_${randomUUID()}`
   try {
     const res = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${PAYSTACK_SECRET}`,
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: jwtPayload.email,
-        amount: PAYSTACK_PRO_AMOUNT_KOBO,
+        email: auth.email,
         currency: 'NGN',
         reference,
-        callback_url: `${SITE_URL}/?checkout=success`,
+        callback_url: `${SITE_URL}/account?payment=return`,
         metadata: {
-          userId: jwtPayload.sub,
+          userId: auth.userId,
           plan: 'pro',
-          cancel_action: `${SITE_URL}/?checkout=cancelled`,
+          interval,
+          cancel_action: `${SITE_URL}/account?payment=cancelled`,
         },
-        plan: process.env.PAYSTACK_PRO_PLAN_CODE, // recurring plan code
+        plan: planCode,
       }),
     })
 
-    const data = await res.json() as { status: boolean; data?: { authorization_url: string } }
-    if (!data.status || !data.data) {
-      return NextResponse.json({ error: 'Paystack initialization failed' }, { status: 500 })
+    const data = await res.json() as { status: boolean; message?: string; data?: { authorization_url: string } }
+    if (!res.ok || !data.status || !data.data) {
+      return NextResponse.json({ error: data.message ?? 'Paystack initialization failed' }, { status: 502 })
     }
-
-    return NextResponse.json({ url: data.data.authorization_url, reference })
-  } catch (err) {
-    console.error('[paystack/initialize] error:', err)
+    return NextResponse.json({ url: data.data.authorization_url, reference, interval })
+  } catch (error) {
+    console.error('[paystack/initialize] error:', error)
     return NextResponse.json({ error: 'Failed to initialize payment' }, { status: 500 })
   }
 }

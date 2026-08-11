@@ -30,7 +30,7 @@ const sections = [
       `Anonymous users receive ${QUOTAS.anonymousDaily} analyses per day per IP or equivalent abuse-prevention identifier.`,
       `Signed-in free accounts include ${QUOTAS.signedInFreeMonthly} analyses per month unless upgraded or otherwise changed in the product.`,
       `Launch promo codes provide ${QUOTAS.promoProDays} days of Pro access from activation unless a specific offer states otherwise.`,
-      'Paid Pro access may be offered through Stripe or Paystack after launch.',
+      'Paid Pro access is offered through Paystack when subscription checkout is enabled.',
       'Quotas, pricing, and feature availability may change as the service evolves, but we will not intentionally misrepresent the quota shown in the product.',
     ],
   },

@@ -27,6 +27,7 @@ import { getCachedResult, setCachedResult } from '../../../lib/cache'
 import { createHash } from 'crypto'
 import { buildCorsHeaders } from '../../../lib/cors'
 import { logOperationalEvent } from '../../../lib/operationalEvents'
+import { consumeTrialScan, getAccessMode, getAccountStatus } from '../../../lib/access'
 
 const MAX_BODY_BYTES = 500_000
 
@@ -247,24 +248,50 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (userId) {
-    const tier = await getUserTier(userId)
-    const quota = await checkAndIncrementQuota(userId, tier)
-    if (!quota.allowed) {
-      return NextResponse.json(
-        { error: 'limit_reached', count: quota.count, limit: quota.limit, message: 'Monthly analysis limit reached. Upgrade to Pro for unlimited analyses.' },
-        { status: 429, headers: SECURITY_HEADERS }
-      )
+  if (getAccessMode() === 'legacy') {
+    if (userId) {
+      const tier = await getUserTier(userId)
+      const quota = await checkAndIncrementQuota(userId, tier)
+      if (!quota.allowed) {
+        return NextResponse.json(
+          { error: 'limit_reached', count: quota.count, limit: quota.limit, message: 'Monthly analysis limit reached. Upgrade to Pro for unlimited analyses.' },
+          { status: 429, headers: SECURITY_HEADERS }
+        )
+      }
+    } else {
+      const quota = await checkAnonFreeQuota(ip)
+      if (!quota.allowed) {
+        return NextResponse.json(
+          { error: 'limit_reached', count: quota.count, limit: quota.limit, message: 'Daily analysis limit reached. Sign in to continue.' },
+          { status: 429, headers: SECURITY_HEADERS }
+        )
+      }
     }
   } else {
-    // Anonymous users: 5 analyses per day per IP. Unknown IPs are bucketed
-    // together instead of skipping quota enforcement.
-    const quota = await checkAnonFreeQuota(ip)
-    if (!quota.allowed) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'limit_reached', count: quota.count, limit: quota.limit, message: 'Daily analysis limit reached. Sign in to continue.' },
-        { status: 429, headers: SECURITY_HEADERS }
+        { error: 'account_required', message: 'Sign in to use your GuardScope trial or subscription.' },
+        { status: 401, headers: SECURITY_HEADERS }
       )
+    }
+    const account = await getAccountStatus(userId)
+    if (!account) {
+      return NextResponse.json({ error: 'account_status_unavailable' }, { status: 503, headers: SECURITY_HEADERS })
+    }
+    if (!account.entitled) {
+      return NextResponse.json(
+        { error: 'subscription_required', count: account.trialScansUsed, limit: account.trialScanLimit, message: 'Your trial is complete. Subscribe to continue scanning.' },
+        { status: 402, headers: SECURITY_HEADERS }
+      )
+    }
+    if (account.accessPlan === 'trial') {
+      const trial = await consumeTrialScan(userId)
+      if (!trial.allowed) {
+        return NextResponse.json(
+          { error: 'subscription_required', count: trial.scansUsed, limit: trial.scanLimit, message: 'Your trial is complete. Subscribe to continue scanning.' },
+          { status: 402, headers: SECURITY_HEADERS }
+        )
+      }
     }
   }
 

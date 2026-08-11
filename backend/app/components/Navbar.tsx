@@ -60,7 +60,7 @@ export function Navbar({ activePage = '' }: { activePage?: string }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
           <a
             className="nav-signin"
-            href="/signup"
+            href="/account"
             style={{
               fontSize: 14,
               fontWeight: 650,
@@ -71,7 +71,7 @@ export function Navbar({ activePage = '' }: { activePage?: string }) {
               background: '#fff',
             }}
           >
-            Sign in
+            Account
           </a>
           <a
             className="nav-cta"

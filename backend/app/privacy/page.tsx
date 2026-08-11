@@ -59,7 +59,7 @@ const sections = [
       '<strong>VirusTotal, Google Safe Browsing, PhishTank, URLhaus, and SpamHaus:</strong> receive URLs or domains needed for threat-intelligence checks.',
       '<strong>Cloudflare DNS and RDAP providers:</strong> receive domains needed for sender authentication, DNS, and domain-age checks.',
       '<strong>Supabase:</strong> provides authentication and database services for accounts, quotas, promo codes, and subscription state.',
-      '<strong>Stripe and Paystack:</strong> process payments and return billing status to GuardScope when paid plans are enabled.',
+      '<strong>Paystack:</strong> processes payments and returns billing status to GuardScope when paid plans are enabled.',
       '<strong>Vercel:</strong> hosts the website and backend API.',
       '<strong>Resend:</strong> may send transactional email such as promo codes, account messages, or support responses.',
     ],

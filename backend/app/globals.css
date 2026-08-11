@@ -40,6 +40,44 @@ img { max-width: 100%; }
 
 ::selection { background: rgba(57,182,255,0.2); color: var(--primary); }
 
+.account-page-shell {
+  min-height: 72vh;
+  padding: 72px 24px 96px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(57,182,255,.14), transparent 30%),
+    linear-gradient(180deg, #061724 0%, #0a2234 42%, #f4f8fb 42%);
+}
+
+.account-dashboard { width: min(1080px, 100%); margin: 0 auto; display: grid; gap: 18px; }
+.account-loading, .account-alert { padding: 18px; border-radius: 12px; background: #fff; color: #173348; }
+.account-alert { border: 1px solid rgba(255,77,79,.35); color: #a3242d; }
+.account-hero-card, .account-billing-card {
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 18px;
+  padding: clamp(24px, 4vw, 42px);
+  background: rgba(8,31,47,.94);
+  color: #f4fbff;
+  box-shadow: 0 28px 80px rgba(0,17,28,.22);
+}
+.account-hero-card { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.account-hero-card h1 { font-size: clamp(32px, 5vw, 54px); line-height: 1.02; margin: 10px 0 12px; }
+.account-hero-card p, .account-billing-card p { color: #93aabd; }
+.section-kicker { color: #65cfff; font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.status-pill { padding: 8px 12px; border: 1px solid rgba(101,207,255,.35); border-radius: 999px; color: #8addff; font-size: 12px; font-weight: 800; text-transform: capitalize; white-space: nowrap; }
+.status-active { color: #78e6a4; border-color: rgba(120,230,164,.35); }
+.status-attention, .status-past_due { color: #ffbf69; border-color: rgba(255,191,105,.4); }
+.account-metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.account-metric { min-height: 150px; padding: 24px; border: 1px solid #d7e1e9; border-radius: 16px; background: #fff; display: grid; align-content: space-between; }
+.account-metric span, .account-metric small { color: #728394; font-size: 12px; }
+.account-metric strong { color: #082034; font-size: 27px; }
+.account-billing-card { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 32px; background: #fff; color: #082034; border-color: #d7e1e9; }
+.account-billing-card h2 { margin: 10px 0; font-size: clamp(24px, 3vw, 36px); }
+.account-actions { min-width: 230px; display: grid; gap: 10px; }
+.account-actions button { min-height: 46px; padding: 0 18px; border-radius: 10px; background: #082034; color: #fff; font-weight: 780; }
+.account-actions button.secondary { background: #eaf5fb; color: #082034; border: 1px solid #c7dae6; }
+.account-actions button.text-button { background: transparent; color: #697b8a; }
+.account-actions button:disabled { opacity: .45; cursor: not-allowed; }
+
 /* Floating icon bubble animation */
 @keyframes float1 {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -170,6 +208,10 @@ img { max-width: 100%; }
   .stat-strip-grid {
     grid-template-columns: 1fr !important;
   }
+
+  .account-hero-card { display: grid; }
+  .account-metric-grid, .account-billing-card { grid-template-columns: 1fr; }
+  .account-actions { min-width: 0; }
 
 }
 

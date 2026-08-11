@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { buildCorsHeaders, isAllowedExtensionRequest } from '../../../../lib/cors'
 import { checkRateLimit } from '../../../../lib/ratelimit'
 import { getUserTier } from '../../../../lib/quota'
+import { ACCESS_COOKIE, REFRESH_COOKIE, authCookieOptions } from '../../../../lib/requestAuth'
+import { getAccountStatus } from '../../../../lib/access'
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!
 const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY)!
@@ -66,6 +68,7 @@ export async function POST(req: NextRequest) {
 
     if (body.client === 'extension') {
       const tier = await getUserTier(data.user.id)
+      const account = await getAccountStatus(data.user.id)
       return NextResponse.json({
         success: true,
         access_token: data.access_token,
@@ -73,10 +76,20 @@ export async function POST(req: NextRequest) {
         expires_in: data.expires_in,
         user: data.user,
         tier,
+        account,
       }, { headers: cors })
     }
 
-    return NextResponse.json({ success: true }, { headers: cors })
+    const response = NextResponse.json({ success: true }, { headers: cors })
+    response.cookies.set(ACCESS_COOKIE, data.access_token, {
+      ...authCookieOptions,
+      maxAge: data.expires_in ?? 3600,
+    })
+    response.cookies.set(REFRESH_COOKIE, data.refresh_token, {
+      ...authCookieOptions,
+      maxAge: 60 * 60 * 24 * 30,
+    })
+    return response
   } catch {
     return NextResponse.json({ error: 'Network error - please try again' }, { status: 500, headers: cors })
   }
