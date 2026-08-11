@@ -37,9 +37,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/logo.png',
+    icon: '/logo-icon-transparent.png',
+    shortcut: '/logo-icon-transparent.png',
+    apple: '/logo-icon-transparent.png',
   },
   openGraph: {
     type: 'website',
@@ -67,7 +67,7 @@ const organizationSchema = {
   '@type': 'Organization',
   name: 'GuardScope',
   url: SITE_URL,
-  logo: `${SITE_URL}/logo.png`,
+  logo: `${SITE_URL}/logo-transparent.png`,
   description: 'AI-assisted email phishing analysis for Gmail.',
   email: SUPPORT_EMAIL,
   foundingDate: '2026',
@@ -109,7 +109,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Manrope:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap"
           rel="stylesheet"
         />
         <script

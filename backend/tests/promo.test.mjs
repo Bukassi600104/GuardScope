@@ -54,8 +54,8 @@ test('promo routes use guardscope.app support address', () => {
 
 test('homepage presents the account-required lifetime trial without promo UI', () => {
   assert.doesNotMatch(homePage, /<LaunchCodeForm \/>/)
-  assert.match(homePage, /Start your 5-scan trial/)
-  assert.match(homePage, /five lifetime trial scans/i)
+  assert.match(homePage, /Create an account/)
+  assert.match(homePage, /Complete lifetime trial scans/i)
   assert.doesNotMatch(homePage, /promo code|launch code|early access/i)
 })
 
