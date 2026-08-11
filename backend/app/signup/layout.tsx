@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Create Account',
-  description: 'Create your free GuardScope account. Start with 5 anonymous email phishing analyses per day - no credit card required.',
+  description: 'Create your GuardScope account and start five complete lifetime email threat-analysis scans.',
   alternates: { canonical: '/signup' },
   openGraph: {
     url: '/signup',
     type: 'website',
     title: 'Create your GuardScope account',
-    description: 'Start with 5 anonymous phishing analyses per day. Inspect suspicious Gmail messages before you click.',
+    description: 'Start with five complete lifetime scans. Inspect suspicious Gmail messages before you click.',
   },
   robots: { index: true, follow: false },
 }

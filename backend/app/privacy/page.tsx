@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { LegalPage } from '../components/LegalPage'
-import { PRIVACY_EMAIL, QUOTAS, SUPPORT_EMAIL } from '../../lib/launch'
+import { PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/launch'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -27,7 +27,7 @@ const sections = [
       '<strong>Security signals:</strong> sender authentication, domain and URL reputation, domain age, DNS/RDAP data, threat-intelligence results, and AI-assisted assessment.',
       '<strong>Usage metadata:</strong> scan count, account tier, timestamps, request identifiers, and abuse-prevention signals needed for quota enforcement, diagnostics, and service reliability.',
       '<strong>Account data:</strong> email address and authentication data when you create an account, handled through Supabase Auth.',
-      '<strong>Promo and billing data:</strong> launch-code status, subscription status, payment status, and support records needed to operate the service.',
+      '<strong>Billing data:</strong> subscription status, payment status, and support records needed to operate the service.',
     ],
   },
   {
@@ -45,9 +45,9 @@ const sections = [
     title: '5. Purpose of processing',
     bullets: [
       'Provide user-requested Gmail email threat analysis and advisory results.',
-      'Enforce anonymous, free, promo, and paid quotas.',
+      'Enforce trial, subscription, and abuse-prevention limits.',
       'Prevent abuse, fraud, API scraping, and attempts to bypass service limits.',
-      'Operate accounts, promo codes, subscriptions, support, and diagnostics.',
+      'Operate accounts, subscriptions, support, and diagnostics.',
       'Improve reliability and security without storing user email content.',
     ],
   },
@@ -58,18 +58,16 @@ const sections = [
       '<strong>InceptionLabs Mercury-2:</strong> receives email text needed for AI-assisted threat analysis.',
       '<strong>VirusTotal, Google Safe Browsing, PhishTank, URLhaus, and SpamHaus:</strong> receive URLs or domains needed for threat-intelligence checks.',
       '<strong>Cloudflare DNS and RDAP providers:</strong> receive domains needed for sender authentication, DNS, and domain-age checks.',
-      '<strong>Supabase:</strong> provides authentication and database services for accounts, quotas, promo codes, and subscription state.',
+      '<strong>Supabase:</strong> provides authentication and database services for accounts, trial usage, and subscription state.',
       '<strong>Paystack:</strong> processes payments and returns billing status to GuardScope when paid plans are enabled.',
       '<strong>Vercel:</strong> hosts the website and backend API.',
-      '<strong>Resend:</strong> may send transactional email such as promo codes, account messages, or support responses.',
+      '<strong>Resend:</strong> may send transactional account messages or support responses.',
     ],
   },
   {
     title: '7. Retention',
     bullets: [
-      `Anonymous usage counters support the ${QUOTAS.anonymousDaily}-messages-per-day quota and abuse prevention.`,
-      `Signed-in free-account counters support the ${QUOTAS.signedInFreeMonthly}-messages-per-month quota and account operation.`,
-      `Promo records support the ${QUOTAS.promoProDays}-day launch-code program and may be retained for support, fraud prevention, and audit purposes.`,
+      'Trial counters enforce the five lifetime scans associated with an account.',
       'Account and subscription records are retained while your account is active and as needed for legal, tax, fraud-prevention, dispute-resolution, or security reasons.',
       'Email content submitted for analysis is not retained in GuardScope databases after the analysis response is produced.',
     ],
@@ -85,9 +83,9 @@ const sections = [
   {
     title: '10. Your choices and rights',
     bullets: [
-      '<strong>Access:</strong> request a copy of account, quota, promo, or subscription records associated with your account.',
+      '<strong>Access:</strong> request a copy of account, trial, or subscription records associated with your account.',
       '<strong>Deletion:</strong> request account deletion and removal of associated account records, subject to legal, security, fraud-prevention, and dispute-resolution retention obligations.',
-      '<strong>Correction:</strong> ask us to correct inaccurate account or promo records.',
+      '<strong>Correction:</strong> ask us to correct inaccurate account or billing records.',
       '<strong>Opt out:</strong> uninstall the extension or stop using the service at any time.',
     ],
     footer: `Email privacy requests to ${PRIVACY_EMAIL}.`,

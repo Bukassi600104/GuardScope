@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import type { AccountStatus, AuthState } from '../utils/auth'
 import { BACKEND_URL } from '../config'
+import { GuardScopeMark } from '../components/GuardScopeMark'
 
 const SIGNED_OUT: AuthState = {
   isAuthenticated: false,
@@ -9,14 +10,6 @@ const SIGNED_OUT: AuthState = {
   tier: 'free',
   token: null,
   account: null,
-}
-
-function GuardScopeIcon() {
-  return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-sky-400/30 bg-sky-400/10 text-sm font-bold text-sky-300">
-      G
-    </div>
-  )
 }
 
 function accountLabel(account?: AccountStatus | null) {
@@ -111,7 +104,7 @@ export default function Popup() {
   return (
     <main className="w-80 bg-[#06131f] text-slate-100">
       <header className="flex items-center gap-3 border-b border-sky-400/15 px-5 py-4">
-        <GuardScopeIcon />
+        <GuardScopeMark size={32} />
         <div>
           <p className="text-sm font-semibold tracking-tight">GuardScope</p>
           <p className="text-[10px] text-slate-500">Email threat intelligence</p>

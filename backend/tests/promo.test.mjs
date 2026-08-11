@@ -52,9 +52,14 @@ test('promo routes use guardscope.app support address', () => {
   assert.match(promo, /support@guardscope\.app/)
 })
 
-test('homepage launch code form stays on-page and collects required fields', () => {
-  assert.match(homePage, /<LaunchCodeForm \/>/)
-  assert.doesNotMatch(homePage, /action="\/api\/promo\/request"/)
+test('homepage presents the account-required lifetime trial without promo UI', () => {
+  assert.doesNotMatch(homePage, /<LaunchCodeForm \/>/)
+  assert.match(homePage, /Start your 5-scan trial/)
+  assert.match(homePage, /five lifetime trial scans/i)
+  assert.doesNotMatch(homePage, /promo code|launch code|early access/i)
+})
+
+test('legacy promo request implementation remains abuse-protected during extension migration', () => {
   assert.match(launchCodeForm, /fetch\('\/api\/promo\/request'/)
   assert.match(launchCodeForm, /country/)
   assert.match(requestRoute, /Launch-code claims are temporarily unavailable/)
@@ -66,12 +71,9 @@ test('homepage launch code form stays on-page and collects required fields', () 
   assert.match(launchCodeForm, /Your launch code/)
 })
 
-test('website upgrade page routes activation to the authenticated extension flow', () => {
-  assert.match(upgradePage, /Activate inside the extension/)
-  assert.match(upgradePage, /CHROME_WEB_STORE_URL/)
-  assert.match(upgradePage, /trusted extension origin/)
-  assert.doesNotMatch(upgradePage, /fetch\('\/api\/promo\/validate'/)
-  assert.doesNotMatch(upgradePage, /body: JSON\.stringify\(\{ code/)
+test('legacy upgrade URL redirects to the synchronized account dashboard', () => {
+  assert.match(upgradePage, /redirect\('\/account'\)/)
+  assert.doesNotMatch(upgradePage, /promo|launch code|early access/i)
 })
 
 test('promo requests use bot traps and server-side abuse telemetry', () => {

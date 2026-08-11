@@ -1,7 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { QUOTAS, SUPPORT_EMAIL } from '../lib/launch'
+import { SUPPORT_EMAIL } from '../lib/launch'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://guardscope.app'
 
@@ -48,15 +48,6 @@ export const metadata: Metadata = {
     title: 'GuardScope - AI Email Security for Gmail',
     description: 'Inspect suspicious Gmail messages before you click.',
     url: '/',
-    images: [
-      {
-        url: '/og-image.svg',
-        width: 1536,
-        height: 1024,
-        alt: 'GuardScope for Gmail - AI-assisted phishing analysis before you click',
-        type: 'image/svg+xml',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
@@ -64,7 +55,6 @@ export const metadata: Metadata = {
     creator: '@guardscope',
     title: 'GuardScope - AI Email Security for Gmail',
     description: 'Inspect suspicious Gmail messages before you click.',
-    images: ['/og-image.svg'],
   },
   alternates: {
     canonical: '/',
@@ -94,7 +84,6 @@ const softwareAppSchema = {
   browserRequirements: 'Requires Google Chrome',
   url: SITE_URL,
   description: 'AI-assisted phishing analysis Chrome extension for Gmail. Analyzes sender authentication, domain age, URLs, and email content to help users inspect suspicious emails before they click.',
-  screenshot: `${SITE_URL}/og-image.svg`,
   featureList: [
     'SPF, DKIM, and DMARC checks',
     'VirusTotal URL scanning',
@@ -104,22 +93,13 @@ const softwareAppSchema = {
     'PhishTank and URLhaus threat intelligence',
     'Plain-English advisory risk reports',
   ],
-  offers: [
-    {
-      '@type': 'Offer',
-      name: 'Free Plan',
-      price: '0',
-      priceCurrency: 'USD',
-      description: `${QUOTAS.anonymousDaily} anonymous analyses per day per IP and ${QUOTAS.signedInFreeMonthly} signed-in free analyses per month.`,
-    },
-    {
-      '@type': 'Offer',
-      name: 'Launch Promo',
-      price: '0',
-      priceCurrency: 'USD',
-      description: `${QUOTAS.promoProDays} days of Pro access for eligible launch-code users.`,
-    },
-  ],
+  offers: {
+    '@type': 'Offer',
+    name: 'GuardScope trial',
+    price: '0',
+    priceCurrency: 'NGN',
+    description: 'Five lifetime scans before a paid Paystack subscription is required.',
+  },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {

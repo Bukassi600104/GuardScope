@@ -1168,7 +1168,7 @@ function ControlCenterStyles() {
       * { box-sizing: border-box; }
       body { margin: 0; background: ${palette.bg}; }
       button, input { font: inherit; }
-      .loginShell { min-height: 100vh; background: linear-gradient(180deg,#f8fcff 0%,#edf6fb 100%); padding: 20px; position: relative; overflow: hidden; }
+      .loginShell { min-height: 100vh; background: #edf2f4; padding: 20px; position: relative; overflow: hidden; }
       .watermarkField { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
       .watermarkItem { position: absolute; opacity: 0.075; filter: drop-shadow(0 18px 22px rgba(6,27,43,0.2)); will-change: transform; }
       .watermarkItem svg { width: 100%; height: 100%; }
@@ -1190,7 +1190,7 @@ function ControlCenterStyles() {
       .notice.success { border: 1px solid rgba(21,138,75,0.24); background: ${palette.greenSoft}; color: #126b37; }
       .notice.danger { border: 1px solid rgba(198,56,56,0.24); background: ${palette.redSoft}; color: #8b2020; }
       .surfaceNotice { margin-bottom: 14px; }
-      .controlShell { min-height: 100vh; background: radial-gradient(circle at top left, rgba(7,150,201,0.12), transparent 34%), ${palette.bg}; color: ${palette.text}; display: grid; grid-template-columns: 74px 1fr; }
+      .controlShell { min-height: 100vh; background: ${palette.bg}; color: ${palette.text}; display: grid; grid-template-columns: 74px 1fr; }
       .rail { position: sticky; top: 0; height: 100vh; padding: 18px 12px; border-right: 1px solid rgba(216,228,236,0.9); background: rgba(255,255,255,0.76); backdrop-filter: blur(18px); display: flex; flex-direction: column; align-items: center; gap: 12px; }
       .railLogo { width: 46px; height: 46px; border-radius: 8px; display: grid; place-items: center; background: ${palette.panel}; border: 1px solid ${palette.line}; }
       .railButton { width: 46px; height: 46px; border: 1px solid transparent; border-radius: 8px; display: grid; place-items: center; background: transparent; color: ${palette.body}; cursor: pointer; }

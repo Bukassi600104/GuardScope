@@ -21,9 +21,9 @@ const EN = {
   pageReloadNeeded: 'Page reload needed',
   connectionError: 'Connection error',
   // Limit reached
-  limitTitle: 'Daily limit reached',
-  limitBody: "You've used all 5 free analyses today.\nSign in or upgrade to Pro for more scans.",
-  upgradeBtn: 'Upgrade to Pro — $4.99/mo',
+  limitTitle: 'Trial complete',
+  limitBody: "Your five lifetime trial scans are complete.\nChoose a subscription to continue.",
+  upgradeBtn: 'View subscription options',
   maybeLater: 'Maybe later',
   // Result
   copyReport: 'Copy report to clipboard',
@@ -64,9 +64,9 @@ const FR = {
   pageReloadNeeded: 'Rechargement nécessaire',
   connectionError: 'Erreur de connexion',
   // Limit reached
-  limitTitle: 'Limite quotidienne atteinte',
-  limitBody: "Vous avez utilisé les 5 analyses gratuites aujourd'hui.\nConnectez-vous ou passez à Pro pour plus d'analyses.",
-  upgradeBtn: 'Passer à Pro — $4.99/mois',
+  limitTitle: 'Essai terminé',
+  limitBody: "Vos cinq analyses d'essai à vie sont terminées.\nChoisissez un abonnement pour continuer.",
+  upgradeBtn: "Voir les options d'abonnement",
   maybeLater: 'Plus tard',
   // Result
   copyReport: 'Copier le rapport',

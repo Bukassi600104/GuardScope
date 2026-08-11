@@ -1,35 +1,13 @@
 import React, { useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../../tailwind.css'
-
-function GuardScopeIcon() {
-  const cx = 21, cy = 24, r = 13
-  const toR = (d: number) => (d * Math.PI) / 180
-  const ax1 = cx + r * Math.cos(toR(30)),  ay1 = cy + r * Math.sin(toR(30))
-  const ax2 = cx + r * Math.cos(toR(-30)), ay2 = cy + r * Math.sin(toR(-30))
-  const od = r + 4  // outer dot at 0° (center of gap), clearly inside gap opening
-  const ox = cx + od * Math.cos(toR(0)), oy = cy + od * Math.sin(toR(0))
-  return (
-    <svg width="64" height="64" viewBox="0 0 48 48" fill="none">
-      <defs>
-        <linearGradient id="ob-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#72D8FF"/>
-          <stop offset="100%" stopColor="#1A8FFF"/>
-        </linearGradient>
-      </defs>
-      <path d={`M ${ax1.toFixed(2)} ${ay1.toFixed(2)} A ${r} ${r} 0 1 1 ${ax2.toFixed(2)} ${ay2.toFixed(2)}`}
-        stroke="url(#ob-g)" strokeWidth="3.2" strokeLinecap="round" fill="none"/>
-      <circle cx={cx} cy={cy} r="3.5" fill="url(#ob-g)"/>
-      <circle cx={ox.toFixed(2)} cy={oy.toFixed(2)} r="3.0" fill="url(#ob-g)"/>
-    </svg>
-  )
-}
+import { GuardScopeMark } from '../components/GuardScopeMark'
 
 function Step({ number, title, description }: { number: number; title: string; description: string }) {
   return (
     <div className="flex gap-4 items-start">
       <div className="w-8 h-8 rounded-full text-white flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5"
-        style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}>
+        style={{ background: '#39B6FF' }}>
         {number}
       </div>
       <div>
@@ -76,7 +54,7 @@ function Onboarding() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <GuardScopeIcon />
+            <GuardScopeMark size={64} />
           </div>
           <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: 'Sora, Inter, sans-serif' }}>
             Welcome to{' '}
@@ -135,7 +113,7 @@ function Onboarding() {
           onClick={handleActivate}
           disabled={activating}
           className="w-full py-3 px-6 disabled:opacity-50 text-white font-bold text-base rounded-xl transition-opacity"
-          style={{ background: 'linear-gradient(135deg,#39B6FF,#1F8DFF)' }}
+          style={{ background: '#39B6FF' }}
         >
           {activating ? 'Opening Gmail...' : 'I Understand — Activate GuardScope'}
         </button>

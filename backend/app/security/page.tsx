@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { LegalPage } from '../components/LegalPage'
-import { PRIVACY_EMAIL, QUOTAS, SUPPORT_EMAIL } from '../../lib/launch'
+import { PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/launch'
 
 export const metadata: Metadata = {
   title: 'Security',
@@ -22,8 +22,8 @@ const sections = [
     bullets: [
       'Scans run only when the user initiates analysis from the extension.',
       'Email content is transmitted for analysis and is not stored in GuardScope databases after the response is produced.',
-      'Anonymous access is limited to reduce abuse while keeping the launch experience usable.',
-      'Account, quota, promo, subscription, and diagnostic metadata are separated from email content.',
+      'Account access and trial limits reduce abuse without trusting browser-local counters.',
+      'Account, trial, subscription, and diagnostic metadata are separated from email content.',
       'Public website copy avoids guaranteed-protection claims and presents results as advisory.',
     ],
   },
@@ -49,10 +49,9 @@ const sections = [
   {
     title: '5. Backend and API protections',
     bullets: [
-      'Rate limits are applied to anonymous analysis, signup, promo-code validation, and other sensitive routes where abuse risk exists.',
+      'Rate limits are applied to analysis, signup, authentication, billing, and other sensitive routes where abuse risk exists.',
       'The backend enforces quota rules independently of website copy or extension UI.',
-      `Anonymous users receive ${QUOTAS.anonymousDaily} messages per day; signed-in free users receive ${QUOTAS.signedInFreeMonthly} messages per month unless changed in backend constants.`,
-      'Promo-code redemption is server-side and should remain tied to account or email identity to reduce resale and duplicate redemption.',
+      'Trial use is limited to five lifetime analyses per signed-in account and is consumed atomically on the server.',
       'Sensitive provider keys must remain server-side and never ship in the extension bundle.',
     ],
   },
@@ -97,7 +96,7 @@ export default function SecurityPage() {
     <LegalPage
       eyebrow="Trust / Security"
       title="Security Documentation"
-      description="A launch-ready overview of how GuardScope limits email-content handling, protects quota and promo flows, documents extension boundaries, and receives vulnerability reports."
+      description="An overview of how GuardScope limits email-content handling, protects trial and subscription flows, documents extension boundaries, and receives vulnerability reports."
       effectiveDate={EFFECTIVE_DATE}
       sections={sections}
     />
