@@ -4,9 +4,10 @@ import test from 'node:test'
 
 const signinRoute = readFileSync(new URL('../app/api/auth/signin/route.ts', import.meta.url), 'utf8')
 const refreshRoute = readFileSync(new URL('../app/api/auth/refresh/route.ts', import.meta.url), 'utf8')
+const websiteSessionRoute = readFileSync(new URL('../app/api/auth/session/route.ts', import.meta.url), 'utf8')
 const cors = readFileSync(new URL('../lib/cors.ts', import.meta.url), 'utf8')
 
-test('extension sign-in receives session fields without changing website sign-in', () => {
+test('extension sign-in receives session fields and website sign-in creates secure cookies', () => {
   assert.match(signinRoute, /client\?: string/)
   assert.match(signinRoute, /body\.client === 'extension'/)
   assert.match(signinRoute, /isAllowedExtensionRequest\(req\)/)
@@ -14,7 +15,17 @@ test('extension sign-in receives session fields without changing website sign-in
   assert.match(signinRoute, /access_token/)
   assert.match(signinRoute, /refresh_token/)
   assert.match(signinRoute, /getUserTier/)
-  assert.match(signinRoute, /return NextResponse\.json\(\{ success: true \}/)
+  assert.match(signinRoute, /getAccountStatus/)
+  assert.match(signinRoute, /response\.cookies\.set\(ACCESS_COOKIE/)
+  assert.match(signinRoute, /response\.cookies\.set\(REFRESH_COOKIE/)
+  assert.match(signinRoute, /return response/)
+})
+
+test('website session rotates secure cookie tokens', () => {
+  assert.match(websiteSessionRoute, /grant_type=refresh_token/)
+  assert.match(websiteSessionRoute, /req\.cookies\.get\(REFRESH_COOKIE\)/)
+  assert.match(websiteSessionRoute, /response\.cookies\.set\(ACCESS_COOKIE/)
+  assert.match(websiteSessionRoute, /response\.cookies\.set\(REFRESH_COOKIE/)
 })
 
 test('extension token refresh is proxied through backend', () => {
@@ -23,6 +34,7 @@ test('extension token refresh is proxied through backend', () => {
   assert.match(refreshRoute, /grant_type=refresh_token/)
   assert.match(refreshRoute, /refresh_token/)
   assert.match(refreshRoute, /getUserTier/)
+  assert.match(refreshRoute, /getAccountStatus/)
   assert.match(refreshRoute, /Session expired/)
 })
 

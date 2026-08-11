@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import { LegalPage } from '../components/LegalPage'
-import { QUOTAS, SUPPORT_EMAIL } from '../../lib/launch'
+import { SUPPORT_EMAIL } from '../../lib/launch'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'GuardScope Terms of Service: usage rules, acceptable use, quotas, promo codes, advisory results, and account deletion.',
+  description: 'GuardScope Terms of Service: trial and subscription rules, acceptable use, advisory results, and account deletion.',
   alternates: { canonical: '/terms' },
   openGraph: { url: '/terms', type: 'website' },
 }
@@ -25,25 +25,19 @@ const sections = [
     body: 'GuardScope results are informational and advisory. No security product can detect every phishing attempt, malicious link, impersonation, or business email compromise attempt. You remain responsible for decisions you make after reviewing a report, including whether to click a link, open an attachment, reply to an email, make a payment, or report a message.',
   },
   {
-    title: '4. Access tiers and quotas',
+    title: '4. Trial and subscription access',
     bullets: [
-      `Anonymous users receive ${QUOTAS.anonymousDaily} analyses per day per IP or equivalent abuse-prevention identifier.`,
-      `Signed-in free accounts include ${QUOTAS.signedInFreeMonthly} analyses per month unless upgraded or otherwise changed in the product.`,
-      `Launch promo codes provide ${QUOTAS.promoProDays} days of Pro access from activation unless a specific offer states otherwise.`,
-      'Paid Pro access may be offered through Stripe or Paystack after launch.',
+      'A signed-in account receives five lifetime trial analyses unless a specific written offer states otherwise.',
+      'Paid Pro access is offered through Paystack when subscription checkout is enabled.',
       'Quotas, pricing, and feature availability may change as the service evolves, but we will not intentionally misrepresent the quota shown in the product.',
     ],
-  },
-  {
-    title: '5. Promo-code and launch-code rules',
-    body: 'Promo codes are limited, issued at our discretion, and intended for individual early-access users. Codes may not be sold, transferred, automated, shared publicly for mass redemption, or used to create multiple accounts to bypass limits. We may revoke a code, downgrade access, or suspend an account if we detect fraud, resale, abuse, or attempts to bypass service limits.',
   },
   {
     title: '6. Acceptable use',
     bullets: [
       'Use GuardScope only for lawful analysis of emails you are authorized to access.',
       'Do not reverse engineer, scrape, overload, attack, or probe the service outside ordinary product use.',
-      'Do not bypass quotas, authentication, billing, rate limits, or promo-code limits.',
+      'Do not bypass trial limits, authentication, billing, or rate limits.',
       'Do not submit payloads intended to exploit GuardScope, its providers, or other users.',
       'Do not process another person\'s email without appropriate permission.',
       'Do not resell GuardScope access unless we provide written authorization.',
@@ -51,11 +45,11 @@ const sections = [
   },
   {
     title: '7. Privacy and data',
-    body: 'Email content is transmitted for user-triggered analysis and is not stored in GuardScope databases after the analysis response is produced. Account, quota, subscription, promo, diagnostic, and abuse-prevention metadata may be stored where needed to operate the service. See the Privacy Policy at guardscope.app/privacy for details.',
+    body: 'Email content is transmitted for user-triggered analysis and is not stored in GuardScope databases after the analysis response is produced. Account, trial, subscription, diagnostic, and abuse-prevention metadata may be stored where needed to operate the service. See the Privacy Policy at guardscope.app/privacy for details.',
   },
   {
     title: '8. Accounts and security',
-    body: `You are responsible for keeping your account credentials secure and for activity under your account. If you believe your account or promo code has been compromised, contact ${SUPPORT_EMAIL}. We may suspend or restrict accounts where needed to protect users, the service, or third-party providers.`,
+    body: `You are responsible for keeping your account credentials secure and for activity under your account. If you believe your account has been compromised, contact ${SUPPORT_EMAIL}. We may suspend or restrict accounts where needed to protect users, the service, or third-party providers.`,
   },
   {
     title: '9. Account deletion',
@@ -67,7 +61,7 @@ const sections = [
   },
   {
     title: '11. Service changes and availability',
-    body: 'We may change, suspend, or discontinue features, quotas, promo campaigns, providers, pricing, or access to beta functionality. We aim to keep GuardScope available, but we do not guarantee uninterrupted or error-free operation.',
+    body: 'We may change, suspend, or discontinue features, trial allowances, providers, pricing, or access to beta functionality. We aim to keep GuardScope available, but we do not guarantee uninterrupted or error-free operation.',
   },
   {
     title: '12. Third-party services',
@@ -96,7 +90,7 @@ export default function TermsPage() {
     <LegalPage
       eyebrow="Legal / Terms"
       title="Terms of Service"
-      description="The rules for using GuardScope, including advisory security results, quotas, launch codes, acceptable use, account deletion, and payment terms."
+      description="The rules for using GuardScope, including advisory security results, trial limits, acceptable use, account deletion, and subscription terms."
       effectiveDate={EFFECTIVE_DATE}
       sections={sections}
     />

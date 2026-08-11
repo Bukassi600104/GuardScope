@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       error: 'payments_suspended',
-      message: 'Payments are not yet active. Use your promo code to access Pro.',
+      message: 'Subscription checkout is not active yet. Your account and trial remain available.',
     },
     { status: 503, headers: buildCorsHeaders(req) }
   )

@@ -3,12 +3,12 @@
 import type { FormEvent, ReactNode } from 'react'
 import { useState } from 'react'
 import { GuardScopeLogo } from '../components/GuardScopeLogo'
-import { CTA_HREF, CTA_LABEL, QUOTAS } from '../../lib/launch'
+import { CTA_HREF, CTA_LABEL } from '../../lib/launch'
 
 type View = 'signin' | 'signup' | 'forgot' | 'forgot_sent' | 'signup_success'
 
 const C = {
-  bg: '#f6faff',
+  bg: '#06131f',
   panel: '#ffffff',
   text: '#001e2f',
   body: '#526477',
@@ -136,7 +136,7 @@ export default function SignupPage() {
         return
       }
 
-      window.location.href = '/'
+      window.location.href = '/account'
     } catch {
       setSigninError('Network error. Please try again.')
     } finally {
@@ -177,38 +177,38 @@ export default function SignupPage() {
     'Sign in to GuardScope'
 
   const description =
-    view === 'signup' ? `Start with ${QUOTAS.signedInFreeMonthly} signed-in scans per month, then activate a launch code when you have one.` :
+    view === 'signup' ? 'Start with five complete lifetime trial scans. No payment card is required.' :
     view === 'forgot' ? 'Enter your account email and we will send password reset instructions.' :
     view === 'forgot_sent' ? 'If an account exists for that email, a reset link is on the way.' :
     view === 'signup_success' && signupNeedsConfirmation ? 'Check your inbox and confirm your email before signing in.' :
     view === 'signup_success' ? 'Your account is ready. Sign in to continue.' :
-    'Access your quota, launch-code status, and GuardScope account settings.'
+    'Access your trial usage, subscription status, and GuardScope account settings.'
 
   return (
     <main style={{ minHeight: '100vh', background: C.bg, padding: '28px 24px 54px' }}>
       <div style={{ maxWidth: 1160, margin: '0 auto' }}>
         <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 44 }}>
-          <a href="/" aria-label="GuardScope home"><GuardScopeLogo variant="dark" size={32} textSize={17} /></a>
+          <a href="/" aria-label="GuardScope home"><GuardScopeLogo variant="color" size={34} textSize={18} /></a>
           <a href={CTA_HREF} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: `1px solid ${C.border}`, background: '#fff', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 760, color: C.text }}>
             {CTA_LABEL}<ArrowIcon />
           </a>
         </nav>
 
         <div className="auth-shell-grid">
-          <section style={{ border: `1px solid ${C.border}`, borderRadius: 8, background: 'linear-gradient(180deg,#ffffff 0%,#edf8ff 100%)', padding: '34px', minHeight: 520 }}>
+          <section style={{ border: `1px solid ${C.border}`, borderRadius: 8, background: '#f4f7f8', padding: '34px', minHeight: 520 }}>
             <p style={{ fontSize: 12, fontWeight: 820, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.cyan, marginBottom: 14 }}>GuardScope account</p>
             <h1 style={{ fontSize: 'clamp(32px,5vw,58px)', lineHeight: 1.04, letterSpacing: '-0.02em', color: C.text, marginBottom: 16 }}>
               Gmail threat analysis with privacy-first account controls.
             </h1>
             <p style={{ fontSize: 16, color: C.body, lineHeight: 1.75, maxWidth: 540 }}>
-              Sign in to manage access, redeem launch codes, and keep your scan quota tied to your account.
+              Sign in to keep trial usage and subscription access synchronized with the Chrome extension.
             </p>
 
             <div style={{ display: 'grid', gap: 12, marginTop: 30 }}>
               {[
                 ['No email storage', 'Email content is analyzed only when you initiate a scan.'],
-                ['Quota protected', `${QUOTAS.anonymousDaily} anonymous scans per day and signed-in limits enforced by the backend.`],
-                ['Launch-code ready', `Promo codes unlock ${QUOTAS.promoProDays} days of Pro access when activated.`],
+                ['Five complete scans', 'Evaluate the full threat report on five real emails.'],
+                ['Account synchronized', 'Trial and subscription access follow you between the website and extension.'],
               ].map(([heading, copy]) => (
                 <div key={heading} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: `1px solid ${C.border}` }}>
                   <span style={{ color: C.success, marginTop: 2 }}><CheckIcon /></span>
@@ -253,7 +253,7 @@ export default function SignupPage() {
                 {signupError && <Alert tone="error">{signupError}</Alert>}
                 <label style={labelStyle}>Email<input style={fieldStyle} type="email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required autoComplete="email" placeholder="you@example.com" /></label>
                 <label style={labelStyle}>Password<input style={fieldStyle} type="password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={12} autoComplete="new-password" placeholder="At least 12 characters" /></label>
-                <Alert tone="info">Use a unique password with at least 12 characters. GuardScope accounts are used for quota, launch-code, and billing status.</Alert>
+                <Alert tone="info">Use a unique password with at least 12 characters. GuardScope accounts securely synchronize trial and billing status.</Alert>
                 <button type="submit" disabled={signupLoading} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14, opacity: signupLoading ? 0.72 : 1 }}>
                   {signupLoading ? 'Creating account...' : 'Create account'}
                 </button>
@@ -282,15 +282,15 @@ export default function SignupPage() {
               <div style={{ display: 'grid', gap: 16 }}>
                 <Alert tone="success">
                   {signupNeedsConfirmation
-                    ? 'Your account was created. Confirm your email from your inbox, then sign in and activate a launch code if you have one.'
-                    : 'Your account was created. Sign in to continue, then activate a launch code if you have one.'}
+                    ? 'Your account was created. Confirm your email from your inbox, then sign in to start your trial.'
+                    : 'Your account was created. Sign in to start your trial.'}
                 </Alert>
                 <button type="button" onClick={() => setView('signin')} style={{ height: 50, borderRadius: 8, background: C.text, color: '#fff', fontWeight: 820, fontSize: 14 }}>Go to sign in</button>
               </div>
             )}
 
             <div style={{ marginTop: 24, paddingTop: 18, borderTop: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-              <a href="/upgrade" style={{ color: C.cyan, fontSize: 13, fontWeight: 760 }}>Have a launch code?</a>
+              <a href="/pricing" style={{ color: C.cyan, fontSize: 13, fontWeight: 760 }}>View plans</a>
               <a href="/privacy" style={{ color: C.muted, fontSize: 13, fontWeight: 650 }}>Privacy details</a>
             </div>
           </section>

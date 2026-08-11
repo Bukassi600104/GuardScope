@@ -1,163 +1,28 @@
 import type { Metadata } from 'next'
-import type { CSSProperties } from 'react'
-import { Navbar } from '../components/Navbar'
 import { Footer } from '../components/Footer'
-import { CTA_HREF, CTA_LABEL, QUOTAS } from '../../lib/launch'
+import { Navbar } from '../components/Navbar'
 
 export const metadata: Metadata = {
   title: 'Pricing',
-  description: 'GuardScope launch pricing: anonymous daily scans, signed-in free scans, and limited free launch-code Pro access.',
+  description: 'Start GuardScope with five lifetime trial scans, then continue with a Paystack-managed Pro subscription.',
   alternates: { canonical: '/pricing' },
 }
 
-const C = {
-  bg: '#f7fbff',
-  surface: '#ffffff',
-  primary: '#061b2b',
-  accent: '#1aa7d9',
-  text: '#061b2b',
-  body: '#4f6275',
-  muted: '#738293',
-  border: '#cdd8e3',
-  success: '#18a957',
-}
-
-const s = {
-  wrap: { width: 'min(1100px, calc(100% - 48px))', margin: '0 auto' } as CSSProperties,
-  section: { padding: '84px 0' } as CSSProperties,
-  h1: { fontSize: 'clamp(38px,5vw,64px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.02em', color: C.text } as CSSProperties,
-  h2: { fontSize: 'clamp(28px,4vw,46px)', fontWeight: 780, lineHeight: 1.1, color: C.text } as CSSProperties,
-  lead: { fontSize: 18, color: C.body, lineHeight: 1.75 } as CSSProperties,
-  card: { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: 28 } as CSSProperties,
-}
-
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
-      <circle cx="12" cy="12" r="10" fill={C.success} fillOpacity="0.12" />
-      <path d="M7 12.5l3.2 3.2L17 9" stroke={C.success} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-const PLANS = [
-  {
-    name: 'Anonymous',
-    price: '$0',
-    description: 'Start scanning without an account.',
-    features: [
-      `${QUOTAS.anonymousDaily} analyses per day per IP`,
-      'User-triggered Gmail scans',
-      'AI, URL, DNS, and domain checks',
-      'No email bodies stored by GuardScope',
-    ],
-  },
-  {
-    name: 'Free account',
-    price: '$0',
-    description: 'Keep account access and upgrade later.',
-    features: [
-      `${QUOTAS.signedInFreeMonthly} analyses per month per account`,
-      'Account-based quota tracking',
-      'Subscription and promo-code support',
-      'Same advisory scan report',
-    ],
-  },
-  {
-    name: 'Launch Pro',
-    price: 'Free code',
-    description: 'Limited launch access for early users.',
-    features: [
-      `${QUOTAS.promoProDays} days of Pro access from activation`,
-      'Unlimited analyses during the promo window',
-      'No credit card required for the launch code',
-      'Codes are limited and abuse-protected',
-    ],
-    featured: true,
-  },
-]
-
-const FAQS = [
-  { q: 'Why are anonymous and signed-in quotas different?', a: 'Anonymous quota is daily and IP-based so new users can try GuardScope quickly. Signed-in free quota is account-based and currently monthly unless upgraded or using a promo code.' },
-  { q: 'Where do I install GuardScope?', a: 'Use the primary Add to Chrome button on this site to open the public Chrome Web Store listing, then install GuardScope from there.' },
-  { q: 'Do launch promo codes require payment?', a: 'No. Launch codes provide temporary Pro access without requiring a credit card.' },
-  { q: 'Are scan results definitive?', a: 'No. GuardScope provides advisory threat analysis and should be used alongside normal security judgment.' },
-]
+const proFeatures = ['Continuous Gmail threat analysis', 'Complete sender, link, domain, and AI checks', 'Synchronized website and extension access', 'Secure recurring billing through Paystack', 'Subscription management from your account']
 
 export default function PricingPage() {
   return (
-    <>
+    <main className="premium-site">
       <Navbar activePage="/pricing" />
-
-      <section style={{ padding: '84px 0 68px', background: `linear-gradient(180deg, ${C.bg} 0%, #fff 100%)`, textAlign: 'center' }}>
-        <div style={{ ...s.wrap, maxWidth: 760 }}>
-          <h1 style={s.h1}>Launch pricing for GuardScope</h1>
-          <p style={{ ...s.lead, margin: '20px auto 0' }}>
-            Install GuardScope from the Chrome Web Store, start with free advisory email scans, and claim a limited launch code for temporary Pro access.
-          </p>
+      <section className="pricing-hero"><div className="premium-shell"><span className="premium-kicker"><i /> SIMPLE ACCESS</span><h1>Try the full intelligence.<br />Subscribe when it earns your trust.</h1><p>One account follows you from the website into Gmail. Trial use and subscription access remain synchronized automatically.</p></div></section>
+      <section className="pricing-section">
+        <div className="premium-shell pricing-cards">
+          <article className="plan-card trial-plan"><span className="section-label">TRIAL</span><h2>Five scans</h2><p className="plan-price">₦0 <small>to evaluate</small></p><p>Use the complete GuardScope analysis on five real emails. No payment card is needed to begin.</p><ul><li>Five lifetime scans</li><li>Full risk report</li><li>One synchronized account</li><li>No reduced-feature demo</li></ul><a className="premium-button secondary" href="/signup">Start trial</a></article>
+          <article className="plan-card pro-plan"><div className="recommended">RECOMMENDED</div><span className="section-label">PRO</span><h2>Continuous protection</h2><p className="plan-price">Pricing soon <small>monthly or annual</small></p><p>Keep GuardScope active after your trial with a recurring plan billed securely in naira through Paystack.</p><ul>{proFeatures.map(feature => <li key={feature}>{feature}</li>)}</ul><a className="premium-button primary" href="/account">View account status</a><small className="billing-note">Checkout unlocks automatically when live billing opens.</small></article>
         </div>
       </section>
-
-      <section style={{ ...s.section, background: '#fff' }}>
-        <div style={s.wrap}>
-          <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            {PLANS.map((plan) => (
-              <article key={plan.name} style={{
-                ...s.card,
-                background: plan.featured ? '#f0f9ff' : '#fff',
-                borderColor: plan.featured ? '#9bdcf4' : C.border,
-                boxShadow: plan.featured ? '0 18px 46px rgba(26,167,217,0.14)' : 'none',
-              }}>
-                <h2 style={{ fontSize: 20, color: C.text, marginBottom: 8 }}>{plan.name}</h2>
-                <div style={{ fontSize: 38, fontWeight: 820, color: C.text, marginBottom: 10 }}>{plan.price}</div>
-                <p style={{ color: C.body, fontSize: 14, lineHeight: 1.65, minHeight: 46 }}>{plan.description}</p>
-                <div style={{ display: 'grid', gap: 12, margin: '26px 0' }}>
-                  {plan.features.map((feature) => (
-                    <div key={feature} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                      <CheckIcon />
-                      <span style={{ color: C.body, fontSize: 14, lineHeight: 1.55 }}>{feature}</span>
-                    </div>
-                  ))}
-                </div>
-                <a href={plan.featured ? CTA_HREF : '/#early-access'} style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '100%',
-                  minHeight: 46,
-                  borderRadius: 8,
-                  background: plan.featured ? C.primary : C.bg,
-                  color: plan.featured ? '#fff' : C.text,
-                  border: plan.featured ? 'none' : `1px solid ${C.border}`,
-                  fontSize: 15,
-                  fontWeight: 760,
-                }}>
-                  {plan.featured ? CTA_LABEL : 'Start free'}
-                </a>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section style={{ ...s.section, background: C.bg }}>
-        <div style={{ ...s.wrap, display: 'grid', gridTemplateColumns: '0.65fr 1fr', gap: 48 }} className="two-col-grid">
-          <div>
-            <h2 style={s.h2}>Pricing questions</h2>
-            <p style={{ ...s.lead, marginTop: 16 }}>Clear quota language matters for users and reviewers.</p>
-          </div>
-          <div>
-            {FAQS.map((faq) => (
-              <div key={faq.q} style={{ padding: '22px 0', borderBottom: `1px solid ${C.border}` }}>
-                <h3 style={{ color: C.text, fontSize: 16, marginBottom: 8 }}>{faq.q}</h3>
-                <p style={{ color: C.body, fontSize: 14, lineHeight: 1.75 }}>{faq.a}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      <section className="premium-section pricing-notes"><div className="premium-shell split-heading"><div><span className="section-label">CLEAR BY DESIGN</span><h2>No anonymous access. No permanent free tier.</h2></div><div className="pricing-points"><p><strong>Five means five.</strong> Trial scans are lifetime account usage, not a monthly reset.</p><p><strong>Paystack only.</strong> Subscription checkout and renewal are designed for a Nigerian business account.</p><p><strong>Safe rollout.</strong> Billing stays unavailable until the live key and both recurring plan codes are verified.</p></div></div></section>
       <Footer />
-    </>
+    </main>
   )
 }

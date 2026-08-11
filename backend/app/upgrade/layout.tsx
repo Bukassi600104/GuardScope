@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Upgrade to Pro',
-  description: 'Activate your GuardScope Pro access - unlimited email analyses, full AI + threat intel layers. Enter your launch promo code.',
+  description: 'Manage your GuardScope trial and Pro subscription from one synchronized account.',
   alternates: { canonical: '/upgrade' },
   openGraph: {
     url: '/upgrade',

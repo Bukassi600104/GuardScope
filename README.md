@@ -49,15 +49,15 @@ GuardScope/
 - **Database/Auth:** Supabase PostgreSQL, Supabase Auth, RLS
 - **Threat intel:** VirusTotal, Google Safe Browsing, PhishTank, URLhaus, Spamhaus
 - **Rate limiting:** Upstash Redis
-- **Payments:** Stripe and Paystack, currently suspended during the launch-code promo period
+- **Payments:** Paystack recurring subscriptions (credential-gated until activation)
 - **Email:** Resend
 - **Monitoring:** Sentry
 
-## Quotas And Beta Access
+## Access Model
 
-- Anonymous users: 5 analyses per day per IP.
-- Signed-in free users: 5 analyses per month per account.
-- Pro and Team users: unlimited analyses, subject to abuse rate limits.
+- Migration-safe `legacy` mode preserves the currently published extension.
+- Trial mode requires an account and provides five lifetime trial scans.
+- Pro and Team access is subscription-authoritative, subject to abuse rate limits.
 - Launch promo codes: 100 seeded `GS-...` codes, each granting 30 days of Pro access after redemption.
 
 ## Privacy Model

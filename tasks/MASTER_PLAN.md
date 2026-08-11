@@ -8,16 +8,15 @@ GuardScope is a Chrome MV3 extension for Gmail that performs AI-powered email au
 
 **Primary market:** Nigeria and Africa first, with global phishing and social-engineering coverage.
 
-**Business model:** Freemium SaaS with early-access promo codes.
+**Business model:** Account-required five-scan trial followed by a paid subscription.
 
 ## Production Decisions
 
 - Production domain: `https://guardscope.app`
 - AI provider: Mercury-2 by InceptionLabs
-- Anonymous quota: 5 analyses per day per IP
-- Signed-in free quota: 5 analyses per month per account
-- Promo access: 100 early-access codes, 30 days of Pro per redeemed code
-- Paid plans: Stripe and Paystack integration exists, with payments suspended during early access
+- Migration mode: legacy access remains available only while the published extension is transitioned
+- Trial quota: 5 lifetime analyses per signed-in account
+- Paid plans: recurring Paystack subscriptions, enabled only after live credentials and plans are verified
 
 ## Tech Stack
 
@@ -28,7 +27,7 @@ GuardScope is a Chrome MV3 extension for Gmail that performs AI-powered email au
 | AI Analysis | Mercury-2 by InceptionLabs |
 | Database | Supabase PostgreSQL with Row-Level Security |
 | Auth | Supabase Auth |
-| Payments | Stripe and Paystack |
+| Payments | Paystack |
 | DNS | Cloudflare DNS over HTTPS |
 | Threat Intel | VirusTotal, Google Safe Browsing, PhishTank, URLhaus, Spamhaus |
 | Rate Limiting | Upstash Redis |
@@ -93,9 +92,9 @@ User opens a Gmail message
 | `/api/promo/request` | POST | Assign early-access code to lead |
 | `/api/promo/status` | GET | Promo availability |
 | `/api/promo/validate` | POST | Redeem code and upgrade user for 30 days |
-| `/api/stripe/checkout` | POST | Stripe checkout, currently suspended during early access |
-| `/api/stripe/webhook` | POST | Stripe subscription webhook |
-| `/api/paystack/initialize` | POST | Paystack checkout, currently suspended during early access |
+| `/api/account/status` | GET | Canonical account entitlement and billing readiness |
+| `/api/paystack/initialize` | POST | Authenticated Paystack recurring checkout |
+| `/api/paystack/manage` | POST | Authenticated Paystack subscription management link |
 | `/api/paystack/webhook` | POST | Paystack subscription webhook |
 | `/api/health` | GET | Health check |
 

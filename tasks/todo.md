@@ -287,13 +287,9 @@
 - [x] Links to /privacy and /terms
 - [x] Commit & push (78036be)
 
-### 5-2: Stripe Integration âœ…
-- [x] stripe npm package installed
-- [x] backend/lib/stripe.ts â€” lazy getStripe() + STRIPE_PRICES
-- [x] POST /api/stripe/checkout â€” creates session with userId in metadata
-- [x] POST /api/stripe/webhook â€” handles checkout.session.completed (â†’ pro), subscription.deleted (â†’ free), invoice.payment_failed (â†’ log)
-- [x] Sentry.captureException on webhook errors
-- [x] Commit & push (78036be)
+### 5-2: Payment provider cleanup
+- [x] Remove the inactive Stripe package and API routes
+- [x] Standardize subscription checkout on Paystack for the Nigerian business account
 
 ### 5-3: Paystack Integration âœ…
 - [x] POST /api/paystack/initialize â€” â‚¦7,500/mo NGN, HMAC reference
@@ -322,7 +318,7 @@
 
 ### Phase 5 Milestone Verification
 - [ ] Landing page live after Vercel deploy
-- [ ] Stripe + Paystack env vars set in Vercel dashboard
+- [ ] Paystack live key, monthly plan, and annual plan set in Vercel dashboard
 - [ ] Extension submitted to Chrome Web Store (requires screenshots + video)
 
 ---

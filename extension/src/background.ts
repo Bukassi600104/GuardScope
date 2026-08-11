@@ -223,6 +223,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
+  if (message.type === 'REFRESH_ACCOUNT') {
+    refreshAccountStatus().then(sendResponse)
+    return true
+  }
+
   if (message.type === 'SIGN_IN') {
     // Validate input types before passing to signIn
     if (typeof message.email !== 'string' || typeof message.password !== 'string') {
@@ -281,6 +286,7 @@ async function handleAnalyze(tabId?: number): Promise<{ success: boolean; report
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as Record<string, unknown>
+    if (res.status === 401 || res.status === 402) await refreshAccountStatus()
     return {
       success: false,
       error: (body.error as string) || `HTTP ${res.status}`,
@@ -301,6 +307,7 @@ async function handleAnalyze(tabId?: number): Promise<{ success: boolean; report
     analyzedAt: Date.now(),
     duration_ms: report.duration_ms ?? 0,
   })
+  await refreshAccountStatus()
   return { success: true, report }
 }
 
@@ -362,6 +369,7 @@ async function getValidToken(): Promise<string | null> {
       refresh_token: string
       expires_in: number
       tier?: AuthState['tier']
+      account?: AuthState['account']
     }
     const newAuth = {
       ...auth,
@@ -369,6 +377,7 @@ async function getValidToken(): Promise<string | null> {
       refreshToken: data.refresh_token,
       tokenExpiresAt: Date.now() + data.expires_in * 1000,
       tier: data.tier ?? auth.tier,
+      account: data.account ?? auth.account ?? null,
     }
     await setAuthState(newAuth)
     return data.access_token
@@ -406,6 +415,7 @@ async function signIn(email: string, password: string): Promise<{ success: boole
     expires_in: number
     user: { id: string; email: string }
     tier?: AuthState['tier']
+    account?: AuthState['account']
   }
 
   const authState: AuthState = {
@@ -416,7 +426,36 @@ async function signIn(email: string, password: string): Promise<{ success: boole
     token: data.access_token,
     refreshToken: data.refresh_token,
     tokenExpiresAt: Date.now() + (data.expires_in ?? 3600) * 1000,
+    account: data.account ?? null,
   }
   await setAuthState(authState)
   return { success: true }
+}
+
+async function refreshAccountStatus(): Promise<{ success: boolean; account?: AuthState['account']; error?: string }> {
+  const token = await getValidToken()
+  if (!token) return { success: false, error: 'Sign in required' }
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/account/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({})) as { error?: string }
+      return { success: false, error: body.error ?? 'Unable to refresh account' }
+    }
+    const account = await res.json() as NonNullable<AuthState['account']>
+    const auth = await getAuthState()
+    if (auth.isAuthenticated) {
+      await setAuthState({
+        ...auth,
+        account,
+        tier: account.accessPlan === 'trial' ? 'free' : account.accessPlan,
+      })
+    }
+    return { success: true, account }
+  } catch {
+    return { success: false, error: 'Network error' }
+  }
 }

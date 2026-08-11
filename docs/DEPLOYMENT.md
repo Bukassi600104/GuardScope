@@ -29,14 +29,14 @@ UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 RESEND_API_KEY=
 SENTRY_DSN=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-STRIPE_PRO_PRICE_ID=
+GUARDSCOPE_ACCESS_MODE=legacy
+PAYMENTS_ENABLED=false
 PAYSTACK_SECRET_KEY=
-PAYSTACK_PRO_PLAN_CODE=
+PAYSTACK_PRO_MONTHLY_PLAN_CODE=
+PAYSTACK_PRO_ANNUAL_PLAN_CODE=
 ```
 
-Stripe and Paystack routes currently return `payments_suspended` during early access, but the env slots are documented for later activation.
+Paystack checkout stays unavailable until `PAYMENTS_ENABLED=true` and both recurring plan codes are configured. Follow `backend/PAYSTACK_SETUP.md` for the safe activation order.
 
 Do not set `AUTH_AUTO_CONFIRM_SIGNUP` in production. Leaving it unset makes
 public account creation use Supabase's standard signup flow and email
@@ -99,7 +99,7 @@ Upload the ZIP built from `extension/dist`, not the source directory.
 Before upload:
 
 ```powershell
-rg -n "eval\(|new Function|http://|SUPABASE_SERVICE|INCEPTION_API_KEY|STRIPE_SECRET|PAYSTACK_SECRET" extension\dist
+rg -n "eval\(|new Function|http://|SUPABASE_SERVICE|INCEPTION_API_KEY|PAYSTACK_SECRET" extension\dist
 ```
 
 Expected: no server secrets or remote-code execution patterns.
